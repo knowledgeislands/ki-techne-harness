@@ -1,0 +1,10 @@
+{
+  "name": "@knowledgeislands/techne-controller",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "PYTHONDONTWRITEBYTECODE=1 python3 -c 'import pathlib; compile(pathlib.Path(\"src/controller.py\").read_text(encoding=\"utf-8\"), \"controller.py\", \"exec\")'",
+    "test": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "typecheck": "bash ../../scripts/check-controller.sh"
+  }
+}

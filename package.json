@@ -1,0 +1,43 @@
+{
+  "name": "@knowledgeislands/ki-techne-tools",
+  "description": "Runnable controller and execution-fabric tooling for the Knowledge Islands ecosystem.",
+  "version": "0.0.0",
+  "author": "kris@kris.me.uk",
+  "bugs": {
+    "url": "https://github.com/knowledgeislands/ki-techne-tools/issues"
+  },
+  "homepage": "https://github.com/knowledgeislands/ki-techne-tools#readme",
+  "keywords": [
+    "controller",
+    "execution-fabric",
+    "k3s",
+    "knowledge-islands",
+    "kubernetes"
+  ],
+  "license": "MIT",
+  "packageManager": "bun@1.4.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knowledgeislands/ki-techne-tools.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "private": false,
+  "scripts": {
+    "clean": "rm -rf node_modules .turbo",
+    "ki:aws:validate": "bash scripts/validate-cloudformation.sh",
+    "ki:controller:bootstrap": "bash packages/bootstrap/bin/techne-controller-bootstrap",
+    "ki:controller:encrypt-secrets": "bash scripts/enable-controller-secrets-encryption.sh",
+    "ki:deps:layout": "bash scripts/check-root-dependencies.sh",
+    "ki:deps:update": "bun update --latest",
+    "test": "bun run ki:deps:layout && turbo run typecheck test"
+  },
+  "devDependencies": {
+    "turbo": "2.10.13"
+  }
+}

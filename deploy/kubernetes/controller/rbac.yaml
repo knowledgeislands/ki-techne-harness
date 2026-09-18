@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: techne-controller-execution
+  namespace: techne-execution
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, watch, delete]
+  - apiGroups: ['']
+    resources: [pods]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: techne-controller-execution
+  namespace: techne-execution
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: techne-controller-execution
+subjects:
+  - kind: ServiceAccount
+    name: techne-controller
+    namespace: techne-controller

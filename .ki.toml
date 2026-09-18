@@ -1,0 +1,79 @@
+# Knowledge Islands repository configuration.
+# Its presence declares conformance with the Knowledge Islands repository standard.
+
+# -----------------------------------------------------------------------------
+# Foundation
+# -----------------------------------------------------------------------------
+
+[repo]
+harnesses = ["knowledgeislands/ki-agentic-harness"]
+
+[skills.ki-repo]
+repository = "https://github.com/knowledgeislands/ki-techne-tools"
+title = "Techne Tools"
+description = "Runnable controller and execution-fabric tooling for the Knowledge Islands ecosystem."
+repo_code = "TECHNE-TOOLS"
+supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
+visibility = "public"
+license = "MIT"
+
+[skills.ki-repo.checks]
+coverage-engineering = false # Bun and Turborepo orchestrate Python and shell workspaces; no TypeScript surface exists.
+
+[skills.ki-authoring]
+
+# -----------------------------------------------------------------------------
+# Repository shape
+# -----------------------------------------------------------------------------
+
+[skills.ki-repo-project]
+
+# -----------------------------------------------------------------------------
+# Governance runtime
+# -----------------------------------------------------------------------------
+
+[skills.ki-guides]
+
+[skills.ki-tokenomics]
+
+[skills.ki-housekeeping-claude]
+
+[skills.ki-tokenomics-claude]
+
+[skills.ki-tokenomics-codex]
+
+# -----------------------------------------------------------------------------
+# Change management
+# -----------------------------------------------------------------------------
+
+[skills.ki-git]
+
+[skills.ki-work]
+adapter = "roadmap"
+
+[skills.ki-work-roadmap]
+
+[skills.ki-work-roadmap.areas]
+CTRL = "controller"
+FAB = "execution-fabric"
+OPS = "operations"
+
+# -----------------------------------------------------------------------------
+# Relationships
+# -----------------------------------------------------------------------------
+
+[skills.ki-trades]
+
+[skills.ki-trades.routes."knowledgeislands/ki-techne-principal"]
+export = ["work", "knowledge"]
+import = ["work", "knowledge"]
+
+[skills.ki-agora]
+
+[skills.ki-agora.memberships.ki-all]
+home = "https://github.com/knowledgeislands/ki-agentic-harness"
+role = "maintainer"
+
+[skills.ki-agora.memberships.ki-fnd]
+home = "https://github.com/knowledgeislands/ki-agentic-harness"
+role = "maintainer"

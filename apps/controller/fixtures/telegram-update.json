@@ -1,0 +1,18 @@
+{
+  "update_id": 42,
+  "message": {
+    "message_id": 1,
+    "date": 1789632000,
+    "text": "/run local",
+    "from": {
+      "id": 700000001,
+      "is_bot": false,
+      "first_name": "Operator"
+    },
+    "chat": {
+      "id": 700000001,
+      "type": "private",
+      "first_name": "Operator"
+    }
+  }
+}

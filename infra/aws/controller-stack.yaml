@@ -1,0 +1,231 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Retained single-node K3s controller cluster for TECHNE-OPS-007
+
+Parameters:
+  ControllerId:
+    Type: String
+    AllowedPattern: '[a-z0-9-]+'
+    Default: controller
+  ImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0526a6499f6470118
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues: [t3.medium]
+  K3sVersion:
+    Type: String
+    Default: v1.36.4+k3s1
+  VpcCidr:
+    Type: String
+    Default: 10.89.0.0/24
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.89.0.0/25
+
+Resources:
+  ControllerVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref ControllerVpc
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref ControllerVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref ControllerVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnet
+
+  ControllerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: No ingress; restricted controller egress
+      VpcId: !Ref ControllerVpc
+      SecurityGroupEgress:
+        - Description: HTTPS for Telegram, SSM and image pulls
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: Kubernetes APIs inside the controller VPC
+          IpProtocol: tcp
+          FromPort: 6443
+          ToPort: 6443
+          CidrIp: !Ref VpcCidr
+        - Description: DNS over UDP
+          IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+        - Description: DNS over TCP
+          IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  ControllerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+
+  ControllerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref ControllerRole]
+
+  ControllerInstance:
+    Type: AWS::EC2::Instance
+    DependsOn: DefaultRoute
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref ControllerInstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpProtocolIpv6: disabled
+        HttpPutResponseHopLimit: 1
+        HttpTokens: required
+        InstanceMetadataTags: disabled
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: '0'
+          GroupSet: [!Ref ControllerSecurityGroup]
+          SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: 16
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-${ControllerId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-controller-id
+          Value: !Ref ControllerId
+        - Key: ki-lifecycle
+          Value: retained-controller
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec > >(tee -a /var/log/ki-controller-bootstrap.log | logger -t ki-controller-bootstrap -s 2>/dev/console) 2>&1
+          systemctl enable --now amazon-ssm-agent.service || systemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION='${K3sVersion}' INSTALL_K3S_EXEC='server --disable=traefik --disable=servicelb --write-kubeconfig-mode=0600 --secrets-encryption' sh -
+          until /usr/local/bin/k3s kubectl get --raw=/readyz >/dev/null 2>&1; do sleep 2; done
+          install -d -m 0700 /var/lib/ki-controller
+          touch /var/lib/ki-controller/ready
+
+Outputs:
+  ControllerInstanceId:
+    Value: !Ref ControllerInstance
+  ControllerPrivateIp:
+    Value: !GetAtt ControllerInstance.PrivateIp
+  ControllerPublicIp:
+    Value: !GetAtt ControllerInstance.PublicIp
+  ControllerSecurityGroupId:
+    Value: !Ref ControllerSecurityGroup
+  PublicSubnetId:
+    Value: !Ref PublicSubnet
+  VpcId:
+    Value: !Ref ControllerVpc
+  VpcCidr:
+    Value: !Ref VpcCidr

@@ -1,0 +1,10 @@
+{
+  "name": "@knowledgeislands/techne-bootstrap",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bash -n bin/techne-controller-bootstrap",
+    "test": "bash -n bin/techne-controller-bootstrap",
+    "typecheck": "shellcheck bin/techne-controller-bootstrap"
+  }
+}

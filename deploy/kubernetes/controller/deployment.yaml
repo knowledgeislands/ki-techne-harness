@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: techne-controller
+  namespace: techne-controller
+  labels:
+    app.kubernetes.io/name: techne-controller
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: techne-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: techne-controller
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: techne-controller
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: python:3.13-alpine@sha256:7415fbc3c9e4979cc717d92377ab2bc7b2b4a2af1ac03cc52b5f3f88efedaf3a
+          imagePullPolicy: IfNotPresent
+          command: [python3, -B, /opt/techne/controller.py]
+          env:
+            - name: TARGETS_FILE
+              value: /etc/techne/targets.json
+            - name: TELEGRAM_BOT_TOKEN_FILE
+              value: /var/run/secrets/techne/telegram-token
+            - name: TELEGRAM_BOT_USERNAME
+              value: kitteth_bot
+            - name: TELEGRAM_OPERATOR_USER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: techne-controller-secrets
+                  key: operator-user-id
+            - name: TELEGRAM_OPERATOR_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: techne-controller-secrets
+                  key: operator-chat-id
+            - name: TELEGRAM_INITIAL_OFFSET
+              valueFrom:
+                secretKeyRef:
+                  name: techne-controller-secrets
+                  key: initial-offset
+          resources:
+            requests:
+              cpu: 25m
+              memory: 48Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+          volumeMounts:
+            - name: source
+              mountPath: /opt/techne
+              readOnly: true
+            - name: config
+              mountPath: /etc/techne
+              readOnly: true
+            - name: secrets
+              mountPath: /var/run/secrets/techne
+              readOnly: true
+            - name: target-credentials
+              mountPath: /var/run/secrets/targets
+              readOnly: true
+      volumes:
+        - name: source
+          configMap:
+            name: techne-controller-source
+            defaultMode: 0444
+        - name: config
+          configMap:
+            name: techne-controller-config
+        - name: secrets
+          secret:
+            secretName: techne-controller-secrets
+        - name: target-credentials
+          secret:
+            secretName: techne-target-credentials
+            optional: true

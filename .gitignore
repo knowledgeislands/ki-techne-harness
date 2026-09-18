@@ -1,0 +1,32 @@
+# Knowledge Islands managed ignores.
+# Edit the owning skill contract, not the marker-bounded blocks below.
+
+# ki-repo:ignore:ki-repo:start
+# Generated reports, local metadata, logs, and runtime projections.
+reports/
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~
+.claude/settings.local.json
+*.log
+.claude/skills/*
+.agents/skills/*
+!.agents/skills/ki-self/
+!.agents/skills/ki-self/**
+# ki-repo:ignore:ki-repo:end
+
+# Unmanaged repository-specific ignores
+# These rules are preserved but are not currently reconciled by a KI skill.
+
+# Root Bun/Turborepo state and local environment files.
+node_modules/
+.turbo/
+.env
+.env.*
+!.env*.example
+
+# KI-managed repository skill projections are machine-local.
+.claude/agents/

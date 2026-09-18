@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Disposable K3s execution target for TECHNE-OPS-007
+
+Parameters:
+  TargetId:
+    Type: String
+    AllowedPattern: '[a-z0-9-]+'
+  ExpiryAt:
+    Type: String
+  ImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0526a6499f6470118
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues: [t3.medium]
+  K3sVersion:
+    Type: String
+    Default: v1.36.4+k3s1
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetId:
+    Type: AWS::EC2::Subnet::Id
+  ControllerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+  TargetSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Private K3s API from the controller only
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - Description: K3s API from the controller security group
+          IpProtocol: tcp
+          FromPort: 6443
+          ToPort: 6443
+          SourceSecurityGroupId: !Ref ControllerSecurityGroupId
+      SecurityGroupEgress:
+        - Description: HTTPS for SSM, K3s and image pulls
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: DNS over UDP
+          IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+        - Description: DNS over TCP
+          IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-target-${TargetId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-target-id
+          Value: !Ref TargetId
+        - Key: ki-expiry-at
+          Value: !Ref ExpiryAt
+        - Key: ki-lifecycle
+          Value: disposable-target
+
+  TargetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-target-${TargetId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-target-id
+          Value: !Ref TargetId
+        - Key: ki-expiry-at
+          Value: !Ref ExpiryAt
+        - Key: ki-lifecycle
+          Value: disposable-target
+
+  TargetInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref TargetRole]
+
+  TargetInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref TargetInstanceProfile
+      InstanceInitiatedShutdownBehavior: terminate
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpProtocolIpv6: disabled
+        HttpPutResponseHopLimit: 1
+        HttpTokens: required
+        InstanceMetadataTags: disabled
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: '0'
+          GroupSet: [!Ref TargetSecurityGroup]
+          SubnetId: !Ref PublicSubnetId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: 16
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: !Sub ki-techne-ops-007-target-${TargetId}
+        - Key: ki-work-item
+          Value: TECHNE-OPS-007
+        - Key: ki-target-id
+          Value: !Ref TargetId
+        - Key: ki-expiry-at
+          Value: !Ref ExpiryAt
+        - Key: ki-lifecycle
+          Value: disposable-target
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec > >(tee -a /var/log/ki-target-bootstrap.log | logger -t ki-target-bootstrap -s 2>/dev/console) 2>&1
+          systemctl enable --now amazon-ssm-agent.service || systemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service
+          systemd-run --unit=ki-target-expiry --on-active=2h /usr/sbin/shutdown -h now
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION='${K3sVersion}' INSTALL_K3S_EXEC='server --disable=traefik --disable=servicelb --write-kubeconfig-mode=0600' sh -
+          until /usr/local/bin/k3s kubectl get --raw=/readyz >/dev/null 2>&1; do sleep 2; done
+          install -d -m 0700 /var/lib/ki-target
+          touch /var/lib/ki-target/ready
+
+Outputs:
+  TargetInstanceId:
+    Value: !Ref TargetInstance
+  TargetPrivateIp:
+    Value: !GetAtt TargetInstance.PrivateIp
+  TargetPublicIp:
+    Value: !GetAtt TargetInstance.PublicIp
+  TargetSecurityGroupId:
+    Value: !Ref TargetSecurityGroup

@@ -1,0 +1,11 @@
+{
+  "targets": [
+    {
+      "id": "local",
+      "api_server": "https://kubernetes.default.svc",
+      "namespace": "techne-execution",
+      "ca_file": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+      "token_file": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    }
+  ]
+}
