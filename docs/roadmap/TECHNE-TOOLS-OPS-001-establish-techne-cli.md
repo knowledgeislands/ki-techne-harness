@@ -4,12 +4,12 @@ area: OPS
 title: Establish Techne CLI
 theme: operations
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: a17546aa15f6f0c914a32c0afdf1c46a15cef5ca
 created_at: 2026-09-19T16:51:50Z
-updated_at: 2026-09-19T17:47:51Z
+updated_at: 2026-09-19T19:45:00Z
 ---
 
 # Establish Techne CLI
@@ -112,6 +112,10 @@ The implementation stays within the approved boundary. Activating the engineerin
 ### Mini recap
 
 Techne now has a tested CLI application and a safe bootstrap command, with the obsolete local bootstrap package removed. Review should focus on the command surface, AWS safety guard and operator wording; follow-on planning should cover controller containerization and the remaining script inventory.
+
+## Done
+
+Accepted by Kris Brown on 19 September 2026 under the standing estate-baseline approval after restoring the root manifest contract required by the delivered CLI. The full local test, build, static-analysis, documentation, dependency and KI audit gates pass. CloudFormation validation retains the successful delivery evidence above; the baseline rerun reached the same command but could not refresh the host's expired AWS SSO token.
 
 ## Discussion
 
