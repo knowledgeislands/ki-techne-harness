@@ -297,7 +297,7 @@ class KubernetesClient:
         token = read_secret(self.target.token_file)
         request = urllib.request.Request(
             f"{self.target.api_server}{path}",
-            headers={"Accept": "text/plain", "Authorization": f"Bearer {token}"},
+            headers={"Accept": "*/*", "Authorization": f"Bearer {token}"},
             method="GET",
         )
         context = ssl.create_default_context(cafile=self.target.ca_file)

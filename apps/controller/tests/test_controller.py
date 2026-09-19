@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 CONTROLLER_PATH = Path(__file__).parents[1] / "src" / "controller.py"
@@ -84,6 +85,40 @@ def update(update_id: int = 42, text: str = "/run local", user_id: int = 7, chat
     }
 
 
+class KubernetesClientTests(unittest.TestCase):
+    def test_pod_logs_allows_server_selected_media_type(self) -> None:
+        target = controller_module.Target(
+            "local",
+            "https://kubernetes.default.svc",
+            "techne-execution",
+            "/ca",
+            "/token",
+        )
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{"outcome":"completed"}\n'
+
+        with (
+            mock.patch.object(controller_module, "read_secret", return_value="token"),
+            mock.patch.object(
+                controller_module.ssl,
+                "create_default_context",
+                return_value=mock.sentinel.context,
+            ),
+            mock.patch.object(
+                controller_module.urllib.request,
+                "urlopen",
+                return_value=response,
+            ) as urlopen,
+        ):
+            logs = controller_module.KubernetesClient(target).pod_logs("techne-local-42-pod")
+
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.get_header("Accept"), "*/*")
+        self.assertEqual(urlopen.call_args.kwargs["context"], mock.sentinel.context)
+        self.assertEqual(logs, '{"outcome":"completed"}')
+
+
 class ControllerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.telegram = FakeTelegram()
@@ -101,6 +136,18 @@ class ControllerTests(unittest.TestCase):
             monotonic=lambda: 0,
             start_worker=start_worker or (lambda callback: callback()),
         )
+
+    def test_start_and_help_list_every_supported_command(self) -> None:
+        expected = "Commands: /run <target>, /cancel <target> <execution-update-id>, /targets"
+        for command in ("/start", "/help"):
+            with self.subTest(command=command):
+                self.telegram.messages.clear()
+                self.make_controller(FakeKubernetes()).handle_update(update(text=command))
+                self.assertEqual(self.telegram.messages[-1][1], expected)
+
+    def test_bot_addressed_targets_command_lists_registered_targets(self) -> None:
+        self.make_controller(FakeKubernetes()).handle_update(update(text="/targets@kitteth_bot"))
+        self.assertEqual(self.telegram.messages[-1][1], "Targets: local")
 
     def test_dispatch_creates_one_deterministic_job(self) -> None:
         kube = FakeKubernetes()
