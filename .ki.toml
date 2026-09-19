@@ -1,6 +1,8 @@
 # Knowledge Islands repository configuration.
 # Its presence declares conformance with the Knowledge Islands repository standard.
 
+# =============================================================================
+
 # -----------------------------------------------------------------------------
 # Foundation
 # -----------------------------------------------------------------------------
@@ -16,9 +18,7 @@ repo_code = "TECHNE-TOOLS"
 supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
 visibility = "public"
 license = "MIT"
-
-[skills.ki-repo.checks]
-coverage-engineering = false # Bun and Turborepo orchestrate Python and shell workspaces; no TypeScript surface exists.
+checks.coverage-engineering = false # Bun and Turborepo orchestrate Python and shell workspaces; no TypeScript surface exists.
 
 [skills.ki-authoring]
 
@@ -29,7 +29,7 @@ coverage-engineering = false # Bun and Turborepo orchestrate Python and shell wo
 [skills.ki-repo-project]
 
 # -----------------------------------------------------------------------------
-# Governance runtime
+# Governance and runtime
 # -----------------------------------------------------------------------------
 
 [skills.ki-guides]
@@ -63,17 +63,8 @@ OPS = "operations"
 # -----------------------------------------------------------------------------
 
 [skills.ki-trades]
-
-[skills.ki-trades.routes."knowledgeislands/ki-techne-principal"]
-export = ["work", "knowledge"]
-import = ["work", "knowledge"]
+routes."knowledgeislands/ki-techne-principal" = { export = ["work", "knowledge"], import = ["work", "knowledge"] }
 
 [skills.ki-agora]
-
-[skills.ki-agora.memberships.ki-all]
-home = "https://github.com/knowledgeislands/ki-agentic-harness"
-role = "maintainer"
-
-[skills.ki-agora.memberships.ki-fnd]
-home = "https://github.com/knowledgeislands/ki-agentic-harness"
-role = "maintainer"
+memberships.ki-all = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
+memberships.ki-fnd = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
