@@ -23,9 +23,3 @@ bun run test
 ```
 
 Turborepo coordinates package tasks. Install dependencies only at the root; package-local `node_modules`, Bun lockfiles and other package-manager lockfiles fail the repository test gate.
-
-## Controller proof
-
-The initial controller proof migrated from Techne Principal work item `TECHNE-OPS-007`. It retains a long-running single-node K3s controller and uses separately registered execution targets. See [the provenance record](docs/provenance/TECHNE-OPS-007.md) and [controller operations guide](docs/guides/controller-proof.md).
-
-Credential admission is deliberately interactive. Before a Telegram credential can enter Kubernetes, the retained cluster must report K3s Secret encryption enabled with rotation stage `reencrypt_finished`. The bootstrap opens an interactive SSM session; it does not put credential values into Git, a command argument or an SSM Run Command parameter.
