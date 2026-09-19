@@ -349,7 +349,7 @@ Retain only sanitised evidence:
 
 Do not retain Telegram tokens, bearer tokens, kubeconfigs, numeric operator identifiers, raw Telegram updates, Secret contents, AWS session material or command output containing any of them.
 
-The canonical proof evidence remains in [Techne Principal's `TECHNE-OPS-007` results area](https://github.com/knowledgeislands/ki-techne-principal/tree/main/-/TECHNE-OPS-007-kubernetes-controller-proof/results). This repository retains implementation provenance and operating instructions, not canonical architectural authority or operational state.
+Record sanitised proof outcomes in the active `TECHNE-OPS-007` roadmap review in Techne Principal. This repository retains implementation provenance and operating instructions, not canonical architectural authority or operational state; superseded proof packages remain recoverable from Git history.
 
 ## Recovery and troubleshooting
 
