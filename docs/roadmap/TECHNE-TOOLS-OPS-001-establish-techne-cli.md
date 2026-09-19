@@ -3,13 +3,13 @@ id: TECHNE-TOOLS-OPS-001
 area: OPS
 title: Establish Techne CLI
 theme: operations
-horizon: triage
-status: draft
+horizon: next
+status: ready
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-19T16:51:50Z
-updated_at: 2026-09-19T16:51:50Z
+updated_at: 2026-09-19T17:33:43Z
 ---
 
 # Establish Techne CLI
@@ -27,6 +27,55 @@ The first delivery should prove the application boundary with read-only diagnost
 ## Boundary
 
 This item establishes the CLI application and migrates controller diagnostics and bootstrap orchestration. It does not containerize the controller, migrate target lifecycle commands, remove remote host bootstrap payloads, publish to a package registry, deploy infrastructure or mutate live controller state during verification.
+
+## Current state
+
+The repository has no `techne` executable or TypeScript application. Controller bootstrap is a standalone Bash package invoked through `bun run ki:controller:bootstrap`; it duplicates AWS configuration and lookup logic also present in operational scripts. The repository test gate passes, and the existing remote bootstrap payload already preserves the required private credential boundary.
+
+## Steps
+
+- [ ] Add a private Bun and TypeScript CLI application under `apps/cli` with a `techne` binary, root workspace command and repository-governance coverage for the new TypeScript surface.
+- [ ] Implement typed non-secret configuration, shell-free process execution, AWS identity and controller-stack inspection, human and JSON output, and deterministic error handling.
+- [ ] Implement `techne doctor`, `techne controller status` and `techne controller bootstrap`, retaining interactive SSM credential admission without placing secret values in arguments, configuration or logs.
+- [ ] Replace the standalone bootstrap package and legacy root alias, then update repository orientation and the controller operations guide to use the CLI.
+- [ ] Add unit and command-level tests using fake executable responses, then run the complete repository and governance gates without contacting live infrastructure.
+
+## Files touched
+
+- `apps/cli/**`
+- `packages/bootstrap/**`
+- `package.json`
+- `bun.lock`
+- `.ki.toml` and the managed engineering-skill projection selected by repository coverage
+- `README.md`
+- `docs/guides/controller-proof.md`
+- this roadmap record
+
+## Verify
+
+Run `mise exec bun@1.4.1 -- bun run test`, `mise exec bun@1.4.1 -- bun run techne -- --help`, focused CLI tests, `ki repo audit --repo .` and `git diff --check`. All must pass without live AWS, Telegram, Kubernetes or network access.
+
+## Dependencies / blocks
+
+There are no work-item dependencies or external delivery blocks. Bun `1.4.1` is already installed through mise; dependency installation and lockfile changes remain repository-root operations.
+
+## Documentation impact
+
+### Decision Records
+
+No Decision Record is needed: this delivery applies the agreed monorepo boundary without changing Techne Principal architecture or authority.
+
+### Specifications
+
+No standalone specification is needed for the first internal CLI surface; command behavior, exit codes and redaction requirements are executable in CLI tests.
+
+### Guides
+
+Update the repository README and controller operations guide so operator-facing examples use `techne`; do not expose internal runtime payload scripts as the primary workflow.
+
+### Roadmap
+
+Controller containerization and migration of the remaining controller and target lifecycle scripts stay outside this item and require separately captured work.
 
 ## Discussion
 
