@@ -17,8 +17,8 @@ Techne Principal owns the architecture, security boundaries, decision criteria a
 
 ## Repository locations
 
+- `apps/cli/` — typed `techne` operator command-line application.
 - `apps/controller/` — dependency-free Python controller, fixtures and unit tests.
-- `packages/bootstrap/` — local interactive launcher for non-retained credential admission.
 - `deploy/kubernetes/controller/` — controller namespaces, RBAC, configuration, network policy and Deployment.
 - `deploy/kubernetes/execution/` — deterministic Job envelope.
 - `deploy/kubernetes/target/` — namespace-scoped remote-target access.
@@ -84,11 +84,17 @@ bun run test
 
 The gate checks the root-only dependency layout, controller syntax, controller unit tests, JSON and Kubernetes manifests, shell syntax and ShellCheck.
 
+Check the local AWS tooling, Session Manager plugin and expected AWS identity:
+
+```sh
+bun run self:techne -- doctor
+```
+
 Validate both AWS templates using the intended account and region:
 
 ```sh
 aws sso login --profile knowledge-islands-techne
-AWS_PROFILE=knowledge-islands-techne AWS_REGION=eu-west-1 bun run ki:aws:validate
+AWS_PROFILE=knowledge-islands-techne AWS_REGION=eu-west-1 bun run self:aws:validate
 ```
 
 ## Telegram preflight
@@ -120,10 +126,7 @@ Authenticate and inspect the expected stack first:
 
 ```sh
 aws sso login --profile knowledge-islands-techne
-aws cloudformation describe-stacks \
-  --profile knowledge-islands-techne \
-  --region eu-west-1 \
-  --stack-name ki-techne-ops-007-controller
+bun run self:techne -- controller status
 ```
 
 Create it only when the stack is absent:
@@ -149,7 +152,7 @@ The upload contains no credential. It replaces `/opt/ki-techne-tools` on the ret
 For an existing cluster, run the supported single-server K3s rotation sequence and wait for re-encryption:
 
 ```sh
-bun run ki:controller:encrypt-secrets
+bun run self:controller:encrypt-secrets
 ```
 
 New controller stacks start K3s with Secret encryption enabled, but the same verification remains mandatory before credential admission.
@@ -159,7 +162,7 @@ New controller stacks start K3s with Secret encryption enabled, but the same ver
 Run the local launcher:
 
 ```sh
-bun run ki:controller:bootstrap
+bun run self:techne -- controller bootstrap
 ```
 
 The launcher verifies AWS account `655383751458`, resolves the retained controller instance and opens an interactive SSM command. The remote bootstrap then:

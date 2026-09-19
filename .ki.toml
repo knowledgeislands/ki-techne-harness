@@ -18,7 +18,6 @@ repo_code = "TECHNE-TOOLS"
 supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
 visibility = "public"
 license = "MIT"
-checks.coverage-engineering = false # Bun and Turborepo orchestrate Python and shell workspaces; no TypeScript surface exists.
 
 [skills.ki-authoring]
 
@@ -68,3 +67,5 @@ routes."knowledgeislands/ki-techne-principal" = { export = ["work", "knowledge"]
 [skills.ki-agora]
 memberships.ki-all = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
 memberships.ki-fnd = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
+
+[skills.ki-engineering]

@@ -6,8 +6,8 @@ Techne Principal remains the authority for engineering architecture, role bounda
 
 ## Repository map
 
+- `apps/cli/` — typed `techne` operator command-line application.
 - `apps/controller/` — dependency-free Telegram-to-Kubernetes controller and tests.
-- `packages/bootstrap/` — interactive, non-retaining operator entry points.
 - `deploy/kubernetes/` — controller, execution and target resources.
 - `infra/aws/` — replaceable AWS proof infrastructure.
 - `scripts/` — repository checks and bounded operational helpers.
@@ -20,6 +20,7 @@ Use Bun `1.4.1` at the repository root:
 ```sh
 bun install
 bun run test
+bun run self:techne -- --help
 ```
 
 Turborepo coordinates package tasks. Install dependencies only at the root; package-local `node_modules`, Bun lockfiles and other package-manager lockfiles fail the repository test gate.

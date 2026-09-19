@@ -6,6 +6,22 @@
   "bugs": {
     "url": "https://github.com/knowledgeislands/ki-techne-tools/issues"
   },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@types/bun": "1.4.2",
+    "husky": "^9.1.7",
+    "knip": "^6.34.0",
+    "lint-staged": "^17.4.1",
+    "rumdl": "^0.2.64",
+    "syncpack": "^15.3.3",
+    "turbo": "2.10.13",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "homepage": "https://github.com/knowledgeislands/ki-techne-tools#readme",
   "keywords": [
     "controller",
@@ -15,29 +31,33 @@
     "kubernetes"
   ],
   "license": "MIT",
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,jsonc}": [
+      "bunx @biomejs/biome check --write --no-errors-on-unmatched"
+    ],
+    "*.md": [
+      "bunx rumdl check --fix"
+    ]
+  },
   "packageManager": "bun@1.4.1",
+  "private": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/knowledgeislands/ki-techne-tools.git"
   },
-  "engines": {
-    "node": ">=22"
+  "scripts": {
+    "clean": "rm -rf node_modules .turbo",
+    "ki:deps:update": "bun update --latest",
+    "prepare": "husky",
+    "self:aws:validate": "bash scripts/validate-cloudformation.sh",
+    "self:controller:encrypt-secrets": "bash scripts/enable-controller-secrets-encryption.sh",
+    "self:deps:layout": "bash scripts/check-root-dependencies.sh",
+    "self:techne": "bun apps/cli/src/main.ts",
+    "test": "bun run self:deps:layout && turbo run typecheck test"
   },
+  "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "private": false,
-  "scripts": {
-    "clean": "rm -rf node_modules .turbo",
-    "ki:aws:validate": "bash scripts/validate-cloudformation.sh",
-    "ki:controller:bootstrap": "bash packages/bootstrap/bin/techne-controller-bootstrap",
-    "ki:controller:encrypt-secrets": "bash scripts/enable-controller-secrets-encryption.sh",
-    "ki:deps:layout": "bash scripts/check-root-dependencies.sh",
-    "ki:deps:update": "bun update --latest",
-    "test": "bun run ki:deps:layout && turbo run typecheck test"
-  },
-  "devDependencies": {
-    "turbo": "2.10.13"
-  }
+  ]
 }

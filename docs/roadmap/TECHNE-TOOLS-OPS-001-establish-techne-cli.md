@@ -4,12 +4,12 @@ area: OPS
 title: Establish Techne CLI
 theme: operations
 horizon: next
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: a17546aa15f6f0c914a32c0afdf1c46a15cef5ca
 created_at: 2026-09-19T16:51:50Z
-updated_at: 2026-09-19T17:33:43Z
+updated_at: 2026-09-19T17:47:51Z
 ---
 
 # Establish Techne CLI
@@ -34,11 +34,11 @@ The repository has no `techne` executable or TypeScript application. Controller 
 
 ## Steps
 
-- [ ] Add a private Bun and TypeScript CLI application under `apps/cli` with a `techne` binary, root workspace command and repository-governance coverage for the new TypeScript surface.
-- [ ] Implement typed non-secret configuration, shell-free process execution, AWS identity and controller-stack inspection, human and JSON output, and deterministic error handling.
-- [ ] Implement `techne doctor`, `techne controller status` and `techne controller bootstrap`, retaining interactive SSM credential admission without placing secret values in arguments, configuration or logs.
-- [ ] Replace the standalone bootstrap package and legacy root alias, then update repository orientation and the controller operations guide to use the CLI.
-- [ ] Add unit and command-level tests using fake executable responses, then run the complete repository and governance gates without contacting live infrastructure.
+- [x] Add a private Bun and TypeScript CLI application under `apps/cli` with a `techne` binary, root workspace command and repository-governance coverage for the new TypeScript surface.
+- [x] Implement typed non-secret configuration, shell-free process execution, AWS identity and controller-stack inspection, human and JSON output, and deterministic error handling.
+- [x] Implement `techne doctor`, `techne controller status` and `techne controller bootstrap`, retaining interactive SSM credential admission without placing secret values in arguments, configuration or logs.
+- [x] Replace the standalone bootstrap package and legacy root alias, then update repository orientation and the controller operations guide to use the CLI.
+- [x] Add unit and command-level tests using fake executable responses, then run the complete repository and governance gates without contacting live infrastructure.
 
 ## Files touched
 
@@ -53,7 +53,7 @@ The repository has no `techne` executable or TypeScript application. Controller 
 
 ## Verify
 
-Run `mise exec bun@1.4.1 -- bun run test`, `mise exec bun@1.4.1 -- bun run techne -- --help`, focused CLI tests, `ki repo audit --repo .` and `git diff --check`. All must pass without live AWS, Telegram, Kubernetes or network access.
+Run `mise exec bun@1.4.1 -- bun run test`, `mise exec bun@1.4.1 -- bun run self:techne -- --help`, focused CLI tests, `ki repo audit --repo .` and `git diff --check`. All must pass without live AWS, Telegram, Kubernetes or network access.
 
 ## Dependencies / blocks
 
@@ -76,6 +76,42 @@ Update the repository README and controller operations guide so operator-facing 
 ### Roadmap
 
 Controller containerization and migration of the remaining controller and target lifecycle scripts stay outside this item and require separately captured work.
+
+## Review
+
+### Delivered
+
+Delivered the agreed first `techne` CLI slice from baseline `a17546aa15f6f0c914a32c0afdf1c46a15cef5ca`: local diagnostics, read-only controller status and the existing private interactive controller bootstrap path. No live infrastructure was contacted or mutated.
+
+### Summary of changes
+
+- Added the private Bun and TypeScript `apps/cli` application with typed configuration, shell-free process execution, human and JSON status output, AWS account protection and Session Manager bootstrap orchestration.
+- Added deterministic command tests with fake subprocess responses, including proof that credential-like environment values never enter SSM arguments.
+- Removed the standalone `packages/bootstrap` launcher and replaced its package alias with `bun run self:techne -- controller bootstrap`.
+- Activated the repository engineering contract and its standard TypeScript, formatting, dependency-analysis and Git-hook configuration for the new source surface.
+- Updated the README and controller operations guide to make `techne` the operator entry point while retaining deployable applications and remote runtime scripts.
+
+### Verification
+
+- `mise exec bun@1.4.1 -- bun run test` — passed all four Turborepo tasks; CLI tests passed 8/8 and controller tests passed 14/14.
+- `mise exec bun@1.4.1 -- bun run self:techne -- --help` — passed without subprocess or network access.
+- `mise exec bun@1.4.1 -- bun run self:techne -- controller status --help` — passed without contacting AWS.
+- `mise exec bun@1.4.1 -- bun run --cwd apps/cli build` — bundled the CLI successfully.
+- Biome, Knip and Syncpack checks — passed.
+- `ki repo audit --repo .` — passed all 14 selected repository skills.
+- `git diff --check` — passed.
+
+### Outstanding concerns
+
+The real AWS identity, CloudFormation response and interactive Session Manager path remain intentionally unexercised in automated verification. Controller containerization and migration of the remaining operational scripts are outside this record and need separate work items.
+
+### Post-change review
+
+The implementation stays within the approved boundary. Activating the engineering contract was a required consequence of adding the first TypeScript application; it did not change runtime architecture or live infrastructure.
+
+### Mini recap
+
+Techne now has a tested CLI application and a safe bootstrap command, with the obsolete local bootstrap package removed. Review should focus on the command surface, AWS safety guard and operator wording; follow-on planning should cover controller containerization and the remaining script inventory.
 
 ## Discussion
 

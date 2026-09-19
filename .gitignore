@@ -18,15 +18,24 @@ Thumbs.db
 !.agents/skills/ki-self/**
 # ki-repo:ignore:ki-repo:end
 
+# ki-repo:ignore:ki-engineering:start
+# TypeScript/Bun dependencies, build output, caches, logs, and real environment files.
+node_modules/
+.turbo/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+!.env*.example
+# ki-repo:ignore:ki-engineering:end
+
 # Unmanaged repository-specific ignores
 # These rules are preserved but are not currently reconciled by a KI skill.
 
 # Root Bun/Turborepo state and local environment files.
-node_modules/
-.turbo/
-.env
-.env.*
-!.env*.example
 
 # KI-managed repository skill projections are machine-local.
 .claude/agents/
