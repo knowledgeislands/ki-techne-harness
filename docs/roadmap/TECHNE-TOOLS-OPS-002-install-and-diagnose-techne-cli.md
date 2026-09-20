@@ -4,12 +4,12 @@ area: OPS
 title: Install and diagnose Techne
 theme: operations
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: fe59ff343d989f112240d620cd371305e66e961d
 created_at: 2026-09-20T06:48:20Z
-updated_at: 2026-09-20T07:55:00Z
+updated_at: 2026-09-20T07:59:32Z
 ---
 
 # Install and diagnose Techne
@@ -111,6 +111,10 @@ The implementation meets the approved source-repository boundary and keeps diagn
 ### Mini recap
 
 Techne is locally installed and can explain its installation and configuration without network access. The repository can produce and publish the three immutable `v0.1.0` archives; after acceptance, publish the release, observe its checksums, then implement and verify the tap-owned formula record.
+
+## Done
+
+Accepted 2026-09-20 by Kris Brown on the review packet above.
 
 ## Discussion
 
