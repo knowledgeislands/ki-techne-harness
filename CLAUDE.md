@@ -1,4 +1,4 @@
-# CLAUDE.md — Techne Tools
+# CLAUDE.md — Techne Harness
 
 @AGENTS.md
 

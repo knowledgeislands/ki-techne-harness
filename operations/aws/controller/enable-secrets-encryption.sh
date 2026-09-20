@@ -25,7 +25,7 @@ instance_id=$(aws cloudformation describe-stacks \
 parameters=$(mktemp)
 trap 'rm -f "${parameters}"' EXIT
 jq -n \
-  --arg command 'sudo /opt/ki-techne-tools/deploy/runtime/controller/enable-secrets-encryption.sh' \
+  --arg command 'sudo /opt/ki-techne-harness/deploy/runtime/controller/enable-secrets-encryption.sh' \
   '{commands: [$command]}' >"${parameters}"
 
 command_id=$(aws ssm send-command \

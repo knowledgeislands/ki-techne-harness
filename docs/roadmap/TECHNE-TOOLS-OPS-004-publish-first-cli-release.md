@@ -28,7 +28,7 @@ Do not publish, tag, push, deploy infrastructure, or mutate Homebrew Tap under t
 
 ### Source ownership
 
-Techne Tools owns the source tag, GitHub release workflow, archives, checksums, and release evidence. Homebrew Tap consumes those immutable outputs under its own later work item and does not own source publication.
+Techne Harness owns the source tag, GitHub release workflow, archives, checksums, and release evidence. Homebrew Tap consumes those immutable outputs under its own later work item and does not own source publication.
 
 ### Completion evidence
 

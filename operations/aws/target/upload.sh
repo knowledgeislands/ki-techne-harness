@@ -37,10 +37,10 @@ jq -n --arg payload "${payload}" '{commands: [
   "set -eu",
   "umask 077",
   ("printf %s " + ($payload | @sh) + " | base64 -d >/tmp/techne-target-harness.tar.gz"),
-  "rm -rf /opt/ki-techne-tools",
-  "install -d -m 0755 /opt/ki-techne-tools",
-  "tar -xzf /tmp/techne-target-harness.tar.gz -C /opt/ki-techne-tools",
-  "chmod +x /opt/ki-techne-tools/deploy/runtime/target/*.sh",
+  "rm -rf /opt/ki-techne-harness",
+  "install -d -m 0755 /opt/ki-techne-harness",
+  "tar -xzf /tmp/techne-target-harness.tar.gz -C /opt/ki-techne-harness",
+  "chmod +x /opt/ki-techne-harness/deploy/runtime/target/*.sh",
   "rm -f /tmp/techne-target-harness.tar.gz"
 ]}' >"${parameters}"
 

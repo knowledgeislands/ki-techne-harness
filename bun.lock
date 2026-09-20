@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@knowledgeislands/ki-techne-tools",
+      "name": "@knowledgeislands/ki-techne-harness",
       "devDependencies": {
         "@biomejs/biome": "^2.5.14",
         "@commitlint/cli": "^21.2.3",

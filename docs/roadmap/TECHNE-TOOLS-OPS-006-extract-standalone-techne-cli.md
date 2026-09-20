@@ -9,7 +9,7 @@ blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-005]
 baseline_ref: 283bed573bcfd60dce9169c4710bba7313f3dfc5
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T12:42:15Z
+updated_at: 2026-09-20T17:31:44Z
 ---
 
 # Extract standalone Techne CLI
@@ -50,7 +50,7 @@ This extraction depends on `TECHNE-TOOLS-OPS-005` producing an explicit harness 
 - `install.sh`, `release/`, `.github/workflows/`
 - `CHANGELOG.md`, `ROADMAP.md`, `docs/roadmap/`
 
-### `knowledgeislands/ki-techne-tools`
+### `knowledgeislands/ki-techne-harness`
 
 - `apps/cli/`
 - `install.sh`, `release/`, `.github/workflows/`
@@ -118,16 +118,15 @@ Established `knowledgeislands/tools-techne` as the standalone source and release
 ### Verification
 
 - Destination: frozen Bun install; build; 37 tests; 100% statement, branch, function and line coverage; typecheck; isolated local installer tests; current-platform compiled archive smoke test; `mandoc`; Biome; rumdl; syncpack; knip; YAML parse; and `git diff --check` passed.
-- Destination KI audit passes 14 of 15 declared capabilities with no warnings; its sole live-state failure is GitHub license detection because the new MIT `LICENSE` is committed locally but deliberately unpushed during review.
+- Destination KI audit passes all 15 declared capabilities after the extracted implementation and MIT license reached `origin/main`.
 - Harness: frozen Bun install with Bun 1.4.1, root dependency-layout check, controller typecheck and 14 controller tests, Biome, rumdl, `git diff --check` and the `ki-engineering` repository audit passed.
 - A non-roadmap search found no remaining harness CLI source, installer, release packager, executable package script or release workflow.
 
 ### Outstanding concerns
 
-- `tools-techne` remains private and two commits ahead of `origin/main`; public visibility, tags, GitHub releases and Homebrew publication remain explicitly outside this item.
-- After human acceptance, pushing the destination will expose the MIT license to GitHub and allow its full live repository audit to pass; pushing the harness will publish the ownership removal.
+- `tools-techne` remains private; public visibility, tags, GitHub releases and Homebrew publication remain explicitly outside this item.
 - The destination records first publication as `TECHNE-TOOL-CLI-001`; the older harness release item still needs an explicit human disposition rather than an inferred merge.
-- Techne Principal still requires a separately governed decision update for the accepted implementation-ownership split, and any harness repository rename remains separate work.
+- Techne Principal still requires a separately governed decision update for the accepted implementation-ownership split.
 
 ### Post-change review
 

@@ -14,7 +14,7 @@ updated_at: 2026-09-20T07:47:23Z
 
 ## Goal
 
-Refresh AWS-backed CloudFormation validation evidence for Techne Tools after authenticating the required AWS SSO session, and make any discovered template drift explicit.
+Refresh AWS-backed CloudFormation validation evidence for Techne Harness after authenticating the required AWS SSO session, and make any discovered template drift explicit.
 
 ## Context
 
@@ -32,7 +32,7 @@ Return when the operator has restored the required AWS SSO session on the valida
 
 ### Project ownership
 
-This belongs to Techne Tools because its templates and validation contract are the subject. The human action is limited to restoring an authenticated AWS SSO session; the repository owns the validation command, evidence, and any resulting local work.
+This belongs to Techne Harness because its templates and validation contract are the subject. The human action is limited to restoring an authenticated AWS SSO session; the repository owns the validation command, evidence, and any resulting local work.
 
 ### Completion evidence
 

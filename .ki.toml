@@ -11,9 +11,9 @@
 harnesses = ["knowledgeislands/ki-agentic-harness"]
 
 [skills.ki-repo]
-repository = "https://github.com/knowledgeislands/ki-techne-tools"
-title = "Techne Tools"
-description = "Runnable controller and execution-fabric tooling for the Knowledge Islands ecosystem."
+repository = "https://github.com/knowledgeislands/ki-techne-harness"
+title = "Techne Harness"
+description = "Runnable personal-controller and execution-fabric harness for the Knowledge Islands ecosystem."
 repo_code = "TECHNE-TOOLS"
 supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
 visibility = "public"
