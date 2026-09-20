@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-proof_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 profile=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 expected_account=${EXPECTED_AWS_ACCOUNT:-655383751458}
@@ -29,7 +29,7 @@ aws cloudformation deploy \
   --profile "${profile}" \
   --region "${region}" \
   --stack-name "${target_stack}" \
-  --template-file "${proof_root}/infra/aws/target-stack.yaml" \
+  --template-file "${repo_root}/infra/aws/target-stack.yaml" \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
     TargetId="${target_id}" \

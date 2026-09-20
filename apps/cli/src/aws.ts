@@ -130,7 +130,7 @@ export class AwsClient {
         '--document-name',
         'AWS-StartInteractiveCommand',
         '--parameters',
-        'command=["sudo /opt/ki-techne-tools/scripts/bootstrap-on-controller.sh"]'
+        'command=["sudo /opt/ki-techne-tools/deploy/runtime/controller/bootstrap.sh"]'
       ],
       { mode: 'interactive' }
     )

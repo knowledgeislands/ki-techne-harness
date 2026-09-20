@@ -1,6 +1,6 @@
-# Techne Tools
+# Techne Harness
 
-Techne Tools is the product monorepo for runnable personal-controller and execution-fabric tooling in the Knowledge Islands ecosystem.
+The Techne Harness is the product monorepo for runnable personal-controller and execution-fabric implementations in the Knowledge Islands ecosystem. The independently released `tools-techne` repository owns the `techne` operator interface.
 
 Techne Principal remains the authority for engineering architecture, role boundaries and decision criteria. This repository owns implementation source, verification, packaging, bootstrap, deployment resources and provider adapters. It does not store credentials or canonical operational state.
 
@@ -10,7 +10,9 @@ Techne Principal remains the authority for engineering architecture, role bounda
 - `apps/controller/` — dependency-free Telegram-to-Kubernetes controller and tests.
 - `deploy/kubernetes/` — controller, execution and target resources.
 - `infra/aws/` — replaceable AWS proof infrastructure.
-- `scripts/` — repository checks and bounded operational helpers.
+- `operations/` — harness lifecycle implementations intended to sit behind `techne` commands.
+- `deploy/runtime/` — controller-host and target-host payloads packaged with deployments.
+- `tooling/checks/` — repository-only verification helpers.
 - `docs/roadmap/` — local product work queue.
 
 ## Install the CLI

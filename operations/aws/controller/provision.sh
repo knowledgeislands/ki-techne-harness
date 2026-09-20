@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-proof_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 profile=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 expected_account=${EXPECTED_AWS_ACCOUNT:-655383751458}
@@ -21,13 +21,13 @@ fi
 aws cloudformation validate-template \
   --profile "${profile}" \
   --region "${region}" \
-  --template-body "file://${proof_root}/infra/aws/controller-stack.yaml" >/dev/null
+  --template-body "file://${repo_root}/infra/aws/controller-stack.yaml" >/dev/null
 
 aws cloudformation deploy \
   --profile "${profile}" \
   --region "${region}" \
   --stack-name "${stack_name}" \
-  --template-file "${proof_root}/infra/aws/controller-stack.yaml" \
+  --template-file "${repo_root}/infra/aws/controller-stack.yaml" \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides ControllerId=primary InstanceType=t3.medium \
   --tags ki-work-item=TECHNE-OPS-007 ki-lifecycle=retained-controller

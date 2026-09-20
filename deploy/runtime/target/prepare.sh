@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-proof_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 kubectl_command=${KUBECTL_COMMAND:-k3s kubectl}
 credential_lifetime=${TARGET_CREDENTIAL_LIFETIME:-4h}
 credential_dir=${TARGET_CREDENTIAL_DIR:-/var/lib/ki-target}
 
 read -r -a kubectl_parts <<<"${kubectl_command}"
-"${kubectl_parts[@]}" apply -f "${proof_root}/deploy/kubernetes/target/access.yaml"
+"${kubectl_parts[@]}" apply -f "${repo_root}/deploy/kubernetes/target/access.yaml"
 
 install -d -m 0700 "${credential_dir}"
 "${kubectl_parts[@]}" -n techne-execution create token techne-controller-remote \

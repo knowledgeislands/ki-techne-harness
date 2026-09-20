@@ -1,10 +1,10 @@
-# Techne Tools
+# Techne Harness
 
-Techne Tools is the runnable personal-controller and execution-fabric product repository for the Knowledge Islands ecosystem.
+The Techne Harness is the runnable personal-controller and execution-fabric implementation repository for the Knowledge Islands ecosystem. The independently released `tools-techne` repository owns the `techne` operator interface.
 
 ## Authority
 
-Techne Principal owns the architecture, roles, invariants and decision criteria. This repository owns implementation, packaging, deployment resources, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here.
+Techne Principal owns the architecture, roles, invariants and decision criteria. This repository owns harness applications, packaging, deployment resources, runtime payloads, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here.
 
 ## Dependencies
 

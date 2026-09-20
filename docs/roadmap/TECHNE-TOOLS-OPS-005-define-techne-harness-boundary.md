@@ -4,12 +4,12 @@ area: OPS
 title: Define Techne harness boundary
 theme: operations
 horizon: now
-status: ready
+status: in-progress
 blocks: [TECHNE-TOOLS-OPS-006]
 blocked_by: []
-baseline_ref: null
+baseline_ref: e922be3cff7556d842e4c9441268e58ff53cf9d6
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T11:53:20Z
+updated_at: 2026-09-20T11:57:27Z
 ---
 
 # Define Techne harness boundary
@@ -48,7 +48,9 @@ The top-level `scripts/` directory contains 19 files with four distinct owners: 
 - `operations/`
 - `deploy/runtime/`
 - `apps/cli/src/aws.ts`
+- `apps/cli/tests/cli.test.ts`
 - `apps/controller/package.json`
+- `AGENTS.md`
 - `package.json`
 - `README.md`
 - `docs/guides/`
@@ -57,7 +59,7 @@ The top-level `scripts/` directory contains 19 files with four distinct owners: 
 ## Verify
 
 - `bun run test`
-- `bunx tsc --noEmit`
+- `bunx turbo run typecheck`
 - `bunx biome check .`
 - `bunx rumdl check README.md docs/guides docs/roadmap/TECHNE-TOOLS-OPS-005-define-techne-harness-boundary.md`
 - `ki repo audit --skill ki-work-roadmap --repo .`

@@ -8,7 +8,7 @@ fi
 
 script_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-"${script_root}/enable-secrets-encryption-on-controller.sh"
+"${script_root}/enable-secrets-encryption.sh"
 
 read -r -s -p 'Telegram bot token: ' TELEGRAM_BOT_TOKEN
 printf '\n'
@@ -24,4 +24,4 @@ read -r -p 'Telegram initial update offset: ' TELEGRAM_INITIAL_OFFSET
 export TELEGRAM_BOT_TOKEN TELEGRAM_OPERATOR_USER_ID TELEGRAM_OPERATOR_CHAT_ID TELEGRAM_INITIAL_OFFSET
 trap 'unset TELEGRAM_BOT_TOKEN TELEGRAM_OPERATOR_USER_ID TELEGRAM_OPERATOR_CHAT_ID TELEGRAM_INITIAL_OFFSET' EXIT
 
-"${script_root}/deploy-on-controller.sh"
+"${script_root}/deploy.sh"

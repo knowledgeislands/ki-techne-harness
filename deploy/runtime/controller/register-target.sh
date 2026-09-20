@@ -16,7 +16,7 @@ set -euo pipefail
 }
 [[ -r ${TARGET_CA_FILE} ]] || { echo 'TARGET_CA_FILE is not readable' >&2; exit 1; }
 
-proof_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 kubectl_command=${KUBECTL_COMMAND:-k3s kubectl}
 read -r -a kubectl_parts <<<"${kubectl_command}"
 
@@ -29,7 +29,7 @@ fi
 targets_file=$(mktemp)
 trap 'rm -f "${targets_file}"' EXIT
 jq -n \
-  --slurpfile local "${proof_root}/apps/controller/fixtures/targets.local.json" \
+  --slurpfile local "${repo_root}/apps/controller/fixtures/targets.local.json" \
   --arg id "${TARGET_ID}" \
   --arg server "${TARGET_API_SERVER}" \
   '{targets: ($local[0].targets + [{
