@@ -46,15 +46,13 @@
     "url": "git+https://github.com/knowledgeislands/ki-techne-tools.git"
   },
   "scripts": {
-    "clean": "rm -rf node_modules .turbo dist apps/cli/dist",
+    "clean": "rm -rf node_modules .turbo dist",
     "ki:deps:update": "bun update --latest",
     "prepare": "husky",
     "self:aws:validate": "bash operations/aws/validate-cloudformation.sh",
     "self:controller:encrypt-secrets": "bash operations/aws/controller/enable-secrets-encryption.sh",
     "self:deps:layout": "bash tooling/checks/root-dependencies.sh",
-    "self:release:test": "bash release/package.test.sh",
-    "self:techne": "bun apps/cli/src/main.ts",
-    "test": "bun run self:deps:layout && turbo run typecheck test && bun run self:release:test"
+    "test": "bun run self:deps:layout && turbo run typecheck test"
   },
   "type": "module",
   "workspaces": [

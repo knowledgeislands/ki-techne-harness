@@ -1,11 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "workspaces": {
-    "apps/cli": {
-      "entry": ["src/main.ts", "tests/**/*.test.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"]
-    }
-  },
   "ignore": [".claude/skills/**", ".claude/agents/**", ".agents/skills/**"],
   "ignoreExportsUsedInFile": true
 }

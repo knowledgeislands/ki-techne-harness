@@ -16,8 +16,6 @@ ruby -e 'require "yaml"; ARGV.each { |path| YAML.parse_stream(File.read(path)) }
   "${repo_root}/infra/aws"/*.yaml
 
 shellcheck \
-  "${repo_root}"/install.sh \
-  "${repo_root}"/release/*.sh \
   "${repo_root}"/tooling/checks/*.sh \
   "${repo_root}"/operations/aws/*.sh \
   "${repo_root}"/operations/aws/controller/*.sh \

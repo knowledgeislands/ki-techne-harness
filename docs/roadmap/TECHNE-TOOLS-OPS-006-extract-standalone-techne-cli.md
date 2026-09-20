@@ -4,12 +4,12 @@ area: OPS
 title: Extract standalone Techne CLI
 theme: operations
 horizon: now
-status: ready
+status: in-progress
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-005]
-baseline_ref: null
+baseline_ref: 283bed573bcfd60dce9169c4710bba7313f3dfc5
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T12:16:19Z
+updated_at: 2026-09-20T12:17:29Z
 ---
 
 # Extract standalone Techne CLI
