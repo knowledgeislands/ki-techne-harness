@@ -4,12 +4,12 @@ area: OPS
 title: Define Techne harness boundary
 theme: operations
 horizon: now
-status: in-progress
+status: awaiting-review
 blocks: [TECHNE-TOOLS-OPS-006]
 blocked_by: []
 baseline_ref: e922be3cff7556d842e4c9441268e58ff53cf9d6
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T11:57:27Z
+updated_at: 2026-09-20T11:59:26Z
 ---
 
 # Define Techne harness boundary
@@ -34,12 +34,12 @@ The top-level `scripts/` directory contains 19 files with four distinct owners: 
 
 ## Steps
 
-- [ ] Move repository checks under `tooling/checks/` and update package and workspace verification entry points.
-- [ ] Move local AWS and Telegram operator workflows under `operations/`, grouped by concern and retained only as harness lifecycle implementations intended to sit behind `techne` commands.
-- [ ] Move controller-host and target-host payloads under `deploy/runtime/`, beside the deployment resources that own them.
-- [ ] Update upload archives, remote invocation paths, internal root resolution, shell verification and CLI bootstrap integration for the owned locations.
-- [ ] Remove the obsolete controller-proof guide and replace its repository-map value with concise harness ownership and command-boundary guidance.
-- [ ] Verify repository gates and confirm no tracked reference still depends on the miscellaneous top-level `scripts/` layout.
+- [x] Move repository checks under `tooling/checks/` and update package and workspace verification entry points.
+- [x] Move local AWS and Telegram operator workflows under `operations/`, grouped by concern and retained only as harness lifecycle implementations intended to sit behind `techne` commands.
+- [x] Move controller-host and target-host payloads under `deploy/runtime/`, beside the deployment resources that own them.
+- [x] Update upload archives, remote invocation paths, internal root resolution, shell verification and CLI bootstrap integration for the owned locations.
+- [x] Remove the obsolete controller-proof guide and replace its repository-map value with concise harness ownership and command-boundary guidance.
+- [x] Verify repository gates and confirm no tracked reference still depends on the miscellaneous top-level `scripts/` layout.
 
 ## Files touched
 
@@ -86,6 +86,40 @@ Remove the controller-proof guide, update the guide index and root repository ma
 ### Roadmap
 
 Record the verified boundary here so `TECHNE-TOOLS-OPS-006` can plan the standalone CLI extraction against it. No delegation is planned because the path moves, reference updates and verification are tightly coupled in one shared working tree.
+
+## Review
+
+### Delivered
+
+Delivered the approved harness-boundary cleanup from immutable baseline `e922be3cff7556d842e4c9441268e58ff53cf9d6` in implementation commit `7a4bf22fc7823b67adc288aa0ef36e701f16739c`. The delivery did not mutate AWS, publish a release, rename the GitHub repository or write to the new `tools-techne` remote.
+
+### Summary of changes
+
+- Replaced the miscellaneous top-level `scripts/` directory with repository checks under `tooling/checks/`, local lifecycle implementations under `operations/` and host payloads under `deploy/runtime/`.
+- Updated package scripts, controller verification, upload archives and the CLI bootstrap path for the owned locations.
+- Removed the obsolete 371-line controller-proof guide and added concise ownership guidance for operations and runtime payloads.
+- Described this repository as the Techne Harness while retaining the current repository and package identities until the approved split.
+
+### Verification
+
+- `bun run test` passed the root dependency-layout gate, both workspace test and typecheck tasks, 14 CLI tests, 14 controller tests and release-package verification.
+- `bunx turbo run typecheck` passed both workspaces.
+- `bunx biome check .` passed.
+- `bunx rumdl check AGENTS.md README.md operations/README.md deploy/runtime/README.md docs/guides docs/roadmap/TECHNE-TOOLS-OPS-005-define-techne-harness-boundary.md` passed.
+- `ki repo audit --skill ki-work-roadmap --repo .` passed.
+- The stale-path search found no tracked non-roadmap reference to `scripts/`.
+
+### Outstanding concerns
+
+The CLI source, installer and release tooling intentionally remain in this repository until `TECHNE-TOOLS-OPS-006` is approved and implemented. Techne Principal still describes the current single product monorepo, and the current GitHub repository has not been renamed. Live CloudFormation validation remains separately tracked by `TECHNE-TOOLS-OPS-003`.
+
+### Post-change review
+
+The goal is met: every retained executable now has one visible owner, the obsolete proof-oriented guide is gone, packaging and bootstrap paths follow the new layout, and repository gates cover the moved files. The change is ready for human acceptance before the dependent CLI extraction begins.
+
+### Mini recap
+
+The Techne Harness now has an explicit internal boundary between development checks, local lifecycle operations and remote runtime payloads. The next proposed delivery is to extract the coherent `apps/cli`, installer and release surface into `knowledgeislands/tools-techne`; no additional learning route was identified beyond the existing Principal decision update.
 
 ## Discussion
 
