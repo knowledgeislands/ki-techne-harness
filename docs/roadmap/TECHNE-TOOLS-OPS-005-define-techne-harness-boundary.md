@@ -4,12 +4,12 @@ area: OPS
 title: Define Techne harness boundary
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: [TECHNE-TOOLS-OPS-006]
 blocked_by: []
 baseline_ref: e922be3cff7556d842e4c9441268e58ff53cf9d6
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T11:59:26Z
+updated_at: 2026-09-20T12:13:15Z
 ---
 
 # Define Techne harness boundary
@@ -120,6 +120,10 @@ The goal is met: every retained executable now has one visible owner, the obsole
 ### Mini recap
 
 The Techne Harness now has an explicit internal boundary between development checks, local lifecycle operations and remote runtime payloads. The next proposed delivery is to extract the coherent `apps/cli`, installer and release surface into `knowledgeislands/tools-techne`; no additional learning route was identified beyond the existing Principal decision update.
+
+## Done
+
+Accepted 2026-09-20 by Kris Brown on the review packet above, with `TECHNE-TOOLS-OPS-006` selected as the next delivery and `tools-ki` named as its repository-shape reference.
 
 ## Discussion
 
