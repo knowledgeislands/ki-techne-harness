@@ -9,14 +9,14 @@ blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-005]
 baseline_ref: null
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T10:52:33Z
+updated_at: 2026-09-20T10:56:01Z
 ---
 
 # Extract standalone Techne CLI
 
 ## Goal
 
-Create `tools-techne` as the independent source and release home for the `techne` operator CLI so its installation and version lifecycle do not change whenever Techne harness applications or images change.
+Create `tools-techne` as the independent source and release home for the `techne` operator CLI so its installation and version lifecycle do not change whenever Techne provider applications or images change.
 
 ## Context
 
@@ -24,17 +24,17 @@ The prototype CLI, local-link installer, diagnostics and release packaging curre
 
 ## Boundary
 
-This extraction depends on `TECHNE-TOOLS-OPS-005` producing an explicit harness boundary and a cohesive operator-CLI source tree. The migration may move CLI source, tests, installer, versioning, release workflows and user-facing CLI documentation to `tools-techne`, then hand an immutable release to `homebrew-tap`. It must not duplicate mutable runtime payloads, publish from both repositories, introduce a package-registry dependency or leave two authoritative `techne` executables.
+This extraction depends on `TECHNE-TOOLS-OPS-005` producing an explicit implementation-provider boundary and a cohesive operator-CLI source tree. The migration may move CLI source, tests, installer, versioning, release workflows and user-facing CLI documentation to `tools-techne`, then hand an immutable release to `homebrew-tap`. It must not duplicate mutable runtime payloads, publish from both repositories, introduce a package-registry dependency or leave two authoritative `techne` executables.
 
 ## Discussion
 
 ### Independent release units
 
-`tools-techne` should own the operator binary, local-development installation, diagnostics, command contracts, semantic version, release archives and Homebrew handoff. The Techne harness should independently own controller and execution images, manifests, infrastructure templates and versioned runtime payload artifacts.
+`tools-techne` should own the operator binary, local-development installation, diagnostics, command contracts, semantic version, release archives and Homebrew handoff. The Techne provider repository should independently own controller and execution images, manifests, infrastructure templates, provider adapters and versioned runtime payload artifacts.
 
-### Harness consumption
+### Provider consumption
 
-Commands that deploy or update the harness need an explicit artifact contract. A released CLI should consume immutable harness artifacts or an explicitly selected local harness checkout; it should not assume its own source repository contains controller code and deployment resources.
+Commands that deploy or update the implementation need an explicit artifact contract. A released CLI should consume immutable provider artifacts or an explicitly selected local provider checkout; it should not assume its own source repository contains controller code and deployment resources.
 
 ### Migration safety
 
