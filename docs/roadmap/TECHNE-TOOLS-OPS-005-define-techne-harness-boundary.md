@@ -3,13 +3,13 @@ id: TECHNE-TOOLS-OPS-005
 area: OPS
 title: Define Techne harness boundary
 theme: operations
-horizon: triage
-status: draft
+horizon: now
+status: ready
 blocks: [TECHNE-TOOLS-OPS-006]
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T10:57:34Z
+updated_at: 2026-09-20T11:53:20Z
 ---
 
 # Define Techne harness boundary
@@ -27,6 +27,63 @@ Techne Principal currently assigns this repository the runnable controller and f
 ## Boundary
 
 This work should inventory every script, choose its durable owner and migrate or remove it before the standalone CLI extraction. It may reshape repository-local tooling, relocate host payloads beside their deployable applications or resources, and propose the harness contract and repository identity to Techne Principal. It must not create `tools-techne`, publish a CLI release, update Homebrew, rename the GitHub repository, redefine canonical Techne architecture locally or mutate live infrastructure without separately approved migration and operational authority.
+
+## Current state
+
+The top-level `scripts/` directory contains 19 files with four distinct owners: three repository checks, ten local operator workflows, five controller-host payloads and one target-host payload. The obsolete controller-proof guide presents all four groups as one operator surface. Package scripts, upload archives, remote command paths and the current CLI bootstrap command depend on that mixed layout.
+
+## Steps
+
+- [ ] Move repository checks under `tooling/checks/` and update package and workspace verification entry points.
+- [ ] Move local AWS and Telegram operator workflows under `operations/`, grouped by concern and retained only as harness lifecycle implementations intended to sit behind `techne` commands.
+- [ ] Move controller-host and target-host payloads under `deploy/runtime/`, beside the deployment resources that own them.
+- [ ] Update upload archives, remote invocation paths, internal root resolution, shell verification and CLI bootstrap integration for the owned locations.
+- [ ] Remove the obsolete controller-proof guide and replace its repository-map value with concise harness ownership and command-boundary guidance.
+- [ ] Verify repository gates and confirm no tracked reference still depends on the miscellaneous top-level `scripts/` layout.
+
+## Files touched
+
+- `scripts/`
+- `tooling/checks/`
+- `operations/`
+- `deploy/runtime/`
+- `apps/cli/src/aws.ts`
+- `apps/controller/package.json`
+- `package.json`
+- `README.md`
+- `docs/guides/`
+- `docs/roadmap/TECHNE-TOOLS-OPS-005-define-techne-harness-boundary.md`
+
+## Verify
+
+- `bun run test`
+- `bunx tsc --noEmit`
+- `bunx biome check .`
+- `bunx rumdl check README.md docs/guides docs/roadmap/TECHNE-TOOLS-OPS-005-define-techne-harness-boundary.md`
+- `ki repo audit --skill ki-work-roadmap --repo .`
+- `rg -n 'scripts/' --glob '!docs/roadmap/**' .` returns no stale path reference.
+
+## Dependencies / blocks
+
+No work item blocks this cleanup. It must complete before `TECHNE-TOOLS-OPS-006` extracts the standalone CLI. The newly created `knowledgeislands/tools-techne` remote is intentionally not mutated by this item.
+
+## Documentation impact
+
+### Decision Records
+
+Techne Principal's implementation-ownership decision will need a separately governed update after the split boundary is accepted; this item does not edit Principal authority.
+
+### Specifications
+
+No portable specification changes. The work classifies implementation ownership without standardising a cross-provider contract.
+
+### Guides
+
+Remove the controller-proof guide, update the guide index and root repository map, and document the distinction between the Techne Harness, its internal provider adapters and the independently released `tools-techne` operator interface.
+
+### Roadmap
+
+Record the verified boundary here so `TECHNE-TOOLS-OPS-006` can plan the standalone CLI extraction against it. No delegation is planned because the path moves, reference updates and verification are tightly coupled in one shared working tree.
 
 ## Discussion
 
