@@ -4,12 +4,12 @@ area: OPS
 title: Extract standalone Techne CLI
 theme: operations
 horizon: now
-status: in-progress
+status: awaiting-review
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-005]
 baseline_ref: 283bed573bcfd60dce9169c4710bba7313f3dfc5
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T12:17:29Z
+updated_at: 2026-09-20T12:42:15Z
 ---
 
 # Extract standalone Techne CLI
@@ -32,13 +32,13 @@ This extraction depends on `TECHNE-TOOLS-OPS-005` producing an explicit harness 
 
 ## Steps
 
-- [ ] Establish `tools-techne` as a flat Bun/TypeScript KI Project following `tools-ki`: root `src/`, `bin/techne`, package metadata, pinned toolchain, formatting, typechecking, tests, hooks, KI declarations and fixed working areas.
-- [ ] Move the accepted CLI implementation and tests from `apps/cli/`, adapting imports and test layout without changing the current public command grammar or AWS safety boundary.
-- [ ] Move local installation, release packaging and GitHub CI/release workflows; add a physical manual, changelog and release artifact checks appropriate to the current Techne surface.
-- [ ] Preserve the existing `tools-techne` documentation-baseline commit and record the source harness commit in extraction history rather than creating a provenance-document tree.
-- [ ] Verify the new repository independently, including local-link installation and a current-platform compiled archive smoke test, without publishing a tag or release.
-- [ ] Remove CLI source, installer and release ownership from the harness; update its package graph, CI, README and guidance to point at `tools-techne` while retaining harness runtime artifacts.
-- [ ] Verify the harness independently and confirm only `tools-techne` remains the authoritative `techne` executable source.
+- [x] Establish `tools-techne` as a flat Bun/TypeScript KI Project following `tools-ki`: root `src/`, `bin/techne`, package metadata, pinned toolchain, formatting, typechecking, tests, hooks, KI declarations and fixed working areas.
+- [x] Move the accepted CLI implementation and tests from `apps/cli/`, adapting imports and test layout without changing the current public command grammar or AWS safety boundary.
+- [x] Move local installation, release packaging and GitHub CI/release workflows; add a physical manual, changelog and release artifact checks appropriate to the current Techne surface.
+- [x] Preserve the existing `tools-techne` documentation-baseline commit and record the source harness commit in extraction history rather than creating a provenance-document tree.
+- [x] Verify the new repository independently, including local-link installation and a current-platform compiled archive smoke test, without publishing a tag or release.
+- [x] Remove CLI source, installer and release ownership from the harness; update its package graph, CI, README and guidance to point at `tools-techne` while retaining harness runtime artifacts.
+- [x] Verify the harness independently and confirm only `tools-techne` remains the authoritative `techne` executable source.
 
 ## Files touched
 
@@ -101,6 +101,41 @@ Retain and update the existing `tools-techne` contributor guides, add the physic
 ### Roadmap
 
 This item remains the migration record in the source repository. First publication remains separate future work and must be represented in the destination repository before release. No delegation is planned because the cross-repository move, source deletion and verification are sequentially coupled.
+
+## Review
+
+### Delivered
+
+Established `knowledgeislands/tools-techne` as the standalone source and release home for the `techne` operator CLI, then removed the duplicate CLI, installer and release surface from Techne Harness.
+
+### Summary of changes
+
+- Preserved destination baseline `d38146c16bd5196e0d0f9996636be9e769a2d461` and committed the extracted implementation as `482353c660d9b892cb343f3ff16f56460db68465` with source provenance for accepted harness commit `e1422cad179aa2cc449f2b7b13def7aed7c7b42e`.
+- Followed the `tools-ki` repository shape: a flat Bun/TypeScript source tree, `bin/techne`, local-link installer, physical manual, deterministic compiled archives, CI and release workflows, 100% coverage gates, KI declarations and fixed working areas.
+- Registered the destination locally and aligned its private GitHub repository description, merge policy, feature toggles and Dependabot settings with the KI repository contract.
+- Removed `apps/cli/`, root `install.sh`, `release/` and the release workflow from Techne Harness in `e577b306548e15e9ed8dc3ebae2a7dac42c5d46b`; updated the package graph, lockfile, checks and README without moving harness applications, operations or runtime payloads.
+
+### Verification
+
+- Destination: frozen Bun install; build; 37 tests; 100% statement, branch, function and line coverage; typecheck; isolated local installer tests; current-platform compiled archive smoke test; `mandoc`; Biome; rumdl; syncpack; knip; YAML parse; and `git diff --check` passed.
+- Destination KI audit passes 14 of 15 declared capabilities with no warnings; its sole live-state failure is GitHub license detection because the new MIT `LICENSE` is committed locally but deliberately unpushed during review.
+- Harness: frozen Bun install with Bun 1.4.1, root dependency-layout check, controller typecheck and 14 controller tests, Biome, rumdl, `git diff --check` and the `ki-engineering` repository audit passed.
+- A non-roadmap search found no remaining harness CLI source, installer, release packager, executable package script or release workflow.
+
+### Outstanding concerns
+
+- `tools-techne` remains private and two commits ahead of `origin/main`; public visibility, tags, GitHub releases and Homebrew publication remain explicitly outside this item.
+- After human acceptance, pushing the destination will expose the MIT license to GitHub and allow its full live repository audit to pass; pushing the harness will publish the ownership removal.
+- The destination records first publication as `TECHNE-TOOL-CLI-001`; the older harness release item still needs an explicit human disposition rather than an inferred merge.
+- Techne Principal still requires a separately governed decision update for the accepted implementation-ownership split, and any harness repository rename remains separate work.
+
+### Post-change review
+
+The split leaves one authoritative `techne` executable while retaining deployable applications, provider operations and runtime payloads in Techne Harness. The extracted CLI still invokes the harness-owned controller bootstrap payload by its deployment path; no mutable runtime implementation was copied into the tool repository. No credentials, provider session material, tags, releases or Homebrew state were created.
+
+### Mini recap
+
+The key decision was to treat `tools-techne` as a release-independent operator tool and this repository as Techne Harness. The durable follow-up routes are the destination first-release work item and the existing Techne Principal decision process; no additional guide or provenance tree is needed.
 
 ## Discussion
 
