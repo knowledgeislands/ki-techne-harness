@@ -71,7 +71,11 @@ Work from a checkout of the repository root:
 
 ```sh
 cd /path/to/ki-techne-tools
+./install.sh --link
+techne diag
 ```
+
+The local link runs the checkout source through Bun. `techne diag` is offline and reports installation provenance, runtime, executable path, working directory and effective non-secret controller configuration. A Homebrew installation instead uses the compiled release artifact and does not require Bun at runtime.
 
 ## Verify the repository
 
@@ -87,8 +91,10 @@ The gate checks the root-only dependency layout, controller syntax, controller u
 Check the local AWS tooling, Session Manager plugin and expected AWS identity:
 
 ```sh
-bun run self:techne -- doctor
+techne doctor
 ```
+
+Doctor explains the active installation mode, checks Bun only for local source installations, then checks the AWS CLI, Session Manager plugin and expected AWS identity needed by controller operations.
 
 Validate both AWS templates using the intended account and region:
 
@@ -126,7 +132,7 @@ Authenticate and inspect the expected stack first:
 
 ```sh
 aws sso login --profile knowledge-islands-techne
-bun run self:techne -- controller status
+techne controller status
 ```
 
 Create it only when the stack is absent:
@@ -162,7 +168,7 @@ New controller stacks start K3s with Secret encryption enabled, but the same ver
 Run the local launcher:
 
 ```sh
-bun run self:techne -- controller bootstrap
+techne controller bootstrap
 ```
 
 The launcher verifies AWS account `655383751458`, resolves the retained controller instance and opens an interactive SSM command. The remote bootstrap then:

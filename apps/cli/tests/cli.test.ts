@@ -1,9 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import { type CliIo, runCli } from '../src/cli.ts'
 import type { CommandCall, CommandResult, CommandRunner, RunOptions } from '../src/process.ts'
+import type { TechneRuntime } from '../src/runtime.ts'
 
 const ACCOUNT = '655383751458'
 const INSTANCE = 'i-0123456789abcdef0'
+const LOCAL_RUNTIME: TechneRuntime = {
+  version: '0.1.0',
+  installation: 'local',
+  executable: '/checkout/apps/cli/src/main.ts',
+  workingDirectory: '/checkout',
+  bunVersion: '1.4.1'
+}
 
 class FakeRunner implements CommandRunner {
   readonly calls: CommandCall[] = []
@@ -29,7 +37,11 @@ function stack(instanceId: string | null = INSTANCE): CommandResult {
   return response(JSON.stringify({ Stacks: [{ StackStatus: 'CREATE_COMPLETE', Outputs }] }))
 }
 
-function harness(runner: FakeRunner, environment: Record<string, string | undefined> = {}) {
+function harness(
+  runner: FakeRunner,
+  environment: Record<string, string | undefined> = {},
+  runtime: TechneRuntime = LOCAL_RUNTIME
+) {
   let stdout = ''
   let stderr = ''
   const io: CliIo = {
@@ -41,7 +53,7 @@ function harness(runner: FakeRunner, environment: Record<string, string | undefi
     }
   }
   return {
-    run: (argv: readonly string[]) => runCli(argv, { runner, environment, io }),
+    run: (argv: readonly string[]) => runCli(argv, { runner, environment, runtime, io }),
     output: () => ({ stdout, stderr })
   }
 }
@@ -53,6 +65,30 @@ describe('techne CLI', () => {
 
     expect(await cli.run(['--help'])).toBe(0)
     expect(cli.output().stdout).toContain('controller bootstrap')
+    expect(runner.calls).toHaveLength(0)
+  })
+
+  test('reports its version without running a subprocess', async () => {
+    const runner = new FakeRunner([])
+    const cli = harness(runner)
+
+    expect(await cli.run(['--version'])).toBe(0)
+    expect(cli.output().stdout).toBe('0.1.0\n')
+    expect(runner.calls).toHaveLength(0)
+  })
+
+  test('reports offline installation and non-secret configuration diagnostics', async () => {
+    const runner = new FakeRunner([])
+    const cli = harness(runner, { AWS_PROFILE: 'local-profile', TELEGRAM_BOT_TOKEN: 'must-not-leak' })
+
+    expect(await cli.run(['diag', '--json'])).toBe(0)
+    expect(JSON.parse(cli.output().stdout)).toMatchObject({
+      version: '0.1.0',
+      installation: 'local',
+      executable: '/checkout/apps/cli/src/main.ts',
+      configuration: { profile: 'local-profile' }
+    })
+    expect(cli.output().stdout).not.toContain('must-not-leak')
     expect(runner.calls).toHaveLength(0)
   })
 
@@ -70,6 +106,28 @@ describe('techne CLI', () => {
     expect(await cli.run(['doctor', '--json'])).toBe(0)
     expect(JSON.parse(cli.output().stdout)).toMatchObject({ ok: true })
     expect(runner.calls.map((call) => call.command)).toEqual(['aws', 'session-manager-plugin', 'aws'])
+  })
+
+  test('uses the embedded runtime for a release installation', async () => {
+    const runner = new FakeRunner([response('', 'aws-cli/2.36.49'), response('1.2.835.0\n'), identity()])
+    const cli = harness(runner, {}, { ...LOCAL_RUNTIME, installation: 'release', executable: '/bin/techne' })
+
+    expect(await cli.run(['doctor', '--json'])).toBe(0)
+    const report = JSON.parse(cli.output().stdout)
+    expect(report.checks).toContainEqual({ name: 'runtime', ok: true, detail: 'embedded Bun 1.4.1' })
+    expect(runner.calls.map((call) => call.command)).toEqual(['aws', 'session-manager-plugin', 'aws'])
+  })
+
+  test('reports a mismatched local Bun runtime', async () => {
+    const runner = new FakeRunner([response('', '', 127), response('', '', 127)])
+    const cli = harness(runner, {}, { ...LOCAL_RUNTIME, bunVersion: '1.4.2' })
+
+    expect(await cli.run(['doctor', '--json'])).toBe(1)
+    expect(JSON.parse(cli.output().stdout).checks).toContainEqual({
+      name: 'bun',
+      ok: false,
+      detail: 'running Bun 1.4.2; expected 1.4.1'
+    })
   })
 
   test('reports a controller stack using flag precedence', async () => {

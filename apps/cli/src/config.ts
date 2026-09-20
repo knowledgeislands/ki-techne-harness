@@ -12,6 +12,7 @@ export interface Invocation {
   config: TechneConfig
   json: boolean
   help: boolean
+  version: boolean
 }
 
 export type Environment = Record<string, string | undefined>
@@ -46,6 +47,7 @@ export function parseInvocation(argv: readonly string[], environment: Environmen
   const command: string[] = []
   let json = false
   let help = false
+  let version = false
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
@@ -58,6 +60,10 @@ export function parseInvocation(argv: readonly string[], environment: Environmen
     }
     if (argument === '--help' || argument === '-h') {
       help = true
+      continue
+    }
+    if (argument === '--version' || argument === '-V') {
+      version = true
       continue
     }
     const configKey = VALUE_FLAGS[argument]
@@ -76,5 +82,5 @@ export function parseInvocation(argv: readonly string[], environment: Environmen
     command.push(argument)
   }
 
-  return { command, config, json, help }
+  return { command, config, json, help, version }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@knowledgeislands/ki-techne-tools",
   "description": "Runnable controller and execution-fabric tooling for the Knowledge Islands ecosystem.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "kris@kris.me.uk",
   "bugs": {
     "url": "https://github.com/knowledgeislands/ki-techne-tools/issues"
@@ -46,14 +46,15 @@
     "url": "git+https://github.com/knowledgeislands/ki-techne-tools.git"
   },
   "scripts": {
-    "clean": "rm -rf node_modules .turbo",
+    "clean": "rm -rf node_modules .turbo dist apps/cli/dist",
     "ki:deps:update": "bun update --latest",
     "prepare": "husky",
     "self:aws:validate": "bash scripts/validate-cloudformation.sh",
     "self:controller:encrypt-secrets": "bash scripts/enable-controller-secrets-encryption.sh",
     "self:deps:layout": "bash scripts/check-root-dependencies.sh",
+    "self:release:test": "bash release/package.test.sh",
     "self:techne": "bun apps/cli/src/main.ts",
-    "test": "bun run self:deps:layout && turbo run typecheck test"
+    "test": "bun run self:deps:layout && turbo run typecheck test && bun run self:release:test"
   },
   "type": "module",
   "workspaces": [

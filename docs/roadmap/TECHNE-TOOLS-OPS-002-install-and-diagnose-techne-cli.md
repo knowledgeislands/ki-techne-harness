@@ -4,12 +4,12 @@ area: OPS
 title: Install and diagnose Techne
 theme: operations
 horizon: next
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: fe59ff343d989f112240d620cd371305e66e961d
 created_at: 2026-09-20T06:48:20Z
-updated_at: 2026-09-20T07:47:50Z
+updated_at: 2026-09-20T07:55:00Z
 ---
 
 # Install and diagnose Techne
@@ -32,11 +32,11 @@ This work may add the local-link installer, installation provenance, version rep
 
 ## Steps
 
-- [ ] Add `v0.1.0` version and installation-provenance contracts, `techne --version`, offline `techne diag`, and mode-aware `techne doctor` output with deterministic tests.
-- [ ] Add an atomic `install.sh --link` development installer using `${TECHNE_INSTALL_DIR:-$HOME/.local/bin}` and verify the installed launcher against the checkout source.
-- [ ] Add reproducible per-platform compiled archive packaging and a guarded GitHub release workflow for macOS ARM64, macOS x64 and Linux x64, including checksum generation and installed-binary smoke tests.
-- [ ] Update repository orientation and controller guidance for local and released installation modes without presenting Homebrew as a separate runtime architecture.
-- [ ] Run the complete local, packaging, documentation and repository-governance gates without contacting AWS or publishing a release.
+- [x] Add `v0.1.0` version and installation-provenance contracts, `techne --version`, offline `techne diag`, and mode-aware `techne doctor` output with deterministic tests.
+- [x] Add an atomic `install.sh --link` development installer using `${TECHNE_INSTALL_DIR:-$HOME/.local/bin}` and verify the installed launcher against the checkout source.
+- [x] Add reproducible per-platform compiled archive packaging and a guarded GitHub release workflow for macOS ARM64, macOS x64 and Linux x64, including checksum generation and installed-binary smoke tests.
+- [x] Update repository orientation and controller guidance for local and released installation modes without presenting Homebrew as a separate runtime architecture.
+- [x] Run the complete local, packaging, documentation and repository-governance gates without contacting AWS or publishing a release.
 
 ## Files touched
 
@@ -75,6 +75,42 @@ Update the root README with installation choices and the controller guide with m
 ### Roadmap
 
 The companion Homebrew formula remains separate tap-owned work and must not be represented as delivered until `v0.1.0` exists and the tap verifies its checksums.
+
+## Review
+
+### Delivered
+
+Delivered the approved local-link, diagnostics and release-packaging boundary from baseline `fe59ff343d989f112240d620cd371305e66e961d`. The local launcher is installed under `~/.local/bin/techne`; no AWS call, tag, GitHub release or tap mutation occurred.
+
+### Summary of changes
+
+- Added `techne --version`, offline human and JSON `techne diag`, explicit `local` and `release` provenance, and mode-aware Doctor checks.
+- Added an atomic `install.sh --link` flow that resolves the checkout's mise-pinned Bun `1.4.1` executable and installs into `${TECHNE_INSTALL_DIR:-$HOME/.local/bin}`.
+- Added deterministic installer and CLI tests, including non-secret diagnostics, release-mode runtime checks and local Bun-version mismatch reporting.
+- Added compiled archive packaging for macOS ARM64, macOS x64 and Linux x64, plus guarded CI and manual release workflows that validate the tag, package version, checksums and artifacts.
+- Updated the README and controller guide with local-link, Homebrew, diagnostic and Doctor workflows.
+
+### Verification
+
+- `mise exec bun@1.4.1 -- bun run test` — passed four Turborepo tasks, 14 CLI/installer tests, 14 controller tests and the current-platform compiled release smoke test.
+- Installed `~/.local/bin/techne` through `./install.sh --link`; `techne diag --json` reported version `0.1.0`, installation `local` and runtime `Bun 1.4.1`.
+- Current-platform release archive executed `--version` and offline `diag --json`, reporting installation `release`.
+- ShellCheck passed for all new shell scripts; both GitHub workflow files parsed as YAML.
+- Biome, Knip and Syncpack checks passed.
+- `ki repo audit --repo .` passed all 14 selected skills.
+- `git diff --check` passed.
+
+### Outstanding concerns
+
+The macOS x64 and Linux x64 binaries require their native GitHub Actions runners and have not run locally. CI, tag validation and GitHub release publication cannot execute until the reviewed commit is pushed and accepted. The tap formula remains correctly pending the published `v0.1.0` asset checksums.
+
+### Post-change review
+
+The implementation meets the approved source-repository boundary and keeps diagnostics non-secret and offline. The release workflow is manual, validates an existing exact semantic-version tag on the default-branch ancestry, and publishes only after all three platform jobs succeed. It is ready for human acceptance before publication.
+
+### Mini recap
+
+Techne is locally installed and can explain its installation and configuration without network access. The repository can produce and publish the three immutable `v0.1.0` archives; after acceptance, publish the release, observe its checksums, then implement and verify the tap-owned formula record.
 
 ## Discussion
 

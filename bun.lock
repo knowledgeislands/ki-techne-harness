@@ -20,7 +20,7 @@
     },
     "apps/cli": {
       "name": "@knowledgeislands/techne-cli",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
         "techne": "src/main.ts",
       },

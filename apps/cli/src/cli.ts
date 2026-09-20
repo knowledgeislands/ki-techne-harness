@@ -2,6 +2,7 @@ import { AwsClient, type ControllerStatus } from './aws.ts'
 import { type Environment, type Invocation, parseInvocation } from './config.ts'
 import { TechneError } from './errors.ts'
 import type { CommandRunner } from './process.ts'
+import type { TechneRuntime } from './runtime.ts'
 
 export interface CliIo {
   stdout(value: string): void
@@ -11,6 +12,7 @@ export interface CliIo {
 export interface CliDependencies {
   runner: CommandRunner
   environment: Environment
+  runtime: TechneRuntime
   io: CliIo
 }
 
@@ -23,6 +25,7 @@ interface DoctorCheck {
 const HELP = `techne — operate the Techne controller and execution fabric
 
 Usage:
+  techne [global options] diag
   techne [global options] doctor
   techne [global options] controller status
   techne [global options] controller bootstrap
@@ -34,6 +37,7 @@ Global options:
   --controller-stack <name>   controller CloudFormation stack
   --json                      machine-readable output where supported
   -h, --help                  show help
+  -V, --version               show version
 `
 
 function commandName(invocation: Invocation): string {
@@ -45,7 +49,25 @@ function cleanVersion(result: { stdout: string; stderr: string }): string {
 }
 
 async function doctor(invocation: Invocation, dependencies: CliDependencies): Promise<number> {
-  const checks: DoctorCheck[] = []
+  const checks: DoctorCheck[] = [
+    {
+      name: 'installation',
+      ok: true,
+      detail: `${dependencies.runtime.installation} (${dependencies.runtime.executable})`
+    }
+  ]
+  if (dependencies.runtime.installation === 'local') {
+    checks.push({
+      name: 'bun',
+      ok: dependencies.runtime.bunVersion === '1.4.1',
+      detail:
+        dependencies.runtime.bunVersion === '1.4.1'
+          ? dependencies.runtime.bunVersion
+          : `running Bun ${dependencies.runtime.bunVersion}; expected 1.4.1`
+    })
+  } else {
+    checks.push({ name: 'runtime', ok: true, detail: `embedded Bun ${dependencies.runtime.bunVersion}` })
+  }
   const awsVersion = await dependencies.runner.run('aws', ['--version'])
   checks.push({
     name: 'aws',
@@ -82,6 +104,36 @@ async function doctor(invocation: Invocation, dependencies: CliDependencies): Pr
     }
   }
   return ok ? 0 : 1
+}
+
+function diag(invocation: Invocation, dependencies: CliDependencies): number {
+  const report = {
+    version: dependencies.runtime.version,
+    installation: dependencies.runtime.installation,
+    executable: dependencies.runtime.executable,
+    workingDirectory: dependencies.runtime.workingDirectory,
+    runtime: `Bun ${dependencies.runtime.bunVersion}`,
+    configuration: {
+      profile: invocation.config.profile,
+      region: invocation.config.region,
+      expectedAccount: invocation.config.expectedAccount,
+      controllerStack: invocation.config.controllerStack
+    }
+  }
+  if (invocation.json) {
+    dependencies.io.stdout(`${JSON.stringify(report)}\n`)
+    return 0
+  }
+  dependencies.io.stdout(`Techne ${report.version}\n`)
+  dependencies.io.stdout(`installation: ${report.installation}\n`)
+  dependencies.io.stdout(`executable: ${report.executable}\n`)
+  dependencies.io.stdout(`working directory: ${report.workingDirectory}\n`)
+  dependencies.io.stdout(`runtime: ${report.runtime}\n`)
+  dependencies.io.stdout(`AWS profile: ${report.configuration.profile}\n`)
+  dependencies.io.stdout(`AWS region: ${report.configuration.region}\n`)
+  dependencies.io.stdout(`expected AWS account: ${report.configuration.expectedAccount}\n`)
+  dependencies.io.stdout(`controller stack: ${report.configuration.controllerStack}\n`)
+  return 0
 }
 
 function printControllerStatus(status: ControllerStatus, invocation: Invocation, io: CliIo): void {
@@ -129,12 +181,18 @@ async function controllerBootstrap(invocation: Invocation, dependencies: CliDepe
 export async function runCli(argv: readonly string[], dependencies: CliDependencies): Promise<number> {
   try {
     const invocation = parseInvocation(argv, dependencies.environment)
+    if (invocation.version) {
+      dependencies.io.stdout(`${dependencies.runtime.version}\n`)
+      return 0
+    }
     if (invocation.help || invocation.command.length === 0) {
       dependencies.io.stdout(HELP)
       return 0
     }
 
     switch (commandName(invocation)) {
+      case 'diag':
+        return diag(invocation, dependencies)
       case 'doctor':
         return await doctor(invocation, dependencies)
       case 'controller status':
