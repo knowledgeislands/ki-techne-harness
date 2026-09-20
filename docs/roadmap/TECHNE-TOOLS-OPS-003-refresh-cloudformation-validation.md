@@ -3,13 +3,13 @@ id: TECHNE-TOOLS-OPS-003
 area: OPS
 title: Refresh CloudFormation validation
 theme: operations
-horizon: triage
+horizon: waiting-for
 status: draft
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-20T07:34:49Z
-updated_at: 2026-09-20T07:34:49Z
+updated_at: 2026-09-20T07:47:23Z
 ---
 
 ## Goal
@@ -23,6 +23,10 @@ The estate baseline passed local CLI, controller, build, type, static-analysis, 
 ## Boundary
 
 Do not store AWS credentials, deploy infrastructure, mutate an account, or treat authentication failure as template failure. If validation reveals a material template defect, capture or adopt that repair separately rather than silently expanding this evidence-refresh item.
+
+## Waiting for
+
+Return when the operator has restored the required AWS SSO session on the validation host. The return condition is authenticated read-only access sufficient to run the repository's CloudFormation validation command; it does not grant deployment or account-mutation authority.
 
 ## Discussion
 
