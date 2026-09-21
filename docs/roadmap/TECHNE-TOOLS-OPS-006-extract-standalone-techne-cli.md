@@ -4,12 +4,12 @@ area: OPS
 title: Extract standalone Techne CLI
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-005]
 baseline_ref: 283bed573bcfd60dce9169c4710bba7313f3dfc5
 created_at: 2026-09-20T10:52:33Z
-updated_at: 2026-09-20T17:31:44Z
+updated_at: 2026-09-21T23:55:41Z
 ---
 
 # Extract standalone Techne CLI
@@ -135,6 +135,10 @@ The split leaves one authoritative `techne` executable while retaining deployabl
 ### Mini recap
 
 The key decision was to treat `tools-techne` as a release-independent operator tool and this repository as Techne Harness. The durable follow-up routes are the destination first-release work item and the existing Techne Principal decision process; no additional guide or provenance tree is needed.
+
+## Done
+
+Accepted 2026-09-21 after confirming the standalone `tools-techne` source and release boundary, the retained Techne Harness application and runtime boundary, the destination and harness verification evidence, and the explicit routing of publication and Principal ownership follow-up work.
 
 ## Discussion
 
