@@ -4,13 +4,13 @@ title: Group guides by audience
 area: OPS
 theme: operations
 horizon: now
-status: draft
+status: ready
 blocks: []
 blocked_by: []
 transferred_from: ki-website
 baseline_ref: null
 created_at: 2026-09-21T17:20:00Z
-updated_at: 2026-09-21T17:20:00Z
+updated_at: 2026-09-22T05:41:35Z
 ---
 
 ## Goal
@@ -31,16 +31,16 @@ Separately, `ki-guides` is being asked to require audience directories under `do
 
 ## Boundary
 
-Adopted into `Now` by explicit approval, so this is prioritised work rather than intake. It remains `status: draft`: `ki-plan` shapes it to `Ready` before any implementation, and this repository still owns its plan and sequencing.
+Adopted into `Now` and approved for delivery. This repository owns the collection and its sequencing; KI Website may derive and cite the resulting guides but has no approval authority over them.
 
 KI Website derives and cites; it does not own this collection and must not be given approval rights over it. Nothing here requires a guide to be written for the website's benefit — if a guide would not serve this repository's own readers, it should not exist.
 
-## Shaping
+## Planning decisions
 
-- Decide the audiences. An operator deploying and running the fabric, and a developer changing its implementation, are the obvious two; whether a provider-adapter author is a third is a real question.
-- Place `telegram-commands.md` under the audience that needs it rather than leaving it at the root.
-- Settle what is documented here and what belongs in `tools-techne`, which owns the operator interface.
-- Decide whether bootstrap and deployment resources need operator guides now or whether the item is only the restructure.
+- Use two audiences: operators and developers. Provider-adapter authors are developers until distinct procedures justify another audience.
+- Place `telegram-commands.md` under operators because it explains the behaviour of the deployed controller rather than the `techne` command-line interface.
+- Keep CLI installation, authentication, command grammar and bootstrap invocation in `tools-techne`; keep deployed-controller behaviour, runtime resources and infrastructure recovery in Techne Harness.
+- Establish the audience structure and honest entry points now. Do not invent a deployment tutorial while the public operator path remains the independently released CLI.
 
 ## Current state
 
@@ -57,11 +57,23 @@ KI Website derives and cites; it does not own this collection and must not be gi
 
 ## Files touched
 
-`docs/guides/` and its new audience directories, `README.md`.
+- `docs/guides/README.md`
+- `docs/guides/operator/README.md`
+- `docs/guides/operator/telegram-commands.md`
+- `docs/guides/developer/README.md`
+- `docs/guides/telegram-commands.md`
+- `README.md`
 
 ## Verify
 
-`ki repo audit --skill ki-guides --repo .` passes, and `ki repo audit --skill ki-authoring --repo .` passes over the collection.
+- `ki repo audit --skill ki-guides --repo .`
+- `ki repo audit --skill ki-authoring --repo .`
+- `bunx rumdl check README.md docs/guides docs/roadmap/TECHNE-TOOLS-OPS-007-group-guides-by-audience.md`
+- `git diff --check`
+
+## Delegation
+
+Keep the guide move, indexes, boundary wording and link repair in one lane because they form one small information architecture. No delegation is needed.
 
 ## Dependencies / blocks
 
