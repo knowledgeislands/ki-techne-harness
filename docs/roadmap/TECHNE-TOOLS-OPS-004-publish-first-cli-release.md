@@ -4,12 +4,13 @@ area: OPS
 title: Publish first CLI release
 theme: operations
 horizon: triage
-status: draft
+status: done
+intake_disposition: rejected
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-20T08:01:34Z
-updated_at: 2026-09-20T08:01:34Z
+updated_at: 2026-09-22T00:04:47Z
 ---
 
 ## Goal
@@ -23,6 +24,14 @@ Publish the first immutable Techne CLI release from the accepted packaging workf
 ## Boundary
 
 Do not publish, tag, push, deploy infrastructure, or mutate Homebrew Tap under the authority of this Triage capture. Release execution requires explicit reviewed authority and must preserve the accepted version, tag-ancestry, native-runner, checksum, and installed-binary smoke gates.
+
+## Intake disposition
+
+Rejected because Techne Harness no longer owns CLI source or release lifecycle. Retaining this proposal as executable harness work would assert an implementation boundary that the accepted extraction has superseded.
+
+## Done
+
+Rejected on 22 September 2026 with explicit owner approval. The record is retained as the canonical terminal disposition of the obsolete intake.
 
 ## Discussion
 
