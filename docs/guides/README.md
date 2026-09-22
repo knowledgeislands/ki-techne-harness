@@ -1,5 +1,8 @@
 # Guides
 
-These guides explain how to operate and contribute to Techne Harness.
+Practical instructions for operators running Techne Harness and developers changing its applications, deployment resources and provider operations.
 
-- [Telegram commands](telegram-commands.md) — operate the controller through `@kitteth_bot`, interpret replies and cancel deterministic executions safely.
+- [Operator guides](operator/README.md) cover deployed-controller behaviour and runtime or infrastructure recovery owned by the harness.
+- [Developer guides](developer/README.md) cover the repository toolchain, implementation boundaries and verification workflow.
+
+Installation, authentication and command-line operation belong to the independently released [`tools-techne` user guides](https://github.com/knowledgeislands/tools-techne/tree/main/docs/guides/user).

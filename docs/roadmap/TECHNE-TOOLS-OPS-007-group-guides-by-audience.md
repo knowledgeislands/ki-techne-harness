@@ -4,13 +4,13 @@ title: Group guides by audience
 area: OPS
 theme: operations
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
 transferred_from: ki-website
-baseline_ref: null
+baseline_ref: b0701f75062b7c8089fc4944fc90f09ab22c69fd
 created_at: 2026-09-21T17:20:00Z
-updated_at: 2026-09-22T05:41:35Z
+updated_at: 2026-09-22T05:43:29Z
 ---
 
 ## Goal
@@ -48,12 +48,12 @@ KI Website derives and cites; it does not own this collection and must not be gi
 
 ## Steps
 
-- [ ] Name the audiences this repository has, and reject any nobody is writing for.
-- [ ] Create one directory per audience, each with its own index.
-- [ ] Move `telegram-commands.md` under the audience that needs it.
-- [ ] Record the documentation boundary with `tools-techne` where the operator interface is concerned.
-- [ ] Sweep `README.md` and the deployment resources for practical instruction that belongs in the collection.
-- [ ] Run the guides audit and repair what it reports.
+- [x] Name the audiences this repository has, and reject any nobody is writing for.
+- [x] Create one directory per audience, each with its own index.
+- [x] Move `telegram-commands.md` under the audience that needs it.
+- [x] Record the documentation boundary with `tools-techne` where the operator interface is concerned.
+- [x] Sweep `README.md` and the deployment resources for practical instruction that belongs in the collection.
+- [x] Run the guides audit and repair what it reports.
 
 ## Files touched
 
@@ -96,6 +96,39 @@ This item is entirely guide impact: it establishes or completes the collection, 
 ### Roadmap
 
 No further roadmap change is expected. If writing the guides exposes behaviour that cannot honestly be explained, that is a separate item raised at the time.
+
+## Review
+
+### Delivered
+
+Grouped the Techne Harness guide collection by audience from immutable baseline `b0701f75062b7c8089fc4944fc90f09ab22c69fd`, with clear operator, developer and `tools-techne` ownership routes.
+
+### Summary of changes
+
+- Created `operator/` and `developer/` audience indexes beneath `docs/guides/`.
+- Moved the Telegram command guide under operators without changing its behavioural content.
+- Added a practical developer route through repository surfaces, verification and live-operation boundaries.
+- Updated the root guide index and repository README to expose both audience routes.
+- Kept provider-adapter authors within the developer audience and CLI installation, authentication and command grammar within `tools-techne`.
+
+### Verification
+
+- `ki repo audit --skill ki-guides --repo .` passed.
+- `ki repo audit --skill ki-authoring --repo .` passed.
+- `bunx rumdl check README.md docs/guides docs/roadmap/TECHNE-TOOLS-OPS-007-group-guides-by-audience.md` passed over six files.
+- `git diff --check` passed, and no active document links to the old root-level Telegram guide path.
+
+### Outstanding concerns
+
+No concern blocks review. KI Website may derive public guidance from this collection on its own schedule; that does not affect local acceptance.
+
+### Post-change review
+
+The collection now gives each real audience a direct entry point without inventing a third audience or duplicating the independently released CLI documentation. The change is ready for owner acceptance.
+
+### Mini recap
+
+Techne Harness now owns audience-centred operator and developer guidance, while `tools-techne` remains the route for CLI use. No additional guide or specification work was exposed.
 
 ## Discussion
 

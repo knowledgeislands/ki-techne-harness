@@ -12,11 +12,17 @@ Techne Principal remains the authority for engineering architecture, role bounda
 - `operations/` — harness lifecycle implementations intended to sit behind `techne` commands.
 - `deploy/runtime/` — controller-host and target-host payloads packaged with deployments.
 - `tooling/checks/` — repository-only verification helpers.
+- `docs/guides/` — operator and developer instructions grouped by audience.
 - `docs/roadmap/` — local product work queue.
 
 ## Operator CLI
 
 Install and run the operator command from [`knowledgeislands/tools-techne`](https://github.com/knowledgeislands/tools-techne). That repository owns the command grammar, local installer, diagnostics, manual and release artifacts. This harness retains the applications, operations and deployable resources those commands operate.
+
+## Guides
+
+- [Operator guides](docs/guides/operator/README.md) cover deployed-controller behaviour and harness-owned recovery.
+- [Developer guides](docs/guides/developer/README.md) cover the local toolchain, ownership boundaries and verification workflow.
 
 ## Workspace
 
