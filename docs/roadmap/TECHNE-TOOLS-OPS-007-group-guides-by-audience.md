@@ -4,13 +4,13 @@ title: Group guides by audience
 area: OPS
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 transferred_from: ki-website
 baseline_ref: b0701f75062b7c8089fc4944fc90f09ab22c69fd
 created_at: 2026-09-21T17:20:00Z
-updated_at: 2026-09-22T05:43:29Z
+updated_at: 2026-09-22T06:22:10Z
 ---
 
 ## Goal
@@ -129,6 +129,10 @@ The collection now gives each real audience a direct entry point without inventi
 ### Mini recap
 
 Techne Harness now owns audience-centred operator and developer guidance, while `tools-techne` remains the route for CLI use. No additional guide or specification work was exposed.
+
+## Done
+
+Accepted on 22 September 2026 by Kris Brown after review of the operator and developer audience structure, preserved `tools-techne` boundary, guide relocation and clean guide, authoring and roadmap audits.
 
 ## Discussion
 

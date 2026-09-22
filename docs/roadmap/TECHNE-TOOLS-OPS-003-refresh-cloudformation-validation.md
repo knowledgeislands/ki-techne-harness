@@ -4,12 +4,12 @@ area: OPS
 title: Refresh CloudFormation validation
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 2f52eca844a47772f8fe9128ad520709f53dfe1c
 created_at: 2026-09-20T07:34:49Z
-updated_at: 2026-09-22T05:39:43Z
+updated_at: 2026-09-22T06:22:10Z
 ---
 
 ## Goal
@@ -100,6 +100,10 @@ The restored AWS session closed the named waiting condition, both templates pass
 ### Mini recap
 
 Techne Harness now has fresh authenticated CloudFormation validation evidence for both AWS templates. No repair or additional learning route is required.
+
+## Done
+
+Accepted on 22 September 2026 by Kris Brown after review of the authenticated AWS identity evidence, successful validation of both tracked CloudFormation templates and the confirmed no-mutation boundary.
 
 ## Discussion
 
