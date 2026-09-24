@@ -139,6 +139,36 @@ The Paperclip company and org chart could represent the agent team available wit
 
 The first proof should use one narrowly scoped Paperclip company, one governed KI repository and one remote Hermes worker. It should demonstrate that a fresh worker can recover the work from the repository baseline and Paperclip task state without relying on private knowledge retained only by the previous agent.
 
+## Direct sessions and the Paperclip skill
+
+Paperclip need not mediate every human-agent conversation. A person can talk directly to a Hermes, Codex or other Techne agent, while that agent uses the Paperclip skill as a coordination capability when the conversation produces work involving the wider team.
+
+The required Paperclip runtime skill teaches an agent how to inspect assignments, create and update tasks, report progress, delegate work and communicate with other agents through the control-plane API. Paperclip also provides task threads and Ask mode when the desired interaction begins inside Paperclip.
+
+This creates two valid entry paths:
+
+```text
+person -> Paperclip task or chat -> assigned agent
+
+person -> direct Techne agent session -> Paperclip skill -> coordinated work
+```
+
+Both paths should converge on the same context, authority and governed-work checks before consequential execution. The second path is especially important for Techne: conversational continuity can remain with the person's chosen agent while Paperclip supplies shared task state only when coordination is useful.
+
+## Linking Paperclip tasks to KI roadmap items
+
+A Paperclip task should be able to reference a canonical KI roadmap item without replacing it. The two records serve different purposes:
+
+- The KI roadmap item owns the governed intent, adoption, priority, dependencies, readiness, review and acceptance lifecycle.
+- The Paperclip task owns one coordinated unit of agent activity, its assignee, conversation, run history, cost and operational disposition.
+- One roadmap item may produce several Paperclip tasks for planning, research, implementation, review or specialist delegation.
+- A Paperclip task may remain unlinked for a transient question or routine operation. Substantive new work discovered there should be captured into KI Triage rather than silently becoming adopted roadmap work.
+- Completing a Paperclip task does not complete or accept the roadmap item. Its result becomes evidence consumed by the KI review path.
+
+The minimum link should name the KI repository, canonical roadmap identifier and admitted repository revision. Paperclip should carry that link in structured task metadata if its extension model permits it, rather than relying only on text in the description. The roadmap record may cite relevant Paperclip tasks in its plan or review evidence once the work is selected, without mirroring Paperclip's operational history.
+
+This association should be durable but deliberately not a bidirectional status synchronisation. Each system retains its own lifecycle authority.
+
 ## KI knowledge boundary
 
 The central invariant is: **repositories hold knowledge; agents consume, apply and propose changes to it**.
@@ -180,6 +210,9 @@ The simplest proof topology is one Paperclip service plus one Hermes VM dedicate
 - Which heartbeat triggers belong in the controller, and which belong in individual workload definitions?
 - What is the smallest contract between Techne admission and Paperclip task creation?
 - Which Paperclip entities should carry KI repository, revision, context and authority references?
+- What structured Paperclip extension point should carry a KI roadmap link?
+- When should a direct agent conversation create or attach to a Paperclip task?
+- How should one roadmap item enumerate several Paperclip execution tasks without copying their state?
 - How should Paperclip and Hermes skills be projected from KI-owned sources and checked for drift?
 - Which Hermes state may persist across executions, and how is it scoped to a working context?
 - Should the first Hermes VM be persistent and rebuildable, or disposable for every task?
@@ -194,6 +227,10 @@ The simplest proof topology is one Paperclip service plus one Hermes VM dedicate
 - [Paperclip execution policies](https://docs.paperclip.ing/guides/power/execution-policy/)
 - [Paperclip execution workspaces](https://docs.paperclip.ing/guides/projects-workflow/workspaces/)
 - [Paperclip trust and low-trust review](https://docs.paperclip.ing/administration/trust-and-low-trust-review/)
+- [Paperclip work modes](https://docs.paperclip.ing/guides/day-to-day/work-modes/)
+- [Paperclip chat-style tasks](https://docs.paperclip.ing/experimental/task-chat/)
+- [Paperclip runtime skill](https://github.com/paperclipai/paperclip/blob/master/skills/paperclip/SKILL.md)
+- [Paperclip skills and repository-backed sources](https://docs.paperclip.ing/guides/org/skills/)
 
 ### Demonstration and Hermes
 
