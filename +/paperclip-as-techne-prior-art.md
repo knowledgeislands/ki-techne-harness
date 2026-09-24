@@ -5,13 +5,33 @@
 
 This note records an initial comparison between [Paperclip](https://github.com/paperclipai/paperclip) and Techne. It is design input, not an adoption decision or a change to Techne's canonical architecture.
 
+## Working thesis
+
+Paperclip is a plausible coordination system for the agents used by Techne. It should sit below Techne's personal controller and above individual agent runtimes:
+
+```text
+person and interfaces
+        |
+Techne controller: why, context, authority and admission
+        |
+Paperclip: who does what, delegation, scheduling and review flow
+        |
+Techne Fabric: where and under which execution constraints
+        |
+Hermes, Codex or another runtime: how one bounded task is performed
+        |
+evidence and proposed durable changes return through Techne
+```
+
+Alongside that execution path, KI repositories remain the authority for what is known, decided and governed. Paperclip, Hermes and other agents may hold operational state or caches, but none becomes the canonical knowledge owner.
+
 ## Conclusion
 
 Paperclip is close to the operational-controller part of Techne, but it begins from a different centre.
 
 Paperclip is an AI-organisation control plane. Its main abstraction is a company containing goals, a hierarchy of persistent AI employees, tasks, budgets, approvals and scheduled execution. Techne is a person-centred governed-work architecture. Its main abstraction is one enduring persona acting through explicit working contexts and dispatching bounded mechanical, agentic or hybrid executions.
 
-Paperclip therefore looks like a concrete implementation of part of the Techne vision rather than a replacement for Techne as a whole. It is valuable prior art for controller interaction, scheduling, cost controls, approval routing and isolated execution.
+Paperclip therefore looks like a concrete agent-coordination subsystem within the Techne vision rather than a replacement for Techne as a whole. It is valuable prior art and a candidate implementation for delegation, scheduling, cost controls, approval routing and coordinated agent work.
 
 ## Shared ground
 
@@ -95,11 +115,11 @@ Techne separates canonical architecture, harness implementation and operator too
 - Do not let a product database replace Git or the selected governed-work process as authority for durable repository outcomes.
 - Do not make one integrated control-plane implementation the definition of the provider-neutral fabric.
 
-## Possible relationship
+## Proposed relationship
 
-Paperclip is most useful immediately as prior art and a behavioural benchmark. Integrating the complete product would create two overlapping control planes, both attempting to own tasks, scheduling, policy, approvals and execution state.
+Paperclip is useful as both prior art and a candidate coordination service. The boundary must prevent it and Techne from becoming competing authorities. Techne owns persona, context, admission and integration; Paperclip owns the coordination of an admitted team of agents.
 
-A bounded experiment could instead treat Paperclip as a replaceable agentic coordination backend:
+A bounded experiment could treat Paperclip as a replaceable agentic coordination backend:
 
 ```text
 Techne persona, context and authority
@@ -115,7 +135,41 @@ Techne persona, context and authority
 
 Under that boundary, Techne would retain ownership of persona continuity, context selection, authority admission, credentials, canonical evidence and result integration. Paperclip would coordinate only the organisation-scoped work admitted to it.
 
-The likely first step should be to reproduce selected Paperclip patterns in small Techne proofs before attempting an adapter for the whole product.
+The Paperclip company and org chart could represent the agent team available within one working context, but must not itself grant access. An agent's Paperclip role describes coordination responsibility; the Techne execution contract still determines what that agent may do for each execution.
+
+The first proof should use one narrowly scoped Paperclip company, one governed KI repository and one remote Hermes worker. It should demonstrate that a fresh worker can recover the work from the repository baseline and Paperclip task state without relying on private knowledge retained only by the previous agent.
+
+## KI knowledge boundary
+
+The central invariant is: **repositories hold knowledge; agents consume, apply and propose changes to it**.
+
+- A KI repository revision supplies the approved architecture, decisions, work records, skills and operating guidance relevant to an execution.
+- Techne binds the repository revision and working context before Paperclip dispatches the task.
+- Paperclip tasks, comments, decisions and artifacts are coordination state and execution evidence. They become durable KI knowledge only through an explicit promotion or change-management path.
+- Hermes memory, model context and session history are runtime aids. They must never be the sole source of a decision, reusable skill, repository fact or recoverable work outcome.
+- Agent-authored learning is a proposal. It returns as a repository change, work record or governed knowledge contribution for review before becoming authoritative.
+- Paperclip-managed and Hermes-managed skills should be versioned projections of KI-owned skills where applicable. Local copies must identify their source revision and be replaceable rather than drifting into independent truth.
+- Replacing an agent or rebuilding its environment must not erase organisational knowledge. Given the same admitted context, repository baseline and retained execution evidence, a replacement worker should be able to continue.
+- Cross-context information cannot be recovered from an agent's memory merely because the same agent role or runtime is reused elsewhere.
+
+This preserves a useful distinction: Paperclip remembers the coordination history, an agent may remember execution details, but KI owns the durable knowledge.
+
+## Hermes on a VM
+
+The video's remote Hermes setup is a useful Techne target pattern. Paperclip remains on its controller host while it wakes Hermes through the Hermes API server on another machine. The demonstration uses several independently hosted Hermes agents and has Paperclip coordinate their reporting lines and tasks.
+
+In Techne terms:
+
+- The VM is a worker target, not an identity or knowledge store.
+- Hermes is an agent runtime available on that target.
+- The Paperclip agent record is a coordination role, not the execution's authority.
+- Each Paperclip wake should correspond to a bounded Techne execution or a traceable continuation of one.
+- The VM should be reproducible from a versioned image or bootstrap profile, with repositories checked out at admitted revisions.
+- Persistent Hermes memory and sessions may support continuity, but must be scoped, exportable where required and non-authoritative.
+- Provider, Hermes API and Paperclip credentials must remain distinct and narrowly scoped.
+- A real deployment should use private networking and authenticated encrypted transport. The demonstration's explicit insecure-HTTP override is suitable only for a disposable private-network proof.
+
+The simplest proof topology is one Paperclip service plus one Hermes VM dedicated to one low-risk working context. Later proofs can test multiple Hermes profiles, stronger sandboxing, disposable task VMs and elastic targets without changing the coordination contract.
 
 ## Questions to revisit
 
@@ -124,7 +178,11 @@ The likely first step should be to reproduce selected Paperclip patterns in smal
 - Should cost accounting be part of every execution evidence envelope?
 - Can Paperclip's low-trust boundary resolution be generalised into Techne's authority-envelope admission rules?
 - Which heartbeat triggers belong in the controller, and which belong in individual workload definitions?
-- Would a Paperclip adapter add useful capability, or mostly duplicate the Techne controller?
+- What is the smallest contract between Techne admission and Paperclip task creation?
+- Which Paperclip entities should carry KI repository, revision, context and authority references?
+- How should Paperclip and Hermes skills be projected from KI-owned sources and checked for drift?
+- Which Hermes state may persist across executions, and how is it scoped to a working context?
+- Should the first Hermes VM be persistent and rebuildable, or disposable for every task?
 - How should a controller present an operator attention queue without adopting the entire company metaphor?
 
 ## Sources
@@ -136,6 +194,14 @@ The likely first step should be to reproduce selected Paperclip patterns in smal
 - [Paperclip execution policies](https://docs.paperclip.ing/guides/power/execution-policy/)
 - [Paperclip execution workspaces](https://docs.paperclip.ing/guides/projects-workflow/workspaces/)
 - [Paperclip trust and low-trust review](https://docs.paperclip.ing/administration/trust-and-low-trust-review/)
+
+### Demonstration and Hermes
+
+- [NetworkChuck's Paperclip demonstration](https://www.youtube.com/watch?v=7RVf25Rg0Mc)
+- [Companion guide: Paperclip as a meta-harness](https://github.com/theNetworkChuck/paperclip-guide)
+- [Companion guide: remote Hermes agents](https://github.com/theNetworkChuck/paperclip-guide/blob/main/guide/04-hire-remote-hermes-agents.md)
+- [Official Hermes adapter for Paperclip](https://github.com/NousResearch/hermes-paperclip-adapter)
+- [Hermes API server documentation](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/api-server.md)
 
 ### Techne Principal
 
