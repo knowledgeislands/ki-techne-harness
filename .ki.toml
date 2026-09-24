@@ -65,7 +65,8 @@ OPS = "operations"
 routes."knowledgeislands/ki-techne-principal" = { export = ["work", "knowledge"], import = ["work", "knowledge"] }
 
 [skills.ki-agora]
-memberships.ki-all = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
-memberships.ki-fnd = { home = "https://github.com/knowledgeislands/ki-agentic-harness", role = "maintainer" }
+memberships.ki-all = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
+memberships.ki-fnd = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
+memberships.ki-tools = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
 
 [skills.ki-engineering]
