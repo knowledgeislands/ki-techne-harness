@@ -1,7 +1,7 @@
 ---
 id: TECHNE-TOOLS-OPS-008
 area: OPS
-title: Provision the controller as a supervised agent host
+title: Provision supervised agent host
 theme: operations
 horizon: triage
 status: draft
@@ -12,7 +12,7 @@ created_at: 2026-09-26T15:55:00Z
 updated_at: 2026-09-26T15:55:00Z
 ---
 
-# Provision the controller as a supervised agent host
+# Provision Supervised Agent Host
 
 ## Goal
 

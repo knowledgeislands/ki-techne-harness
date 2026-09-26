@@ -3,9 +3,6 @@
   "description": "Runnable personal-controller and execution-fabric harness for the Knowledge Islands ecosystem.",
   "version": "0.1.0",
   "author": "kris@kris.me.uk",
-  "bugs": {
-    "url": "https://github.com/knowledgeislands/ki-techne-harness/issues"
-  },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
     "@commitlint/cli": "^21.2.3",
