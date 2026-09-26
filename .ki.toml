@@ -31,6 +31,8 @@ license = "MIT"
 # Governance and runtime
 # -----------------------------------------------------------------------------
 
+[skills.ki-agent-coordination-paperclip]
+
 [skills.ki-guides]
 
 [skills.ki-tokenomics]
