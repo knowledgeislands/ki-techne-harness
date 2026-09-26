@@ -21,11 +21,13 @@
   },
   "homepage": "https://github.com/knowledgeislands/ki-techne-harness#readme",
   "keywords": [
+    "bun",
     "controller",
     "execution-fabric",
     "k3s",
     "knowledge-islands",
-    "kubernetes"
+    "kubernetes",
+    "typescript"
   ],
   "license": "MIT",
   "lint-staged": {
