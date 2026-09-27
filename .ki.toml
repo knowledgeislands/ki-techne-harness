@@ -79,26 +79,18 @@ techne-interface-compatibility = "Committed Techne interface and compatibility e
 [skills.ki-trades.routes."knowledgeislands/ki-agentic-harness"]
 export = ["work", "knowledge"]
 import = ["knowledge"]
-
-[skills.ki-trades.routes."knowledgeislands/ki-agentic-harness".standing.export]
-knowledge = ["shared-capability-maintenance"]
+standing.export.knowledge = ["shared-capability-maintenance"]
 
 [skills.ki-trades.routes."knowledgeislands/ki-techne-principal"]
 export = ["work", "knowledge"]
 import = ["work", "knowledge"]
-
-[skills.ki-trades.routes."knowledgeislands/ki-techne-principal".standing.import]
-knowledge = ["techne-architecture-context"]
+standing.import.knowledge = ["techne-architecture-context"]
 
 [skills.ki-trades.routes."knowledgeislands/tools-techne"]
 export = ["work", "knowledge"]
 import = ["work", "knowledge"]
-
-[skills.ki-trades.routes."knowledgeislands/tools-techne".standing.export]
-knowledge = ["techne-interface-compatibility"]
-
-[skills.ki-trades.routes."knowledgeislands/tools-techne".standing.import]
-knowledge = ["techne-interface-compatibility"]
+standing.export.knowledge = ["techne-interface-compatibility"]
+standing.import.knowledge = ["techne-interface-compatibility"]
 
 [skills.ki-agora]
 memberships.kis = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
