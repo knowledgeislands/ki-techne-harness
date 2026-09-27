@@ -17,3 +17,7 @@ Never place credentials, kubeconfigs, raw Telegram updates, numeric operator ide
 ## Change management
 
 Use the local roadmap under `docs/roadmap/` for prospective repository work. Preserve source provenance when moving implementation from another island. Do not push, publish, release or mutate live infrastructure without explicit authority.
+
+## Techne execution hold
+
+New Techné implementation, substantive architecture changes, branch integration and remote rollout are on hold. The programme hold and restart criteria are owned by `ki-techne-principal` in `AGENTS.md`, section `Techne holding position`. Existing Ready records and task approvals do not override the hold. Preserve branches, worktrees, work records and existing services; read-only inspection and explicitly scoped preservation or hold administration may continue. Resume only on the principal's explicit direction after the local Paperclip learning review and remote-delivery policy.
