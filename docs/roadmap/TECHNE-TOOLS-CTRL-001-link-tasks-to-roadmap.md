@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-24T22:34:01Z
-updated_at: 2026-09-27T05:17:00Z
+updated_at: 2026-09-27T22:45:00Z
 ---
 
 # Link tasks to roadmap
@@ -149,3 +149,9 @@ A recorded revision that no longer resolves makes the link stale, not void. The 
 ### Intake
 
 Transient Paperclip tasks need no roadmap record. When an agent discovers substantive prospective work, the Paperclip skill should route it through the KI intake process as unadopted Triage rather than treating task creation as adoption authority.
+
+### Pickup checkpoint — 2026-09-27
+
+- **Delivered outside this repository:** `knowledgeislands/ki-agentic-harness` commit `a98cce65` added the optional, provider-qualified `task_links` contract in `skills/change-management/ki-work-roadmap/references/standards-work-item-format.md` (`Task links`) and its rubric. `knowledgeislands/tools-ki` commit `c0857d5652060d644fecc7c2f20a308f59feec7c` added parsing and validation in `src/core/work/items.ts` (`parseTaskLinks`) and JSON projection in `src/core/work/roadmap-report.ts` (`taskLinks`). Both commits are on their repositories' local `main`; this is a delivered overlap with the planned roadmap-side covering-task field, not a verified link to any particular Paperclip task or completion of this item.
+- **Current destination evidence:** this repository's `main` is `6c90020e40ad354430d64265f9191a925cf89026`. Commit `593a971` shaped this item to Ready; the local `docs/roadmap/` has three records. The planned `docs/decisions/` collection, `tooling/checks/governing-work.sh`, and `check:governing-work` script are absent. Neither this record nor the other two currently declares `task_links`. The retained clean `KIS-4` and `KNO-19` worktree tips, `fa86fec42dfaa812da64fe79d9563fa0dff27780` and `4b45c117c9ddffc44cdfc225ad4ad9cc58651b01`, are ancestors of `main`; they contain no unintegrated candidate delivery. The repository's `AGENTS.md` and the principal's `Techne holding position` section retain the execution hold.
+- **Remaining and pickup:** reconcile the delivered `task_links` shape with this item's older covering-task/checker plan before changing its implementation scope. Reconcile the destination branch, the linked `KIS-4`/`KIS-5`/`KIS-6` tasks and any current ownership, and retained worktrees from current evidence; repository prose and this checkpoint do not establish live task state. This checkpoint is guidance, not an execution block or resumption authority. Complete the still-missing local decision, task-side link and contradiction checker only under renewed programme authority, then run the item's positive and negative verification and seek owner review and acceptance. Missing task-side evidence does not release ownership or lift the hold; any later Done record remains until explicit pruning. Fresh `ki-work-roadmap` and `ki-authoring` audits passed on this baseline; no runtime, checker, or acceptance gate was rerun.
