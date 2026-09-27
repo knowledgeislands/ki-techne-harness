@@ -20,6 +20,11 @@ visibility = "public"
 license = "MIT"
 
 [skills.ki-authoring]
+[skills.ki-binding]
+[skills.ki-binding-claude]
+[skills.ki-binding-chatgpt]
+[skills.ki-housekeeping-chatgpt]
+auto_memory = "disabled"
 
 # -----------------------------------------------------------------------------
 # Repository shape
@@ -32,16 +37,18 @@ license = "MIT"
 # -----------------------------------------------------------------------------
 
 [skills.ki-agent-coordination-paperclip]
+organisation_code = "KIS"
 
 [skills.ki-guides]
 
 [skills.ki-tokenomics]
 
 [skills.ki-housekeeping-claude]
+auto_memory = "disabled"
 
 [skills.ki-tokenomics-claude]
 
-[skills.ki-tokenomics-codex]
+[skills.ki-tokenomics-chatgpt]
 
 # -----------------------------------------------------------------------------
 # Change management
@@ -94,8 +101,6 @@ knowledge = ["techne-interface-compatibility"]
 knowledge = ["techne-interface-compatibility"]
 
 [skills.ki-agora]
-memberships.ki-all = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
-memberships.ki-fnd = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
-memberships.ki-tools = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
+memberships.kis = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "execution-harness" }
 
 [skills.ki-engineering]
