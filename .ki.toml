@@ -95,6 +95,6 @@ standing.export.knowledge = ["techne-interface-compatibility"]
 standing.import.knowledge = ["techne-interface-compatibility"]
 
 [skills.ki-agora]
-memberships.kis = { home = "https://github.com/knowledgeislands/ki-arcadia-principal", role = "member" }
+memberships.kis = { home = "https://github.com/knowledgeislands/ki-arcadia-principal" }
 
 [skills.ki-engineering]
