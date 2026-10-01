@@ -4,7 +4,7 @@ The Techne Harness is the runnable personal-controller and execution-fabric impl
 
 ## Authority
 
-Techne Principal owns the architecture, roles, invariants and decision criteria. This repository owns harness applications, packaging, deployment resources, runtime payloads, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here.
+Arcadia owns the architecture, roles, invariants and decision criteria. This repository owns harness applications, packaging, deployment resources, runtime payloads, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here. The [implementation ownership decision (ADR-TECHNE-003)](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-TECHNE-003-techne-implementation-ownership.md) defines this boundary.
 
 ## Dependencies
 
@@ -20,4 +20,4 @@ Use the local roadmap under `docs/roadmap/` for prospective repository work. Pre
 
 ## Techne execution hold
 
-New Techné implementation, substantive architecture changes, branch integration and remote rollout are on hold. The programme hold and restart criteria are owned by `ki-techne-principal` in `AGENTS.md`, section `Techne holding position`. Existing Ready records and task approvals do not override the hold. Preserve branches, worktrees, work records and existing services; read-only inspection and explicitly scoped preservation or hold administration may continue. Resume only on the principal's explicit direction after the local Paperclip learning review and remote-delivery policy.
+New Techné implementation, substantive architecture changes, branch integration and remote rollout are on hold. The programme hold and restart criteria are owned by Arcadia in [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md). Existing Ready records and task approvals do not override the hold. Preserve branches, worktrees, work records and existing services; read-only inspection and explicitly scoped preservation or hold administration may continue. Resume only on the principal's explicit direction after the local Paperclip learning review and remote-delivery policy.
