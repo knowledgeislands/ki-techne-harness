@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-24T22:34:01Z
-updated_at: 2026-09-27T22:45:00Z
+updated_at: 2026-10-04T11:40:00Z
 ---
 
 # Link tasks to roadmap
@@ -22,89 +22,73 @@ Let Paperclip tasks reference canonical KI roadmap items so coordinated agent ac
 
 Paperclip supports direct task conversations and supplies agents with a runtime skill for creating, updating, delegating and reporting work through its control plane. A person may also talk directly with a Techne agent and have that agent invoke Paperclip only when shared coordination is useful.
 
-KI roadmap records already own work adoption, priority, readiness, dependencies, review and acceptance. Paperclip tasks instead own assignees, conversations, runs, costs and operational dispositions. Linking them would allow an agent team to coordinate execution while preserving the repository as the durable source of governed work.
+KI roadmap records already own work adoption, priority, readiness, dependencies, review and acceptance. Paperclip tasks instead own assignees, conversations, runs, costs and operational dispositions. Linking them allows an agent team to coordinate execution while preserving the repository as the durable source of governed work.
 
-No link exists today. Every Paperclip task coordinating work on this repository is traceable to governed work only through prose a reader must believe, so there is nothing an audit can fail.
+When this item was first shaped, no link contract existed anywhere, so the plan designed one locally: a reserved Paperclip issue document under the key `ki-governing-work`, a two-way contradiction checker reading those documents, and a local governance Decision Record. That contract has since been decided and delivered portably, in a different shape, so this item now applies the portable contract here rather than inventing a parallel one.
 
 ## Boundary
 
-This item does not adopt Paperclip, implement a complete Paperclip provider, synchronise the two lifecycle models, or make Paperclip tasks canonical KI knowledge. It does not require every direct question, routine or agent conversation to have a roadmap item.
+This item does not adopt Paperclip, implement a Paperclip provider, synchronise the two lifecycle models, or make Paperclip tasks canonical KI knowledge. It does not require every direct question, routine or agent conversation to have a roadmap item.
 
-It does not change the portable `ki-agent-coordination-paperclip` standard in `knowledgeislands/ki-agentic-harness`, and it does not change roadmap front matter in `knowledgeislands/tools-ki`. Both are named as follow-on work under Documentation impact. It delivers the decided contract and a working checker for this repository only.
+It does not change the portable `ki-agent-coordination-paperclip` or `ki-work-roadmap` standards in `knowledgeislands/ki-agentic-harness`, or the roadmap parser in `knowledgeislands/tools-ki`.
+
+It makes no write to Paperclip. Task-side prose backlinks, which the portable standard places in each task description, are owner follow-up rather than repository work, and recording them is outside this item. It performs no remote execution or remote-environment management under the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md).
 
 ## Current state
 
-`docs/roadmap/` holds three records: this one, `TECHNE-TOOLS-FAB-001` and `TECHNE-TOOLS-OPS-008`, both captured as unadopted Triage. `_ISSUES.md` reserves `CTRL` through `001`, so this item needs no ledger advance and shaping it allocates no identifier.
-
-`.ki.toml` declares `[skills.ki-agent-coordination-paperclip]`, so the coordination doctrine is active here, but the standard's _Task-to-work relationship_ section records the task side only, and its _Roadmap records are the exception_ section names the primary checkout as the write locus for every roadmap write in this repository.
-
-Two gaps keep the decision from being recorded where an audit can reach it. `docs/decisions/` does not exist; this repository has no Decision Record collection. `.ki.toml` does not declare `[skills.ki-decision-records]`, so a record written into `docs/decisions/` today would be an ungoverned file that no audit reads. Declaring the skill is therefore part of this item, not a follow-on.
-
-No mechanism records a governing item on a Paperclip task, and no check would fail if a task claimed the wrong one.
-
-Governing coverage, in the interim prose form the coordination standard prescribes until a covering-task field is admitted by `ki-work-roadmap`: Paperclip task `KIS-4` shapes this item; `KIS-5` delivers the item-side front-matter field in `knowledgeislands/tools-ki`; `KIS-6` brings the company's existing tasks under the resulting contract.
+- **Portable contract delivered.** `knowledgeislands/ki-agentic-harness` commit `a98cce65` added the optional, provider-qualified `task_links` front-matter map to the `Task links` section of `skills/change-management/ki-work-roadmap/references/standards-work-item-format.md`. The `Task-to-work relationship` section of `standards-agent-coordination-paperclip.md` now makes the item's own `task_links` the durable structured association, makes the task side an ordinary-prose backlink in the task description, and forbids inventing a Paperclip custom field or a shared writable lookup table.
+- **Parser delivered.** `knowledgeislands/tools-ki` commit `c0857d5652060d644fecc7c2f20a308f59feec7c` parses and validates `task_links` (`parseTaskLinks` in `src/core/work/items.ts`), so `ki repo audit --skill ki-work-roadmap` rejects a malformed map.
+- **Owner direction recorded.** Paperclip task `KIS-5` records the human's request for an authoritative map on each roadmap item, prose task-side backlinks, and no shared lookup table, writable index, mandatory reverse document or bidirectional synchronisation.
+- **Covering tasks, read-only evidence of 2026-10-04.** Company `KIS` (`558dd49e-7615-409f-b7b2-7f19e22171d9`) at `http://127.0.0.1:3100`: `KIS-4` (`dc04354e-d2ed-455d-b415-88bbef0d7270`, `done`) shaped this item; `KIS-5` (`b76a4ec9-be48-4a3c-8568-7885b5e6789b`, `backlog`) owns the per-item task-link field in `tools-ki`; `KIS-6` (`7afd7214-386e-455f-83bd-6ac4c9f1bf7f`, `blocked`) brings the company's existing tasks under governed work.
+- **This repository.** No roadmap record declares `task_links`. `docs/decisions/`, `tooling/checks/governing-work.sh` and a `check:governing-work` script are absent and are no longer planned.
 
 ## Steps
 
-- [ ] Declare `[skills.ki-decision-records]` in `.ki.toml`, create `docs/decisions/` and its `README.md` index carrying an ordered list with one entry per record.
-- [ ] Write `docs/decisions/GDR-TECHNE-TOOLS-001-paperclip-governing-work-link.md` with the required frontmatter pair `decision_type: governance` and `decision_type_url: https://knowledgeislands.info/specifications/decision-records/gdr`, and the `## Context`, `## Decision` and `## Consequences` sections. It records the carrier, the TOML grammar and its five field rules, the direction of authority, the staleness rule, and the five-item evidence set.
-- [ ] Add `tooling/checks/governing-work.sh`: read the covering-task enumeration from every item in `docs/roadmap/`, read each Paperclip task's `ki-governing-work` document, assert agreement in both directions, and resolve every recorded revision with `git cat-file -e <revision>^{commit}`.
-- [ ] Make the checker report four distinct outcomes and exit on them: `0` no contradiction; `1` one or more contradictions, each printed as `<rule> <item-id> <task-key>`; `2` credentials absent, reported as unverifiable rather than passing; `3` the repository cannot resolve a revision because the clone is shallow or unfetched.
-- [ ] Have the checker run task-side-only while no covering-task field is admitted to roadmap front matter, printing one explicit line naming that degradation. It must not fall silent, and it must not write the field into front matter, which `ki repo audit --skill ki-work-roadmap` would reject as an unsupported field.
-- [ ] Add the `check:governing-work` script entry to `package.json` and wire it into the existing `tooling/checks` invocation path.
-- [ ] Write this repository's own `ki-governing-work` document onto `KIS-4`, `KIS-5` and `KIS-6`, then run the checker and record its output.
+- [ ] Record `task_links.paperclip` in this item's front matter for `KIS-4` (`evaluation`), `KIS-5` (`related`) and `KIS-6` (`coordination`), each with the admitted instance `authority`, the company UUID as `scope`, the task UUID as `id`, the current `key`, and the company-prefixed issue `url`, re-verified read-only against Paperclip immediately before writing.
+- [ ] Run the positive verification and the negative check below, restoring the record after the negative check.
+- [ ] Record the superseded carrier, checker and Decision Record under Discussion, citing the portable standard and `KIS-5`, so the withdrawal is explicit rather than silent.
+- [ ] Record owner follow-up: ordinary-prose backlinks in the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming this repository, this item, an admitted revision and the task's purpose.
 
 ## Files touched
 
-- `.ki.toml` (one skill declaration)
-- `docs/decisions/README.md` (new; the ordered index the Decision Records standard requires)
-- `docs/decisions/GDR-TECHNE-TOOLS-001-paperclip-governing-work-link.md` (new)
-- `tooling/checks/governing-work.sh` (new)
-- `package.json` (one script entry)
-- `docs/roadmap/TECHNE-TOOLS-CTRL-001-link-tasks-to-roadmap.md` (this record)
+- `docs/roadmap/TECHNE-TOOLS-CTRL-001-link-tasks-to-roadmap.md` (this record only)
 
 ## Verify
 
 ```bash
-ki repo audit --skill ki-work-roadmap --repo .                  # PASS, front-matter shape unchanged
-ki repo audit --skill ki-decision-records --repo .              # PASS, the new collection and index are well-formed
+ki repo audit --skill ki-work-roadmap --repo .                  # PASS, task_links accepted
 ki repo audit --skill ki-repo-project --repo .                  # PASS, repository shape still conforms
 ki repo audit --skill ki-agent-coordination-paperclip --repo .  # PASS
-bash tooling/checks/governing-work.sh --repo .                  # exit 0, prints "contradictions: 0"
+ki repo roadmap list --json                                     # this item projects three Paperclip taskLinks
 ```
 
-Negative check, which must fail: edit the `item` value in one task's `ki-governing-work` document to a roadmap identifier that does not exist in `docs/roadmap/`, re-run the checker, and require exit `1` naming that task and the `unknown_item` rule. Restore the document afterwards and require exit `0` again. A checker that cannot be made to fail has not been verified.
+Negative check, which must fail: temporarily set one link's `relation` to a value outside the admitted vocabulary, re-run `ki repo audit --skill ki-work-roadmap --repo .`, and require a failure naming this item. Restore the record and require PASS again. A link contract that cannot be made to fail has not been verified.
 
 ## Dependencies / blocks
 
-Nothing blocks this item. The carrier needs no Paperclip change, and the checker's task side works against the current API. `ki-decision-records` is provided by the already declared harness `knowledgeislands/ki-agentic-harness`, so declaring it adds no new dependency.
-
-The item side of the two-way link depends on a covering-task field being admitted to roadmap front matter in `knowledgeislands/tools-ki`; that is separate work, coordinated as `KIS-5`. Until it lands the checker runs task-side-only and says so. This item must not pre-empt it by writing the field, because the front-matter parser rejects unknown fields and would fail the whole repository audit. That is sequencing preference rather than build order, so `blocked_by` stays empty.
+Nothing blocks this item. The portable contract and its parser are delivered. Writing task-side backlinks into Paperclip is owner follow-up, not a prerequisite.
 
 ## Delegation
 
-Delivery is an engineering change and goes to one worker. The boundary is the six files under Files touched; no file outside this repository may be edited. Every write under `docs/roadmap/` is made in this repository's designated primary checkout rather than the worker's isolated checkout, as the coordination standard requires; the remaining files are written in the worker's own checkout. The gate between shaping and delivery is this record at `status: ready`. The final review — running all five Verify commands plus the negative check, and reconciling the result against the Decision Record text — stays with the orchestrator and does not transfer with the work.
+Delivery is one small record edit in the designated primary checkout, which the coordination standard requires for every `docs/roadmap/` write. It is not delegated.
 
 ## Documentation impact
 
 ### Decision Records
 
-One new governance Decision Record in this repository, named under Files touched, recording the carrier choice, the grammar, the staleness rule and the evidence set. It is a `GDR-` because the decision is about process, authority and change mechanism rather than component structure. It is the first record in the `TECHNE-TOOLS` scope, so it takes serial `001`, and it arrives together with the `[skills.ki-decision-records]` declaration and the ordered index that make the collection auditable. The portable home of the task-to-work rule remains `ki-agent-coordination-paperclip`; the record cites it rather than restating it.
+None. The link contract is a portable governance decision now recorded in `ki-agentic-harness`; a local Decision Record would restate a rejected carrier or duplicate the portable one, so `[skills.ki-decision-records]` is not declared for this item.
 
 ### Specifications
 
-No behaviour-level contract in this repository changes. The controller ships nothing new. The link grammar is a governance contract, recorded as a Decision Record, and its portable specification belongs to `ki-agentic-harness`, captured as follow-on work below.
+No behaviour-level contract in this repository changes. The controller ships nothing new.
 
 ### Guides
 
-No human guidance changes. The Decision Record carries the contract and the checker carries its own usage; a guide would be a third copy to drift.
+No human guidance changes.
 
 ### Roadmap
 
-Two follow-on items to capture through `ki-next` as unadopted Triage, neither of which this item may deliver:
-
-- `knowledgeislands/ki-agentic-harness` — fold the `ki-governing-work` grammar into the _Task-to-work relationship_ section of `standards-agent-coordination-paperclip.md` and add the matching AUDIT rule, so the contract is portable and every declaring repository is checked rather than only this one.
-- `knowledgeislands/tools-ki` — admit an optional covering-task field to roadmap front matter. Coordinated in Paperclip as `KIS-5`.
+The two follow-ons originally planned are both delivered and need no capture: the portable task-link rule in `knowledgeislands/ki-agentic-harness` (`a98cce65`) and the front-matter field in `knowledgeislands/tools-ki` (`c0857d56`).
 
 ## Discussion
 
@@ -116,42 +100,17 @@ The KI roadmap item remains authoritative for adoption and delivery lifecycle. A
 
 Paperclip is a coordination capability rather than a mandatory conversational gateway. A direct Techne agent session may use the Paperclip skill to create or attach to a task, delegate a bounded activity, or report progress. Tasks originating in Paperclip may reach the same agent through its normal runtime adapter.
 
-A direct session decides between three outcomes. It stays outside Paperclip when the exchange leaves no durable artefact. It attaches to an existing task when the work falls inside the scope that task's `ki-governing-work` purpose already attests to. It creates a task otherwise — and creating a task adopts nothing: absent a governing item, the work goes to KI Triage through `ki-next` first, and the document is written against the resulting Triage item.
+A direct session stays outside Paperclip when the exchange leaves no durable artefact, attaches to an existing task when the work falls inside that task's stated purpose, and creates a task otherwise. Creating a task adopts nothing: absent a governing item, the work goes to KI Triage through `ki-next` first.
 
-### Link contract
+### Superseded carrier
 
-The minimum association names the KI repository, roadmap identifier and admitted repository revision. One roadmap item may link to several Paperclip tasks, while each task identifies at most one governing roadmap item.
-
-The carrier is a reserved Paperclip issue document under the key `ki-governing-work`, holding one fenced TOML block with `repository`, `item`, `revision`, `purpose` and `recorded_at`. The item identifier uses the grammar the roadmap parser already enforces; the revision uses the forty-character lowercase hexadecimal rule `baseline_ref` enforces; `recorded_at` uses the canonical UTC-second shape of the timestamp pair. Borrowing the validators rather than inventing parallel ones is what keeps the two halves from diverging.
-
-A document key is unique per issue, so "at most one governing item" is a property of the storage rather than a rule someone must remember. The document is revisioned, so re-pointing a task appends a claim instead of erasing one. It is bindable as an interaction target, so re-pointing can be put to a human as a card. And the documents route takes an unconstrained key with a two-field body, so the grammar is KI-owned data inside a generic first-party API — no Paperclip schema change, no fork, and nothing an upgrade can take away short of removing the documents API.
-
-The roadmap item may record relevant Paperclip task references during planning or review, but should not mirror their comment history, run state or cost ledger. Paperclip execution results become evidence for the roadmap review packet.
-
-### Rejected carriers
-
-A billing code is one flat string for three values with no revision history, and it belongs to billing; an unrelated billing edit would destroy the link. A company label is capped at forty-eight characters, leaving no room for a revision beside an identifier, and adds a third place to drift. Work products admit only a workspace-file resource reference in their metadata, so the association would degrade into prose. External objects are read-only with no create route. Task description prose — the interim form — is unrevisioned and rewritten by anyone editing the description.
-
-### Discovery from the repository side
-
-The repository never asks Paperclip what covers it. The item's own front matter enumerates its covering tasks, and the task's document attests to its governing item; neither writes the other. The contradiction detector is what makes the link two-way rather than two one-way links that drift: for each task it asserts that the named item enumerates that task, and for each enumerated task it asserts that the task's document names this repository and this item. Any disagreement is reported, never repaired by writing, and no bidirectional status synchronisation of any kind is introduced.
-
-The field is optional rather than required. Requiring it on every item would force an edit to every existing record across the estate at adoption, and the exception granted to avoid that would never expire. An optional field, checked for consistency wherever it is present, with a later rule that new Ready items must declare it, costs one narrow gap now instead of a permanent one.
-
-### Evidence into the review packet
-
-When a Paperclip task finishes, five things are cited into the item's `## Awaiting review` packet: the task identifier and URL; the terminal Paperclip status and its timestamp; the task's pull-request, commit and branch work products as access paths; the `ki-governing-work` revision in force at completion together with the revision it recorded; and the identifier of the comment carrying the outcome. They are cited, never mirrored, and they are not acceptance — `ki-accept` still requires its human review gate.
-
-### Stale revisions
-
-A recorded revision that no longer resolves makes the link stale, not void. The task is not orphaned and is never silently re-pointed. The correction is to re-read the item at the current tip, confirm or restate the scope, and append a new document revision naming the new commit and the superseded one. A shallow or unfetched clone yields an unverifiable rather than an unresolvable revision, which is reported separately and is not a contradiction.
+The original plan's carrier was a reserved Paperclip issue document under the key `ki-governing-work`, holding one fenced TOML block with `repository`, `item`, `revision`, `purpose` and `recorded_at`, enforced by a `tooling/checks/governing-work.sh` contradiction checker and recorded in a local `GDR-TECHNE-TOOLS-001`. It is withdrawn, not deferred. The portable `Task-to-work relationship` standard places the durable structured association in the item's own `task_links` and the task side in ordinary prose, forbids inventing a Paperclip custom field, and `KIS-5` records the owner's rejection of a mandatory reverse document. Consistency between the two sides is now a `COORD-3` judgement under `ki-agent-coordination-paperclip`, reconciled before assigning or releasing work, rather than a repository-local checker.
 
 ### Intake
 
 Transient Paperclip tasks need no roadmap record. When an agent discovers substantive prospective work, the Paperclip skill should route it through the KI intake process as unadopted Triage rather than treating task creation as adoption authority.
 
-### Pickup checkpoint — 2026-09-27
+### Planning history
 
-- **Delivered outside this repository:** `knowledgeislands/ki-agentic-harness` commit `a98cce65` added the optional, provider-qualified `task_links` contract in `skills/change-management/ki-work-roadmap/references/standards-work-item-format.md` (`Task links`) and its rubric. `knowledgeislands/tools-ki` commit `c0857d5652060d644fecc7c2f20a308f59feec7c` added parsing and validation in `src/core/work/items.ts` (`parseTaskLinks`) and JSON projection in `src/core/work/roadmap-report.ts` (`taskLinks`). Both commits are on their repositories' local `main`; this is a delivered overlap with the planned roadmap-side covering-task field, not a verified link to any particular Paperclip task or completion of this item.
-- **Current destination evidence:** this repository's `main` is `6c90020e40ad354430d64265f9191a925cf89026`. Commit `593a971` shaped this item to Ready; the local `docs/roadmap/` has three records. The planned `docs/decisions/` collection, `tooling/checks/governing-work.sh`, and `check:governing-work` script are absent. Neither this record nor the other two currently declares `task_links`. The retained clean `KIS-4` and `KNO-19` worktree tips, `fa86fec42dfaa812da64fe79d9563fa0dff27780` and `4b45c117c9ddffc44cdfc225ad4ad9cc58651b01`, are ancestors of `main`; they contain no unintegrated candidate delivery. The repository's `AGENTS.md` and the principal's `Techne holding position` section retain the execution hold.
-- **Remaining and pickup:** reconcile the delivered `task_links` shape with this item's older covering-task/checker plan before changing its implementation scope. Reconcile the destination branch, the linked `KIS-4`/`KIS-5`/`KIS-6` tasks and any current ownership, and retained worktrees from current evidence; repository prose and this checkpoint do not establish live task state. This checkpoint is guidance, not an execution block or resumption authority. Complete the still-missing local decision, task-side link and contradiction checker only under renewed programme authority, then run the item's positive and negative verification and seek owner review and acceptance. Missing task-side evidence does not release ownership or lift the hold; any later Done record remains until explicit pruning. Fresh `ki-work-roadmap` and `ki-authoring` audits passed on this baseline; no runtime, checker, or acceptance gate was rerun.
+- 2026-09-27: shaped to Ready around the `ki-governing-work` carrier (`593a971`); a pickup checkpoint then recorded the delivered `task_links` contract and required reconciliation before implementation.
+- 2026-10-04: returned to draft and replanned against the delivered portable contract and the owner direction recorded on `KIS-5`, under the owner's delegated roadmap authority for the 2026-10-04 estate push. An independent judgement review recommended this disposition and the narrowed scope; the item was then set Ready again.
