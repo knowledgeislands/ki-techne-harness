@@ -4,12 +4,32 @@ area: CTRL
 title: Link tasks to roadmap
 theme: controller
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: aecb41e51daf39505440126f6b4c56840fb7780f
 created_at: 2026-09-24T22:34:01Z
-updated_at: 2026-10-04T11:40:00Z
+updated_at: 2026-10-04T11:40:02Z
+task_links:
+  paperclip:
+    - authority: http://127.0.0.1:3100
+      scope: 558dd49e-7615-409f-b7b2-7f19e22171d9
+      id: dc04354e-d2ed-455d-b415-88bbef0d7270
+      key: KIS-4
+      url: http://127.0.0.1:3100/KIS/issues/KIS-4
+      relation: evaluation
+    - authority: http://127.0.0.1:3100
+      scope: 558dd49e-7615-409f-b7b2-7f19e22171d9
+      id: b76a4ec9-be48-4a3c-8568-7885b5e6789b
+      key: KIS-5
+      url: http://127.0.0.1:3100/KIS/issues/KIS-5
+      relation: related
+    - authority: http://127.0.0.1:3100
+      scope: 558dd49e-7615-409f-b7b2-7f19e22171d9
+      id: 7afd7214-386e-455f-83bd-6ac4c9f1bf7f
+      key: KIS-6
+      url: http://127.0.0.1:3100/KIS/issues/KIS-6
+      relation: coordination
 ---
 
 # Link tasks to roadmap
@@ -44,10 +64,10 @@ It makes no write to Paperclip. Task-side prose backlinks, which the portable st
 
 ## Steps
 
-- [ ] Record `task_links.paperclip` in this item's front matter for `KIS-4` (`evaluation`), `KIS-5` (`related`) and `KIS-6` (`coordination`), each with the admitted instance `authority`, the company UUID as `scope`, the task UUID as `id`, the current `key`, and the company-prefixed issue `url`, re-verified read-only against Paperclip immediately before writing.
-- [ ] Run the positive verification and the negative check below, restoring the record after the negative check.
-- [ ] Record the superseded carrier, checker and Decision Record under Discussion, citing the portable standard and `KIS-5`, so the withdrawal is explicit rather than silent.
-- [ ] Record owner follow-up: ordinary-prose backlinks in the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming this repository, this item, an admitted revision and the task's purpose.
+- [x] Record `task_links.paperclip` in this item's front matter for `KIS-4` (`evaluation`), `KIS-5` (`related`) and `KIS-6` (`coordination`), each with the admitted instance `authority`, the company UUID as `scope`, the task UUID as `id`, the current `key`, and the company-prefixed issue `url`, re-verified read-only against Paperclip immediately before writing.
+- [x] Run the positive verification and the negative check below, restoring the record after the negative check.
+- [x] Record the superseded carrier, checker and Decision Record under Discussion, citing the portable standard and `KIS-5`, so the withdrawal is explicit rather than silent.
+- [x] Record owner follow-up: ordinary-prose backlinks in the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming this repository, this item, an admitted revision and the task's purpose.
 
 ## Files touched
 
@@ -59,7 +79,7 @@ It makes no write to Paperclip. Task-side prose backlinks, which the portable st
 ki repo audit --skill ki-work-roadmap --repo .                  # PASS, task_links accepted
 ki repo audit --skill ki-repo-project --repo .                  # PASS, repository shape still conforms
 ki repo audit --skill ki-agent-coordination-paperclip --repo .  # PASS
-ki repo roadmap list --json                                     # this item projects three Paperclip taskLinks
+ki repo roadmap list --format json                              # this item projects three Paperclip taskLinks
 ```
 
 Negative check, which must fail: temporarily set one link's `relation` to a value outside the admitted vocabulary, re-run `ki repo audit --skill ki-work-roadmap --repo .`, and require a failure naming this item. Restore the record and require PASS again. A link contract that cannot be made to fail has not been verified.
@@ -89,6 +109,39 @@ No human guidance changes.
 ### Roadmap
 
 The two follow-ons originally planned are both delivered and need no capture: the portable task-link rule in `knowledgeislands/ki-agentic-harness` (`a98cce65`) and the front-matter field in `knowledgeislands/tools-ki` (`c0857d56`).
+
+## Review
+
+### Delivered
+
+The narrowed Ready boundary from `aecb41e`: verified `task_links.paperclip` entries for `KIS-4`, `KIS-5` and `KIS-6` on this record, the explicit withdrawal of the superseded carrier, and the owner follow-up for task-side backlinks. Excluded as planned: any Paperclip write, Decision Record, checker or script, and any file outside this record. Immutable baseline `aecb41e51daf39505440126f6b4c56840fb7780f`.
+
+### Change Summary
+
+- `docs/roadmap/TECHNE-TOOLS-CTRL-001-link-tasks-to-roadmap.md`: added `task_links.paperclip` with three references (`KIS-4` `evaluation`, `KIS-5` `related`, `KIS-6` `coordination`), each re-verified read-only immediately before writing: company `558dd49e-7615-409f-b7b2-7f19e22171d9` and each task UUID from `GET /api/issues/<key>`, and each issue `url` answering HTTP 200.
+- Deviation within scope, for review: the Verify listing command is `ki repo roadmap list --format json`; the planned `--json` flag does not exist in `ki` 0.5.1.
+
+### Verification
+
+- `ki repo audit --skill ki-work-roadmap --repo .`: PASS.
+- `ki repo audit --skill ki-repo-project --repo .`: PASS.
+- `ki repo audit --skill ki-agent-coordination-paperclip --repo .`: PASS.
+- `ki repo roadmap list --format json`: this item projects `taskLinks.paperclip` with `KIS-4` `evaluation`, `KIS-5` `related` and `KIS-6` `coordination`; `--links all` renders all three URLs.
+- Negative check: with `KIS-6` set to `relation: bogus`, the roadmap audit failed with `ITEM-1 ... task_links relation 'bogus' is invalid` and exit 1; after restoring the record it passed again.
+
+### Outstanding concerns
+
+- Owner follow-up, outside this item: add ordinary-prose backlinks to the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming `knowledgeislands/ki-techne-harness`, `TECHNE-TOOLS-CTRL-001`, an admitted revision and the task's purpose. Not done because Paperclip writes are outside this item and this session.
+- `KIS-6` remains `blocked` in Paperclip; bringing the company's other tasks under governed work is that task's scope, not this item's.
+- The `authority` is a loopback instance URL, as the portable example shows; a future non-local Paperclip instance would need the links re-pointed.
+
+### Post-change review
+
+The goal, traceability from governed work to the coordinating tasks, is met in the portable shape that the estate now audits, without a parallel local contract. Scope held to one record. Regression risk is negligible: the field is optional, parser-validated, and the negative check shows the audit fails closed on a malformed link. Ready for independent review and acceptance.
+
+### Mini recap
+
+Replanned and delivered: the stale `ki-governing-work` design is withdrawn in the record and three verified Paperclip links are recorded. All planned gates pass and the negative check fails as required. Proposed learning route, not promoted: Ready records whose plan names an undelivered portable contract should be re-checked against that contract before implementation.
 
 ## Discussion
 
