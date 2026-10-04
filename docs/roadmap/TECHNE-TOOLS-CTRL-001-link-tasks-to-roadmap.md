@@ -4,12 +4,12 @@ area: CTRL
 title: Link tasks to roadmap
 theme: controller
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: aecb41e51daf39505440126f6b4c56840fb7780f
 created_at: 2026-09-24T22:34:01Z
-updated_at: 2026-10-04T11:44:40Z
+updated_at: 2026-10-04T11:46:04Z
 task_links:
   paperclip:
     - authority: http://127.0.0.1:3100
@@ -142,6 +142,10 @@ The goal, traceability from governed work to the coordinating tasks, is met in t
 ### Mini recap
 
 Replanned and delivered: the stale `ki-governing-work` design is withdrawn in the record and three verified Paperclip links are recorded. All planned gates pass and the negative check fails as required. Proposed learning route, not promoted: Ready records whose plan names an undelivered portable contract should be re-checked against that contract before implementation.
+
+## Done
+
+Accepted 2026-10-04 under the owner's delegated roadmap authority for the 2026-10-04 estate push, on an independent review verdict of ACCEPT for the delivery at `bfe58ca`. The first review returned one required change, an owning identifier for the backlink follow-up, which `bfe58ca` resolved by citing `KIS-6`. Retained follow-up: prose backlinks on `KIS-4`, `KIS-5` and `KIS-6`, owned by `KIS-6`.
 
 ## Discussion
 
