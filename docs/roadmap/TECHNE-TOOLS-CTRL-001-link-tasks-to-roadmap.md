@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: aecb41e51daf39505440126f6b4c56840fb7780f
 created_at: 2026-09-24T22:34:01Z
-updated_at: 2026-10-04T11:40:02Z
+updated_at: 2026-10-04T11:44:40Z
 task_links:
   paperclip:
     - authority: http://127.0.0.1:3100
@@ -131,7 +131,7 @@ The narrowed Ready boundary from `aecb41e`: verified `task_links.paperclip` entr
 
 ### Outstanding concerns
 
-- Owner follow-up, outside this item: add ordinary-prose backlinks to the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming `knowledgeislands/ki-techne-harness`, `TECHNE-TOOLS-CTRL-001`, an admitted revision and the task's purpose. Not done because Paperclip writes are outside this item and this session.
+- Owner follow-up, outside this item: add ordinary-prose backlinks to the descriptions of `KIS-4`, `KIS-5` and `KIS-6` naming `knowledgeislands/ki-techne-harness`, `TECHNE-TOOLS-CTRL-001`, an admitted revision and the task's purpose. Not done because Paperclip writes are outside this item and this session. Owned by Paperclip task `KIS-6`, whose scope of bringing the company's existing tasks under governed work covers writing these backlinks.
 - `KIS-6` remains `blocked` in Paperclip; bringing the company's other tasks under governed work is that task's scope, not this item's.
 - The `authority` is a loopback instance URL, as the portable example shows; a future non-local Paperclip instance would need the links re-pointed.
 
