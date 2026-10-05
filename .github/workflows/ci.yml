@@ -20,12 +20,15 @@ jobs:
           KI_DATA_HOME: ${{ runner.temp }}/ki/data
           KI_CONFIG_HOME: ${{ runner.temp }}/ki/config
           KI_CACHE_HOME: ${{ runner.temp }}/ki/cache
+          KI_MCP_SOURCE: ${{ runner.temp }}/ki/config/mcp-servers.yaml
           XDG_STATE_HOME: ${{ runner.temp }}/ki/state
           KI_STATE_HOME: ${{ runner.temp }}/ki/state/ki
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.agents" "$HOME/.claude"
           printf '{}\n' > "$HOME/.claude/settings.json"
+          mkdir -p "$(dirname "$KI_MCP_SOURCE")"
+          printf 'mcpServers: []\n' > "$KI_MCP_SOURCE"
           git clone --quiet --depth 1 --branch main https://github.com/knowledgeislands/tools-ki.git "$RUNNER_TEMP/tools-ki-source"
           printf 'KI source commit: %s\n' "$(git -C "$RUNNER_TEMP/tools-ki-source" rev-parse HEAD)"
           (cd "$RUNNER_TEMP/tools-ki-source" && bun install --frozen-lockfile)
@@ -33,15 +36,17 @@ jobs:
           export PATH="$KI_CLI_INSTALL_DIR:$PATH"
           test "$(command -v ki)" = "$KI_CLI_INSTALL_DIR/ki"
           ki --version
-          ki manage diag | grep -F 'Installation: local'
-          ki manage diag | grep -F "Executable: $KI_CLI_INSTALL_DIR/ki"
+          ki diag | grep -F 'Installation: local'
+          ki diag --full | grep -F "Executable: $RUNNER_TEMP/tools-ki-source/src/main.ts"
           ki bootstrap
           ki registry add --repo .
           ki repo repair --repo .
           project_key=${GITHUB_WORKSPACE//\//-}
           mkdir -p "$HOME/.claude/projects/$project_key/memory"
           touch "$HOME/.claude/projects/$project_key/memory/MEMORY.md"
-          ki manage diag | grep -F 'Status: valid'
+          diag=$(ki diag)
+          grep -F 'Configuration: valid' <<<"$diag"
+          grep -F 'Registry: valid' <<<"$diag"
           ki harness list | grep -F 'knowledgeislands/ki-agentic-harness'
           printf '%s\n' "$KI_CLI_INSTALL_DIR" >> "$GITHUB_PATH"
           {
@@ -50,6 +55,7 @@ jobs:
             printf 'KI_DATA_HOME=%s\n' "$KI_DATA_HOME"
             printf 'KI_CONFIG_HOME=%s\n' "$KI_CONFIG_HOME"
             printf 'KI_CACHE_HOME=%s\n' "$KI_CACHE_HOME"
+            printf 'KI_MCP_SOURCE=%s\n' "$KI_MCP_SOURCE"
             printf 'XDG_STATE_HOME=%s\n' "$XDG_STATE_HOME"
             printf 'KI_STATE_HOME=%s\n' "$KI_STATE_HOME"
           } >> "$GITHUB_ENV"
