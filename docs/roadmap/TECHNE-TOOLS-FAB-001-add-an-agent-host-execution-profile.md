@@ -3,13 +3,13 @@ id: TECHNE-TOOLS-FAB-001
 area: FAB
 title: Add agent-host profile
 theme: execution-fabric
-horizon: triage
-status: draft
+horizon: now
+status: ready
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-26T15:55:00Z
-updated_at: 2026-09-26T15:55:00Z
+updated_at: 2026-10-05T08:16:00Z
 ---
 
 # Add Agent-Host Profile
@@ -29,6 +29,66 @@ The correct response is not to loosen the deterministic profile. It is to add a 
 ## Boundary
 
 This item does not change the deterministic execution profile, widen its egress, raise its deadline, or grant it a volume. It does not deploy an agent host, install an agent runtime, or authorise any spend. It designs and declares the additive profile and the guard that keeps the two apart.
+
+## Current state
+
+One execution profile exists, hard-coded in `build_job()` in `apps/controller/src/controller.py` (`backoffLimit: 0`, `activeDeadlineSeconds: 300`, `restartPolicy: Never`, `readOnlyRootFilesystem: True`) and mirrored in `deploy/kubernetes/execution/job.example.json`. Both execution namespaces default-deny all egress (`techne-execution-default-deny` in `deploy/kubernetes/controller/network-policy.yaml`, `deny-execution-network` in `deploy/kubernetes/target/access.yaml`). No test pins the four fields or compares the fixture with `build_job()`.
+
+## Steps
+
+- [ ] Add `deploy/kubernetes/execution/agent-host.job.example.json`: a second Job literal with the decided fields - including `activeDeadlineSeconds: 28800`, `ttlSecondsAfterFinished: 600`, the `/workspace` `emptyDir` with `sizeLimit: 8Gi`, and `env: IDLE_TIMEOUT_SECONDS=1800` on the workload container - and pod label `techne.knowledgeislands.dev/profile: agent-host`.
+- [ ] Add `deploy/kubernetes/execution/agent-host-network-policy.yaml`: namespace `techne-execution`, podSelector on the profile label, egress DNS to `kube-system` plus TCP 443 only, and a comment block naming the placeholder destinations (model API, repository host).
+- [ ] Add `build_agent_host_job()` to `apps/controller/src/controller.py` as a separate literal; leave `build_job()` untouched and do not wire the new builder to `/run` dispatch.
+- [ ] Add `test_deterministic_profile_fields_are_unchanged` to `apps/controller/tests/test_controller.py`, asserting the four fields of `build_job()`, that its `spec` equals the `spec` of `deploy/kubernetes/execution/job.example.json`, and that `metadata` matches once the fixture's `namespace` key is dropped (the builder does not set it).
+- [ ] Add `test_agent_host_profile_shares_no_base`, asserting the agent-host Job carries the profile label and `activeDeadlineSeconds == 28800`, and that `build_job()` output is identical before and after calling `build_agent_host_job()`.
+- [ ] Extend `tooling/checks/controller.sh` so its `jq` check covers the new JSON and its `validate-manifests.rb` call covers `deploy/kubernetes/execution/*.yaml`.
+- [ ] Add a short "Execution profiles" section to `docs/guides/developer/README.md` naming both profiles and the non-regression rule, and stating that the idle reaper and operator-chat notification are declared, not yet implemented.
+
+## Files touched
+
+- `apps/controller/src/controller.py`
+- `apps/controller/tests/test_controller.py`
+- `deploy/kubernetes/execution/agent-host.job.example.json` (new)
+- `deploy/kubernetes/execution/agent-host-network-policy.yaml` (new)
+- `tooling/checks/controller.sh`
+- `docs/guides/developer/README.md`
+- This roadmap record
+
+## Verify
+
+All local; nothing is applied to a cluster.
+
+```sh
+bun install --frozen-lockfile && bun run test
+bunx biome check . && ki repo audit --progress never && git diff --check
+python3 -c 'import sys; sys.path.insert(0,"apps/controller/src"); import controller as c; j=c.build_job("telegram:42:local","techne-local-42"); s=j["spec"]; p=s["template"]["spec"]; assert (s["activeDeadlineSeconds"],s["backoffLimit"],p["restartPolicy"],p["containers"][0]["securityContext"]["readOnlyRootFilesystem"])==(300,0,"Never",True)'
+jq -e '.spec.activeDeadlineSeconds==300 and .spec.backoffLimit==0 and .spec.template.spec.restartPolicy=="Never" and .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem==true' deploy/kubernetes/execution/job.example.json
+git diff --quiet "$(sed -n 's/^baseline_ref: //p' docs/roadmap/TECHNE-TOOLS-FAB-001-add-an-agent-host-execution-profile.md)" -- deploy/kubernetes/controller/network-policy.yaml deploy/kubernetes/target/access.yaml deploy/kubernetes/execution/job.example.json
+```
+
+The last three commands are the non-regression acceptance test: the deterministic profile's egress, deadline, read-only root and terminal restart policy are unchanged.
+
+## Dependencies / blocks
+
+Blocked by nothing. [TECHNE-TOOLS-OPS-008](TECHNE-TOOLS-OPS-008-provision-the-controller-as-a-supervised-agent-host.md) is a non-blocking boundary: substrate capacity and concrete egress destinations are decided there. Any `kubectl apply`, image build, agent-runtime install or cluster change remains under the Techne Programme Hold and is outside this item.
+
+## Documentation impact
+
+### Decision Records
+
+None; the profile split is an additive declaration within existing architecture.
+
+### Specifications
+
+None.
+
+### Guides
+
+`docs/guides/developer/README.md` gains an "Execution profiles" section naming both profiles and the non-regression rule.
+
+### Roadmap
+
+None beyond this record.
 
 ## Discussion
 
@@ -50,3 +110,16 @@ An agent host that runs while nothing is assigned is a standing charge. The prof
 - How is a workspace allocated per session so that two sessions never write one repository root?
 - What idle timeout and maximum lifetime are acceptable, and who is notified when one fires?
 - Does the substrate have the capacity to host a session at all, given the measured node size and free disk recorded in `TECHNE-TOOLS-OPS-008`?
+
+### Decisions - 2026-10-05
+
+The open questions that are reversible local declarations were decided by the Fable reviewer under delegated autonomy, reversible:
+
+- **Egress** is a `NetworkPolicy` allow-list, not an open allowance: DNS plus TCP 443 for pods with the agent-host profile label. Concrete model-API and repository-host FQDN or CIDR values need live information and stay recorded placeholders.
+- **Workspace** is a per-session `emptyDir` with a `sizeLimit` placeholder of `8Gi` mounted at `/workspace`; one Job per session, so two sessions never share a repository root. Persistence across reattach is outside this item.
+- **Lifetime** is `activeDeadlineSeconds: 28800` (eight hours), `ttlSecondsAfterFinished: 600`, and a declared `IDLE_TIMEOUT_SECONDS=1800` for the idle reaper; notification goes to the operator chat, as for deterministic failures.
+- **Termination** stays final for this iteration (`restartPolicy: Never`, `backoffLimit: 0`); reattach survivability is deferred rather than silently relaxed.
+- **No shared base**: `build_job()` is untouched and `build_agent_host_job()` is a separate literal.
+- **Capacity** is the OPS-008 decision and does not block a declaration that validates without a node.
+
+Adopted from Triage to `now` and made Ready in the same pass.

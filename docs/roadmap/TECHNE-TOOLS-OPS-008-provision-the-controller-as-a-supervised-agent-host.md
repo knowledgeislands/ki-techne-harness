@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-26T15:55:00Z
-updated_at: 2026-09-26T15:55:00Z
+updated_at: 2026-10-05T08:10:00Z
 ---
 
 # Provision Supervised Agent Host
@@ -57,3 +57,9 @@ Any grant made for a proof should be named with its revocation at the moment it 
 - Does editor-based remote development justify enabling the SSH service, given that the session-manager path already gives a persistent shell?
 - Which mesh-network access-control list governs the second shape, and in which repository is it recorded?
 - What is the revocation step for every grant this provisioning would create?
+
+### Owner question - 2026-10-05
+
+Triaged by the Fable reviewer as needing Kris. Every open question is spend, exposure (SSH enablement, key material, mesh ACL) or blast-radius acceptance on a live host, all under the Techne Programme Hold. It stays in Triage as the costed decision record; [TECHNE-TOOLS-FAB-001](TECHNE-TOOLS-FAB-001-add-an-agent-host-execution-profile.md) gives the eventual host a declared profile without pre-committing the substrate.
+
+**Question for Kris:** Is the supervised agent host the existing controller node (shared blast radius, two processors, four gigabytes, a few gigabytes of headroom), or a separate host to be named later? Recommended: a separate host, deferred until the hold's restart prerequisites are met - the headroom is marginal after a checkout, the shared blast radius couples the control plane to interactive sessions, and even a "yes" today could not be acted on under the hold.
