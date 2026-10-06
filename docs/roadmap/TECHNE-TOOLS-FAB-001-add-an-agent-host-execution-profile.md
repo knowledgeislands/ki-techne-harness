@@ -4,12 +4,12 @@ area: FAB
 title: Add agent-host profile
 theme: execution-fabric
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: 6cd3e92fd61bbe95d3b51e6a2fe64144f836bf7f
 created_at: 2026-09-26T15:55:00Z
-updated_at: 2026-10-05T08:16:00Z
+updated_at: 2026-10-06T21:35:49Z
 ---
 
 # Add Agent-Host Profile
@@ -36,13 +36,13 @@ One execution profile exists, hard-coded in `build_job()` in `apps/controller/sr
 
 ## Steps
 
-- [ ] Add `deploy/kubernetes/execution/agent-host.job.example.json`: a second Job literal with the decided fields - including `activeDeadlineSeconds: 28800`, `ttlSecondsAfterFinished: 600`, the `/workspace` `emptyDir` with `sizeLimit: 8Gi`, and `env: IDLE_TIMEOUT_SECONDS=1800` on the workload container - and pod label `techne.knowledgeislands.dev/profile: agent-host`.
-- [ ] Add `deploy/kubernetes/execution/agent-host-network-policy.yaml`: namespace `techne-execution`, podSelector on the profile label, egress DNS to `kube-system` plus TCP 443 only, and a comment block naming the placeholder destinations (model API, repository host).
-- [ ] Add `build_agent_host_job()` to `apps/controller/src/controller.py` as a separate literal; leave `build_job()` untouched and do not wire the new builder to `/run` dispatch.
-- [ ] Add `test_deterministic_profile_fields_are_unchanged` to `apps/controller/tests/test_controller.py`, asserting the four fields of `build_job()`, that its `spec` equals the `spec` of `deploy/kubernetes/execution/job.example.json`, and that `metadata` matches once the fixture's `namespace` key is dropped (the builder does not set it).
-- [ ] Add `test_agent_host_profile_shares_no_base`, asserting the agent-host Job carries the profile label and `activeDeadlineSeconds == 28800`, and that `build_job()` output is identical before and after calling `build_agent_host_job()`.
-- [ ] Extend `tooling/checks/controller.sh` so its `jq` check covers the new JSON and its `validate-manifests.rb` call covers `deploy/kubernetes/execution/*.yaml`.
-- [ ] Add a short "Execution profiles" section to `docs/guides/developer/README.md` naming both profiles and the non-regression rule, and stating that the idle reaper and operator-chat notification are declared, not yet implemented.
+- [x] Add `deploy/kubernetes/execution/agent-host.job.example.json`: a second Job literal with the decided fields - including `activeDeadlineSeconds: 28800`, `ttlSecondsAfterFinished: 600`, the `/workspace` `emptyDir` with `sizeLimit: 8Gi`, and `env: IDLE_TIMEOUT_SECONDS=1800` on the workload container - and pod label `techne.knowledgeislands.dev/profile: agent-host`.
+- [x] Add `deploy/kubernetes/execution/agent-host-network-policy.yaml`: namespace `techne-execution`, podSelector on the profile label, egress DNS to `kube-system` plus TCP 443 only, and a comment block naming the placeholder destinations (model API, repository host).
+- [x] Add `build_agent_host_job()` to `apps/controller/src/controller.py` as a separate literal; leave `build_job()` untouched and do not wire the new builder to `/run` dispatch.
+- [x] Add `test_deterministic_profile_fields_are_unchanged` to `apps/controller/tests/test_controller.py`, asserting the four fields of `build_job()`, that its `spec` equals the `spec` of `deploy/kubernetes/execution/job.example.json`, and that `metadata` matches once the fixture's `namespace` key is dropped (the builder does not set it).
+- [x] Add `test_agent_host_profile_shares_no_base`, asserting the agent-host Job carries the profile label and `activeDeadlineSeconds == 28800`, and that `build_job()` output is identical before and after calling `build_agent_host_job()`.
+- [x] Extend `tooling/checks/controller.sh` so its `jq` check covers the new JSON and its `validate-manifests.rb` call covers `deploy/kubernetes/execution/*.yaml`.
+- [x] Add a short "Execution profiles" section to `docs/guides/developer/README.md` naming both profiles and the non-regression rule, and stating that the idle reaper and operator-chat notification are declared, not yet implemented.
 
 ## Files touched
 
@@ -89,6 +89,46 @@ None.
 ### Roadmap
 
 None beyond this record.
+
+## Review
+
+### Delivered
+
+The additive agent-host execution profile is declared locally: a separate `build_agent_host_job()` builder, a matching Job fixture, a label-scoped egress allow-list, two non-regression tests, extended offline checks and a developer-guide section. Excluded, as the boundary states: no change to the deterministic profile, no wiring to `/run` dispatch, no image build, no agent-runtime install and nothing applied to any cluster. Baseline `6cd3e92fd61bbe95d3b51e6a2fe64144f836bf7f`; the result is the local commit that carries this packet.
+
+### Change Summary
+
+- `apps/controller/src/controller.py`: adds `build_agent_host_job()` as an independent literal with the profile label, `activeDeadlineSeconds: 28800`, `ttlSecondsAfterFinished: 600`, a `/workspace` `emptyDir` with `sizeLimit: 8Gi` and `IDLE_TIMEOUT_SECONDS=1800`. `build_job()` is untouched.
+- `apps/controller/tests/test_controller.py`: adds `ExecutionProfileTests` with `test_deterministic_profile_fields_are_unchanged` and `test_agent_host_profile_shares_no_base`.
+- `deploy/kubernetes/execution/agent-host.job.example.json` (new): the builder's output plus the `techne-execution` namespace, formatted by Biome.
+- `deploy/kubernetes/execution/agent-host-network-policy.yaml` (new): `techne-execution-agent-host-egress`, selecting the profile label, allowing DNS to `kube-system` and TCP 443, with a comment block naming the placeholder model-API and repository-host destinations.
+- `tooling/checks/controller.sh`: the `jq` check covers the new fixture and `validate-manifests.rb` covers `deploy/kubernetes/execution/*.yaml`.
+- `docs/guides/developer/README.md`: new "Execution profiles" section.
+- Choices within the plan's latitude: the agent-host literal keeps the deterministic profile's placeholder image, command, resources, non-root user and read-only root, with `/workspace` as the only writable path; `test_agent_host_profile_shares_no_base` also checks that the builder matches its fixture, as the deterministic test does.
+
+### Verification
+
+- `bun install --frozen-lockfile && bun run test`: pass, 16 controller tests OK, 8 manifest files validated, offline checks passed.
+- `bunx biome check .`: pass, after formatting the new fixture.
+- `ki repo audit --progress never`: PASS, 18 skills.
+- `git diff --check`: clean.
+- Deterministic-field `python3` assertion: pass.
+- Deterministic-fixture `jq -e`: `true`.
+- `git diff --quiet` from the baseline over `network-policy.yaml`, `access.yaml` and `job.example.json`: exit 0, unchanged.
+
+### Outstanding concerns
+
+- The TCP 443 egress rule has no destination selector, so until the placeholders are filled from TECHNE-TOOLS-OPS-008 it allows 443 to any address for agent-host pods. That is the recorded decision; it must be narrowed before any apply.
+- Nothing has been checked against a live API server: the manifests have only been checked for structure, offline.
+- The idle reaper and operator-chat notification are declared only.
+
+### Post-change review
+
+Goal met: a second profile exists and cannot change the first without a test failing, because the deterministic builder is compared field by field and against its fixture. Scope held to the listed files. Regression risk is low: dispatch still calls only `build_job()`, and the new policy selects only pods with the agent-host label, which no current code path creates. Ready for review.
+
+### Mini recap
+
+Declared the agent-host profile and its guard locally, with all stated gates green and the deterministic profile shown to be unchanged. The main open concern is the destination-unbounded 443 rule pending OPS-008. Proposed learning route: none beyond the developer-guide section already added.
 
 ## Discussion
 

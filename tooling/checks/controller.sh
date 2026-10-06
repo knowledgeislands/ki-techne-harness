@@ -6,11 +6,12 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 PYTHONDONTWRITEBYTECODE=1 python3 -c 'import pathlib; compile(pathlib.Path("'"${repo_root}"'/apps/controller/src/controller.py").read_text(encoding="utf-8"), "controller.py", "exec")'
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "${repo_root}/apps/controller/tests" -p 'test_*.py' -v
 
-jq --exit-status . "${repo_root}/apps/controller/fixtures/targets.local.json" "${repo_root}/apps/controller/fixtures/targets.remote.json" "${repo_root}/apps/controller/fixtures/telegram-update.json" "${repo_root}/deploy/kubernetes/execution/job.example.json" >/dev/null
+jq --exit-status . "${repo_root}/apps/controller/fixtures/targets.local.json" "${repo_root}/apps/controller/fixtures/targets.remote.json" "${repo_root}/apps/controller/fixtures/telegram-update.json" "${repo_root}/deploy/kubernetes/execution/job.example.json" "${repo_root}/deploy/kubernetes/execution/agent-host.job.example.json" >/dev/null
 
 ruby "${repo_root}/tooling/checks/validate-manifests.rb" \
   "${repo_root}/deploy/kubernetes/controller"/*.yaml \
-  "${repo_root}/deploy/kubernetes/target"/*.yaml
+  "${repo_root}/deploy/kubernetes/target"/*.yaml \
+  "${repo_root}/deploy/kubernetes/execution"/*.yaml
 
 ruby -e 'require "yaml"; ARGV.each { |path| YAML.parse_stream(File.read(path)) }' \
   "${repo_root}/infra/aws"/*.yaml

@@ -154,6 +154,73 @@ def build_job(execution_id: str, job_name: str, image: str = DEFAULT_IMAGE) -> d
     }
 
 
+def build_agent_host_job(execution_id: str, job_name: str, image: str = DEFAULT_IMAGE) -> dict[str, Any]:
+    # Declared only: not wired to dispatch, and deliberately shares no base with build_job().
+    label_id = job_name.removeprefix(f"{JOB_PREFIX}-")
+    return {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+            "name": job_name,
+            "labels": {
+                "app.kubernetes.io/name": "techne-execution",
+                "techne.knowledgeislands.dev/execution": label_id,
+                "techne.knowledgeislands.dev/profile": "agent-host",
+            },
+            "annotations": {"techne.knowledgeislands.dev/execution-id": execution_id},
+        },
+        "spec": {
+            "backoffLimit": 0,
+            "activeDeadlineSeconds": 28800,
+            "ttlSecondsAfterFinished": 600,
+            "template": {
+                "metadata": {
+                    "labels": {
+                        "app.kubernetes.io/name": "techne-execution",
+                        "techne.knowledgeislands.dev/execution": label_id,
+                        "techne.knowledgeislands.dev/profile": "agent-host",
+                    }
+                },
+                "spec": {
+                    "automountServiceAccountToken": False,
+                    "restartPolicy": "Never",
+                    "serviceAccountName": "techne-execution",
+                    "securityContext": {
+                        "runAsNonRoot": True,
+                        "seccompProfile": {"type": "RuntimeDefault"},
+                    },
+                    "volumes": [{"name": "workspace", "emptyDir": {"sizeLimit": "8Gi"}}],
+                    "containers": [
+                        {
+                            "name": "workload",
+                            "image": image,
+                            "imagePullPolicy": "IfNotPresent",
+                            "command": [
+                                "/bin/sh",
+                                "-c",
+                                f"printf '%s\\n' '{json.dumps({'execution_id': execution_id, 'outcome': 'completed'}, separators=(',', ':'))}'",
+                            ],
+                            "env": [{"name": "IDLE_TIMEOUT_SECONDS", "value": "1800"}],
+                            "volumeMounts": [{"name": "workspace", "mountPath": "/workspace"}],
+                            "resources": {
+                                "requests": {"cpu": "10m", "memory": "16Mi"},
+                                "limits": {"cpu": "100m", "memory": "64Mi"},
+                            },
+                            "securityContext": {
+                                "allowPrivilegeEscalation": False,
+                                "capabilities": {"drop": ["ALL"]},
+                                "readOnlyRootFilesystem": True,
+                                "runAsNonRoot": True,
+                                "runAsUser": 65534,
+                            },
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
 class TelegramClient:
     def __init__(self, token_file: str, expected_username: str, timeout: int = 35) -> None:
         self._token_file = token_file

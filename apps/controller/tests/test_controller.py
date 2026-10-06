@@ -233,5 +233,41 @@ class ControllerTests(unittest.TestCase):
                 controller_module.load_targets(str(path))
 
 
+EXECUTION_DIR = Path(__file__).parents[3] / "deploy" / "kubernetes" / "execution"
+
+
+def load_fixture(name: str) -> dict:
+    return json.loads((EXECUTION_DIR / name).read_text(encoding="utf-8"))
+
+
+def without_namespace(metadata: dict) -> dict:
+    return {key: value for key, value in metadata.items() if key != "namespace"}
+
+
+class ExecutionProfileTests(unittest.TestCase):
+    def test_deterministic_profile_fields_are_unchanged(self) -> None:
+        job = controller_module.build_job("telegram:42:local", "techne-local-42")
+        spec = job["spec"]
+        pod = spec["template"]["spec"]
+        self.assertEqual(spec["activeDeadlineSeconds"], 300)
+        self.assertEqual(spec["backoffLimit"], 0)
+        self.assertEqual(pod["restartPolicy"], "Never")
+        self.assertIs(pod["containers"][0]["securityContext"]["readOnlyRootFilesystem"], True)
+        fixture = load_fixture("job.example.json")
+        self.assertEqual(spec, fixture["spec"])
+        self.assertEqual(job["metadata"], without_namespace(fixture["metadata"]))
+
+    def test_agent_host_profile_shares_no_base(self) -> None:
+        before = controller_module.build_job("telegram:42:local", "techne-local-42")
+        job = controller_module.build_agent_host_job("telegram:42:local", "techne-local-42")
+        after = controller_module.build_job("telegram:42:local", "techne-local-42")
+        self.assertEqual(before, after)
+        self.assertEqual(job["spec"]["template"]["metadata"]["labels"]["techne.knowledgeislands.dev/profile"], "agent-host")
+        self.assertEqual(job["spec"]["activeDeadlineSeconds"], 28800)
+        fixture = load_fixture("agent-host.job.example.json")
+        self.assertEqual(job["spec"], fixture["spec"])
+        self.assertEqual(job["metadata"], without_namespace(fixture["metadata"]))
+
+
 if __name__ == "__main__":
     unittest.main()
