@@ -8,7 +8,7 @@ Arcadia owns the architecture, roles, invariants and decision criteria. This rep
 
 ## Dependencies
 
-Use Bun `1.4.1` from the repository root. Run dependency installation only at the root. Package manifests may declare tasks and dependencies, but package-local lockfiles and package-local `node_modules` directories are prohibited.
+Use Bun `1.4.2` from the repository root. Run dependency installation only at the root. Package manifests may declare tasks and dependencies, but package-local lockfiles and package-local `node_modules` directories are prohibited.
 
 ## Secrets and operational state
 

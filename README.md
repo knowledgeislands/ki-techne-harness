@@ -26,7 +26,7 @@ Install and run the operator command from [`knowledgeislands/tools-techne`](http
 
 ## Workspace
 
-Use Bun `1.4.1` at the repository root:
+Use Bun `1.4.2` at the repository root:
 
 ```sh
 bun install

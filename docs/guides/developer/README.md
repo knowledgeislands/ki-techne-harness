@@ -4,7 +4,7 @@ Use this guide when changing the controller application, Kubernetes resources, A
 
 ## Prepare the workspace
 
-Use Bun `1.4.1` from the repository root and install dependencies only there:
+Use Bun `1.4.2` from the repository root and install dependencies only there:
 
 ```sh
 bun install --frozen-lockfile
