@@ -4,12 +4,12 @@ area: FAB
 title: Add agent-host profile
 theme: execution-fabric
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 6cd3e92fd61bbe95d3b51e6a2fe64144f836bf7f
 created_at: 2026-09-26T15:55:00Z
-updated_at: 2026-10-06T21:35:49Z
+updated_at: 2026-10-06T22:43:40Z
 ---
 
 # Add Agent-Host Profile
@@ -129,6 +129,10 @@ Goal met: a second profile exists and cannot change the first without a test fai
 ### Mini recap
 
 Declared the agent-host profile and its guard locally, with all stated gates green and the deterministic profile shown to be unchanged. The main open concern is the destination-unbounded 443 rule pending OPS-008. Proposed learning route: none beyond the developer-guide section already added.
+
+## Done
+
+Accepted 2026-10-07 by Kris Brown on the review packet above.
 
 ## Discussion
 
