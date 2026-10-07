@@ -4,12 +4,14 @@ area: OPS
 title: Provision supervised agent host
 theme: operations
 horizon: triage
-status: draft
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: null
+intake_disposition: merged
+intake_disposition_target: TECHNE-TOOLS-OPS-009
 created_at: 2026-09-26T15:55:00Z
-updated_at: 2026-10-05T08:10:00Z
+updated_at: 2026-10-07T00:31:48Z
 ---
 
 # Provision Supervised Agent Host
@@ -29,6 +31,16 @@ This item exists because the earlier conclusion that the substrate structurally 
 ## Boundary
 
 This item does not provision anything. It does not enable the SSH service, install an authorised key, install a runtime, resize the instance, enlarge the volume, or open a port. Each of those is a change requiring explicit approval from the exposure authority, and the purpose of this record is to put the decision and its cost in one place first.
+
+## Intake disposition
+
+- **Outcome:** merged into `TECHNE-TOOLS-OPS-009`.
+- **Rationale:** this record's owner question was whether the supervised agent host is the existing controller node or a separate host. `KI-ARCADIA-GOV-020` answered it with a separate host, and `TECHNE-TOOLS-OPS-009` delivered that host's stack, runbook, kill switch and teardown, leaving the controller unchanged. The remaining open questions are answered there or in GOV-020: capacity and blast radius by a separate `t3.medium` host with its own network; access by Tailscale SSH with no session-manager or OpenSSH listener; the mesh access policy by the runbook's tailnet policy, recorded in the Tailscale admin console; and revocation by the runbook's kill-switch and teardown steps. Nothing in this record remains to deliver separately.
+- **Approval:** closed by Claude under Kris Brown's delegation of 2026-10-07 02:25 CEST, which left this disposition to Claude's judgement.
+
+## Done
+
+Closed 2026-10-07 as merged into `TECHNE-TOOLS-OPS-009`, under Kris Brown's delegation. No delivery evidence is claimed for this record.
 
 ## Discussion
 
