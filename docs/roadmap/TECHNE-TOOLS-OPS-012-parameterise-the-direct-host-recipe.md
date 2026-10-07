@@ -52,7 +52,7 @@ Every per-host name already follows the host id: stack and host `ki-techne-<id>`
 ## Boundary
 
 - In scope: a `recipes/direct-host/recipe.toml` manifest; a stack parameter for the host name; environment-variable inputs in the stack scripts and host scripts for every binding value; a configurable personal instruction file list; offline checks; the operator runbook.
-- Out of scope: the `techne` CLI, binding loader and provider adapter, which are [TECHNE-TOOL-CLI-005](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-005-recipe-and-binding-commands.md) in `tools-techne`; Kris's binding files, which are `DOTFILES-UE-070` in chezmoi; moving the existing stack template or scripts, which the manifest points at in place; a second recipe, binding or provider other than as offline test fixtures.
+- Out of scope: the `techne` CLI, binding loader and provider adapter, which are `TECHNE-TOOL-CLI-005` in `tools-techne`; Kris's binding files, which are `DOTFILES-UE-070` in chezmoi; moving the existing stack template or scripts, which the manifest points at in place; a second recipe, binding or provider other than as offline test fixtures.
 - No remote authority beyond [GDR-KI-ARCADIA-004](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/GDR-KI-ARCADIA-004-standing-agent-host-exemption-from-the-techne-programme-hold.md), the standing exemption for the one existing host. The only remote check is a CloudFormation change set for the first binding, run by Kris under that exemption, which must show no change. No second live binding, other provider or tailnet change.
 
 ## Current state
@@ -90,7 +90,7 @@ No `recipes/` directory exists. The stack, `operations/aws/agent-host/` scripts 
 
 ## Dependencies / blocks
 
-No `blocks` or `blocked_by`. This record and [TECHNE-TOOL-CLI-005](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-005-recipe-and-binding-commands.md) are built in parallel against the GOV-025 schema; neither blocks the other's build. CLI-005's release reads this manifest, so it is integrated against this record's delivered manifest before it ships, and that release is applied together with Kris's binding (`DOTFILES-UE-070` in chezmoi). These are sequencing conditions, not recorded dependencies.
+No `blocks` or `blocked_by`. This record and `TECHNE-TOOL-CLI-005` in `tools-techne` are built in parallel against the GOV-025 schema; neither blocks the other's build. CLI-005's release reads this manifest, so it is integrated against this record's delivered manifest before it ships, and that release is applied together with Kris's binding (`DOTFILES-UE-070` in chezmoi). These are sequencing conditions, not recorded dependencies.
 
 ## Documentation impact
 
