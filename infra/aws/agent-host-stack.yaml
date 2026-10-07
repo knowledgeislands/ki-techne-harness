@@ -21,7 +21,7 @@ Parameters:
   OperatorUser:
     Type: String
     AllowedPattern: '[a-z][a-z0-9-]{0,30}'
-    Default: kris
+    Default: techne
   TailscaleTag:
     Type: String
     AllowedPattern: 'tag:[a-z0-9-]+'
@@ -265,6 +265,27 @@ Resources:
             useradd --create-home --shell /bin/bash '${OperatorUser}'
           fi
           sudo -u '${OperatorUser}' -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+
+          # GitHub HTTPS credentials come from Parameter Store on demand, so the
+          # token is never written to disk on the host.
+          cat > /usr/local/bin/git-credential-ki-agent-host <<'HELPER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          [[ $# -eq 1 && $1 == get ]] || exit 0
+          protocol=
+          host=
+          while IFS='=' read -r key value && [[ -n $key ]]; do
+            case $key in
+              protocol) protocol=$value ;;
+              host) host=$value ;;
+            esac
+          done
+          [[ $protocol == https && $host == github.com ]] || exit 0
+          token=$(/snap/bin/aws ssm get-parameter --region '${AWS::Region}' --name '${ParameterPrefix}/github-token' --with-decryption --query Parameter.Value --output text)
+          printf 'username=x-access-token\npassword=%s\n' "$token"
+          HELPER
+          chmod 0755 /usr/local/bin/git-credential-ki-agent-host
+          sudo -u '${OperatorUser}' -H git config --global credential.https://github.com.helper ki-agent-host
 
           curl -fsSL https://tailscale.com/install.sh | sh
           umask 077

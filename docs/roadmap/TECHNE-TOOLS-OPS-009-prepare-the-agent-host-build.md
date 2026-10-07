@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: f4e4ba22dbd65368f5a85216e8c0233789854dac
 created_at: 2026-10-07T00:10:08Z
-updated_at: 2026-10-07T00:10:08Z
+updated_at: 2026-10-07T00:30:34Z
 ---
 
 # Prepare Agent-Host Build
@@ -99,11 +99,13 @@ A complete local provisioning path for the agent host, within the boundary above
   - **Egress:** TCP 443, TCP 80 for signed Ubuntu archives (the Tailscale installer uses apt), UDP 3478 and UDP 41641. DNS needs no rule because the VPC resolver is unfiltered.
   - **Role:** `ssm:GetParameter` and `ssm:GetParameters` on `/ki/techne/agent-host/*` only, and `kms:Decrypt` only through Parameter Store.
   - **Boot:** reads the auth key into a mode-0600 file under `/run`, joins with `tailscale up --auth-key=file:... --ssh --advertise-tags=tag:ki-techne-agent-host`, and deletes the file; the key never reaches a command argument or log. Installs Git, `tmux`, `jq`, checksum-verified Node.js `24.x`, the AWS CLI and Claude Code for the operator user.
-  - **Operator OS user `kris`**, non-root and without `sudo`.
+  - **Operator OS user `techne`**, non-root and without `sudo`. The first delivery used `kris`; Kris directed the change to `techne` on 2026-10-07.
+  - **GitHub credential helper:** the boot script installs `git-credential-ki-agent-host`, which answers only HTTPS `get` requests for `github.com` by reading `/ki/techne/agent-host/github-token` through the instance role, and sets it as `techne`'s helper for `https://github.com`. It writes nothing to disk.
   - **Defaults:** `t3.medium`, 40 GB encrypted `gp3`, IMDSv2 required; the controller's pinned image.
 - `operations/aws/agent-host/provision.sh`, `stop.sh`, `destroy.sh`: account-checked; provisioning refuses an existing stack or a missing auth-key parameter (metadata check only); the kill switch uses the least-privilege `knowledge-islands-techne-agent-host` profile and matches all three identifying tags; teardown requires `CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host`, refuses a stack without `ki-agent-host-id = agent-host`, and deletes the three parameters after the stack.
 - `tooling/checks/agent-host-stack.rb`: offline invariants — no controller reference, no ingress, exact tags on every tagged resource, the exact egress set, the role scope, IMDSv2, encryption, the single security group, every `Fn::Sub` reference resolving to a parameter, the Tailscale join line, and `bash -n` plus shellcheck of the rendered user data.
 - `tooling/checks/controller.sh`, `operations/aws/validate-cloudformation.sh`, `operations/README.md`, `docs/guides/operator/README.md`, `docs/guides/operator/agent-host.md`: wiring and the runbook.
+- Follow-up on 2026-10-07: the operator user became `techne`; `tooling/checks/agent-host-stack.rb` now pins that default, rejects `sudo` or extra groups for the user, and runs the extracted credential helper against a stub `aws`; the runbook gained a paste-ready tailnet policy, the auth-key settings, and the Claude Code and GitHub credential steps.
 
 No deviation from the GOV-020 bounds. Points where a bound needed an implementation choice are listed under Outstanding concerns for Kris.
 
@@ -117,6 +119,7 @@ All local and offline; nothing contacted AWS, Tailscale or GitHub.
 - `ki repo audit --repo .`: PASS, 18 skills.
 - `git diff --check`: clean.
 - Negative checks of `tooling/checks/agent-host-stack.rb` against altered copies: a braced shell variable in the user data, a changed `ki-lifecycle` tag, an added ingress list and an unquoted shell expansion were each rejected.
+- Follow-up on 2026-10-07, for the `techne` user and the credential helper: `bun run test`, `bunx biome check .`, `bunx rumdl check .`, `ki repo audit --repo .` and `git diff --check` pass. Altered copies of the template were each rejected: operator default `kris`, the user added to `sudo`, a helper that answers any host, and a helper that reads `model-api-key`. The tailnet policy snippet is unvalidated against a live tailnet; the runbook names the points to check.
 - Not run, because they contact AWS: `bun run self:aws:validate`, `provision.sh`, `stop.sh`, `destroy.sh`.
 
 ### Outstanding concerns
@@ -136,6 +139,10 @@ The goal is met locally: the path to build, reach, stop and remove the host exis
 Added a separate CloudFormation stack, three operations scripts, an offline structural check and an operator runbook for the GOV-020 agent host, with local gates passing and nothing run remotely. Proposed learning routes: the component-naming principle and the security-group limits on name-based egress could inform a Techne Engineering Practice note in Arcadia; a DNS firewall or egress proxy is a candidate future item if the prototype continues.
 
 ## Discussion
+
+### Credentials decision - 2026-10-07
+
+Decided by Claude under Kris's delegation, 2026-10-07. Claude Code on the host signs in interactively as Kris, by the device or browser flow over SSH, so no model API key is stored and `/ki/techne/agent-host/model-api-key` stays unused. GitHub uses a fine-grained personal access token that Kris creates, limited to the Knowledge Islands repositories Kris selects, with Contents read and write and Metadata read only, expiring after 30 days. It is stored at `/ki/techne/agent-host/github-token` and used by `techne`'s Git credential helper, which the boot script installs. Rationale: an interactive login keeps model access tied to Kris's own account and revocable there, with no long-lived key to store; a fine-grained, short-lived, repository-limited token bounds what a session on the host can change on GitHub.
 
 ### Why a separate stack
 
