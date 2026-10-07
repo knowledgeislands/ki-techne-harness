@@ -163,7 +163,7 @@ The boot script ends by printing `ki-agent-host bootstrap complete`. It also wri
 3. In Zed, open the `ki-techne-agent-host` remote with `upload_binary_over_ssh` enabled; the host never downloads the Zed server itself.
 4. Delete the spent auth-key parameter: `aws ssm delete-parameter --profile knowledge-islands-techne --region eu-west-1 --name /ki/techne/agent-host/tailscale-auth-key`. Tailscale keeps the node joined across reboots.
 
-The `techne` user installs anything else it needs, such as Bun, mise or `ki`, in its own home directory.
+Set up the `techne` workspace next, as [Workspace setup](#workspace-setup) describes, once the GitHub token is in place.
 
 ## Credentials on the host
 
@@ -194,6 +194,37 @@ The boot script installs `/usr/local/bin/git-credential-ki-agent-host` and sets 
 
 To rotate the token, create a new one, overwrite the parameter by adding `--overwrite` to the command above, and revoke the old one in GitHub. The token expires after 30 days whether or not the host is still running.
 
+## Workspace setup
+
+One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a tool pin or Kris's Claude instructions change:
+
+```sh
+bash operations/aws/agent-host/setup.sh          # add --pull to fast-forward clean checkouts
+```
+
+It needs `chezmoi` on the Mac and uses SSH to `ki-techne-agent-host` only; set `AGENT_HOST_SSH` for another SSH name. It renders Kris's Claude instructions with `chezmoi cat`, copies them with the host scripts over one connection and runs `host/converge.sh` there. That script converges:
+
+- the Git identity from the Mac's global configuration and the house pull, branch and push settings;
+- the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/kit/<organisation>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
+- mise and its global pins for Bun, Node and the Codex CLI, each repository's own mise tools and its Bun dependencies;
+- one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc` and Husky's `init.sh`, so tools are on `PATH` in non-interactive SSH and Git hooks too;
+- the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;
+- Kris's Claude instructions in `~/.claude`, each with a header naming its source, and `autoMemoryEnabled` set to `false`.
+
+It never copies credentials, MCP configuration or any other part of `~/.claude`. It backs up any file it replaces under `~/.local/state/ki-agent-host/backups/`. A run that finds nothing to do ends with `no changes`; a failed step makes it exit non-zero. On the host, `bash host/converge.sh` from the harness checkout does the same without the Claude instructions.
+
+Two steps remain Kris's. Sign Claude Code in as [Claude Code](#claude-code) describes. Sign Codex in by running `codex login` as `techne` on the host, which prints a sign-in URL to approve on the Mac.
+
+### Status
+
+Before you stop or tear down the host, and whenever you want to know what is at risk, run the read-only report from the Mac:
+
+```sh
+bash operations/aws/agent-host/status.sh
+```
+
+For each repository it lists the branch, uncommitted files, commits that no remote branch contains, stashes and the ahead and behind counts as of the last fetch, and flags any with work at risk. It also lists the GitHub token's expiry, the Tailscale node key's expiry and the date the prototype authority lapses. It changes and fetches nothing.
+
 ## A working session
 
 ![One working session: Kris connects through the helper and Zed over Tailscale, runs Claude Code on the host, and pushes only on request through the credential helper](agent-host-session.svg)
@@ -206,7 +237,7 @@ In that session Claude Code runs as `techne` and commits explicit paths. It push
 
 Do both steps; either one alone stops access.
 
-1. Stop the host, which ends every session on it. With `assume knowledge-islands-techne-agent-host`:
+1. Stop the host, which ends every session on it. If time allows, run [Status](#status) first so nothing unlanded is lost. With `assume knowledge-islands-techne-agent-host`:
 
    ```sh
    bash operations/aws/agent-host/stop.sh

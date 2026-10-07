@@ -4,7 +4,7 @@ This directory contains local lifecycle implementations owned by the Techne Harn
 
 ## Ownership
 
-- `aws/agent-host/` provisions, stops and destroys the prototype agent host, separately from the controller.
+- `aws/agent-host/` provisions, stops and destroys the prototype agent host, separately from the controller, and sets up and reports on its `techne` workspace over SSH.
 - `aws/controller/` provisions, uploads, configures and destroys the retained controller.
 - `aws/target/` provisions, uploads and destroys disposable execution targets.
 - `aws/validate-cloudformation.sh` validates the harness's AWS templates.
