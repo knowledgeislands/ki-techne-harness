@@ -63,7 +63,6 @@ auto_memory = "disabled"
 adapter = "roadmap"
 
 [skills.ki-work-roadmap]
-areas = ["CTRL", "FAB", "OPS"]
 # Mirrors the apps/ packages and the top-level deployment directories.
 components = [
   "cli",
@@ -73,6 +72,11 @@ components = [
   "operations",
   "recipes",
 ]
+
+[skills.ki-work-roadmap.areas]
+CTRL = "Controller"
+FAB = "Execution fabric"
+OPS = "Operations"
 
 # -----------------------------------------------------------------------------
 # Relationships
