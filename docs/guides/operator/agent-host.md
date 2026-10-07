@@ -27,6 +27,34 @@ Two AWS profiles are in play. The build and teardown use the admin profile `know
 
 The stack is `infra/aws/agent-host-stack.yaml`; the scripts are in `operations/aws/agent-host/`.
 
+## Recipe and binding
+
+The host is the first binding, `agent-host`, of the harness recipe `direct-host`, whose agents run on the host itself. The recipe's manifest, [`recipes/direct-host/recipe.toml`](../../../recipes/direct-host/recipe.toml), names the stack and scripts, the fields a binding fills in, the environment variable each script reads for each field, the resource selectors and recipe-owned tags, and the footprint a binding leaves. A binding is a person's named instance, held outside this repository at `~/.config/techne/hosts/<name>.toml` with schema `techne/host-binding/v1`; it names its provider by carrying exactly one provider table, here `[aws]`. The `techne` CLI in `tools-techne` reads both and runs these scripts with every variable set from the binding; the manifest and the variables are the only contract between the two repositories.
+
+Run by hand with no variable set, every script behaves as the `agent-host` binding: each default below is that binding's value. A field the manifest marks required has no recipe default, so the binding must give it; the scripts still default it to today's value. A recipe default may be derived from the binding name, written `{name}`.
+
+| Binding field | Recipe default | Variable | Read by |
+| --- | --- | --- | --- |
+| `host_name` | `ki-techne-{name}` | `AGENT_HOST_NAME` | `setup.sh`, `provision.sh`, `stop.sh` |
+| `tailscale_name` | `ki-techne-{name}` | `AGENT_HOST_TAILSCALE_NAME` | `setup.sh`, `status.sh`, `provision.sh` |
+| `tailscale_tag` | `tag:ki-techne-{name}` | `AGENT_HOST_TAILSCALE_TAG` | `provision.sh` |
+| `repositories` | `operations/aws/agent-host/host/repositories.txt` | `AGENT_HOST_REPOSITORIES` | `setup.sh` |
+| `workspace` | `~/workspaces/kit` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh` |
+| `aws.account` | required | `EXPECTED_AWS_ACCOUNT` | `provision.sh`, `stop.sh`, `destroy.sh` |
+| `aws.region` | required | `AWS_REGION` | `provision.sh`, `stop.sh`, `destroy.sh` |
+| `aws.admin_profile` | required | `AWS_PROFILE` | `provision.sh`, `destroy.sh` |
+| `aws.operator_profile` | required | `AWS_PROFILE` | `stop.sh` |
+| `aws.tag` | `{name}` | `AGENT_HOST_ID` | `provision.sh`, `stop.sh`, `destroy.sh` |
+| `aws.stack_name` | `ki-techne-{name}` | `AGENT_HOST_STACK_NAME` | `provision.sh`, `destroy.sh` |
+| `aws.parameter_prefix` | `/ki/techne/{name}` | `AGENT_HOST_PARAMETER_PREFIX` | `provision.sh`, `destroy.sh` |
+| `aws.operator_role` | `ki-techne-{name}-operator` | none | the CLI's provider adapter only |
+| `aws.instance_type` | `t3.medium` | `AGENT_HOST_INSTANCE_TYPE` | `provision.sh` |
+| `aws.volume_size` | `40` | `AGENT_HOST_VOLUME_SIZE` | `provision.sh` |
+
+`setup.sh` and `status.sh` read no AWS variable: they reach the host by its Tailscale name over SSH, and pass the workspace to the host scripts, which expand a leading `~/` to the operator's home there. `provision.sh` passes the host name, Tailscale name and tag, tag value and parameter prefix to the stack's `HostName`, `TailscaleHostname`, `TailscaleTag`, `AgentHostId` and `ParameterPrefix` parameters, and tags the stack with the tag value. `AGENT_HOST_INSTRUCTIONS` is not a binding field: it is the person's own list of Claude instruction files that `setup.sh` renders, space-separated names under `~/.claude`, defaulting to `CLAUDE.md communication.md delegation.md memory-scope.md markdown.md`.
+
+`bun run test` checks the manifest offline: every binding field declared once, in its provider-neutral or provider section, no AWS concept outside `[providers.aws]`, each listed script reading its variable, and each script default equal to the `agent-host` binding's value.
+
 ## Egress and what a security group cannot enforce
 
 The security group allows only outbound TCP 443 (GitHub, the model API, package registries, Tailscale coordination and DERP relays), TCP 80 (signed Ubuntu package archives), UDP 3478 (Tailscale STUN) and UDP 41641 (Tailscale direct connections to peers on the default port).
@@ -203,14 +231,14 @@ One rerunnable command from the Mac converges `techne`'s workspace on the host. 
 bash operations/aws/agent-host/setup.sh          # add --pull to fast-forward clean checkouts
 ```
 
-It needs `chezmoi` on the Mac and uses SSH to `ki-techne-agent-host` only; set `AGENT_HOST_SSH` for another SSH name. It renders Kris's Claude instructions with `chezmoi cat`, copies them with the host scripts over one connection and runs `host/converge.sh` there. That script converges:
+It needs `chezmoi` on the Mac and uses SSH to the binding's Tailscale name only, `ki-techne-agent-host` unless `AGENT_HOST_TAILSCALE_NAME` is set. It renders Kris's Claude instructions with `chezmoi cat`, copies them with the host scripts over one connection and runs `host/converge.sh` there. That script converges:
 
 - the Git identity from the Mac's global configuration and the house pull, branch and push settings;
 - the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/kit/<organisation>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
 - mise and its global pins for Bun, Node and the Codex CLI, each repository's own mise tools and its Bun dependencies;
 - one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc` and Husky's `init.sh`, so tools are on `PATH` in non-interactive SSH and Git hooks too;
 - the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;
-- Kris's Claude instructions in `~/.claude`, each with a header naming its source, and `autoMemoryEnabled` set to `false`.
+- Kris's Claude instructions in `~/.claude`, the files `AGENT_HOST_INSTRUCTIONS` names, each with a header naming its source, and `autoMemoryEnabled` set to `false`.
 
 It never copies credentials, MCP configuration or any other part of `~/.claude`. It backs up any file it replaces under `~/.local/state/ki-agent-host/backups/`. A run that finds nothing to do ends with `no changes`; a failed step makes it exit non-zero. On the host, `bash host/converge.sh` from the harness checkout does the same without the Claude instructions.
 

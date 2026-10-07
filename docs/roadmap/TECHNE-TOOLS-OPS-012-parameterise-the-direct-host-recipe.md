@@ -7,12 +7,12 @@ purpose: capability
 project: agent-host
 transferred_from: knowledgeislands/ki-arcadia-principal:KI-ARCADIA-GOV-025
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T12:58:15Z
-updated_at: 2026-10-07T12:58:15Z
+updated_at: 2026-10-07T14:05:00Z
 ---
 
 # Parameterise Direct-Host Recipe
@@ -60,14 +60,14 @@ No `recipes/` directory exists. The stack, `operations/aws/agent-host/` scripts 
 
 ## Steps
 
-- [ ] Add `recipes/direct-host/recipe.toml`: `schema = "techne/recipe/v1"`, `name`, `summary`, `runtime = "direct"`, `providers = ["aws"]`; provider-neutral `[paths]` for `setup.sh` and `status.sh` and `[parameters.<field>]` for `host_name`, `tailscale_name`, `tailscale_tag`, `repositories` and `workspace`, each stating whether it is required or derived from the binding name and the environment variable the scripts read; one `[providers.aws]` section with `[providers.aws.paths]` for `infra/aws/agent-host-stack.yaml`, `provision.sh`, `stop.sh` and `destroy.sh`, `[providers.aws.parameters.<field>]` for `tag`, `stack_name`, `parameter_prefix`, `account`, `region`, `admin_profile`, `operator_profile`, `operator_role`, `instance_type` and `volume_size`, and the resource selectors the adapter needs (tag key, derived names, operator role); the recipe-owned tags (`ki-lifecycle`, `ki-work-item`); and a `footprint` list for `aws` (stack, parameters, operator role and profile) and provider-neutral (tailnet device and tag, SSH entry) that `teardown` reports as remaining.
-- [ ] Turn the literal host name in `infra/aws/agent-host-stack.yaml` into a stack parameter defaulting to `ki-techne-agent-host`, used by the `Name` tag, cloud-init `set-hostname` and `/etc/hosts`, `tailscale up --hostname` and the `TailscaleHostname` output.
-- [ ] Read the AWS values (tag, stack, parameter prefix, profiles, account, region, instance type, volume size) from environment variables in `provision.sh`, `destroy.sh` and `stop.sh`, each defaulting to today's value, including the `stop.sh` `Name` filter and the `CONFIRM_DESTROY_AGENT_HOST` guard.
-- [ ] Read the provider-neutral values (host name, repositories, workspace) from environment variables in `setup.sh`, `status.sh`, `host/converge.sh` and `host/status.sh`, so those need nothing AWS-specific.
-- [ ] Make the personal instruction file list in `setup.sh` configurable through an environment variable, defaulting to today's five files.
-- [ ] Extend the offline checks: template parameter and default checks, ShellCheck of every changed script, and a manifest check that every binding field in the table above is declared exactly once, as provider-neutral or under `[providers.aws]`, and that no provider-neutral entry names an AWS concept.
-- [ ] Update `docs/guides/operator/agent-host.md` to describe `direct-host` as a recipe, the binding fields and the environment variables each script reads.
-- [ ] Hand Kris the no-change change set command for the first binding's values; record the result in Review.
+- [x] Add `recipes/direct-host/recipe.toml`: `schema = "techne/recipe/v1"`, `name`, `summary`, `runtime = "direct"`, `providers = ["aws"]`; provider-neutral `[paths]` for `setup.sh` and `status.sh` and `[parameters.<field>]` for `host_name`, `tailscale_name`, `tailscale_tag`, `repositories` and `workspace`, each stating whether it is required or derived from the binding name and the environment variable the scripts read; one `[providers.aws]` section with `[providers.aws.paths]` for `infra/aws/agent-host-stack.yaml`, `provision.sh`, `stop.sh` and `destroy.sh`, `[providers.aws.parameters.<field>]` for `tag`, `stack_name`, `parameter_prefix`, `account`, `region`, `admin_profile`, `operator_profile`, `operator_role`, `instance_type` and `volume_size`, and the resource selectors the adapter needs (tag key, derived names, operator role); the recipe-owned tags (`ki-lifecycle`, `ki-work-item`); and a `footprint` list for `aws` (stack, parameters, operator role and profile) and provider-neutral (tailnet device and tag, SSH entry) that `teardown` reports as remaining.
+- [x] Turn the literal host name in `infra/aws/agent-host-stack.yaml` into a stack parameter defaulting to `ki-techne-agent-host`, used by the `Name` tag, cloud-init `set-hostname` and `/etc/hosts`, `tailscale up --hostname` and the `TailscaleHostname` output.
+- [x] Read the AWS values (tag, stack, parameter prefix, profiles, account, region, instance type, volume size) from environment variables in `provision.sh`, `destroy.sh` and `stop.sh`, each defaulting to today's value, including the `stop.sh` `Name` filter and the `CONFIRM_DESTROY_AGENT_HOST` guard.
+- [x] Read the provider-neutral values (host name, repositories, workspace) from environment variables in `setup.sh`, `status.sh`, `host/converge.sh` and `host/status.sh`, so those need nothing AWS-specific.
+- [x] Make the personal instruction file list in `setup.sh` configurable through an environment variable, defaulting to today's five files.
+- [x] Extend the offline checks: template parameter and default checks, ShellCheck of every changed script, and a manifest check that every binding field in the table above is declared exactly once, as provider-neutral or under `[providers.aws]`, and that no provider-neutral entry names an AWS concept.
+- [x] Update `docs/guides/operator/agent-host.md` to describe `direct-host` as a recipe, the binding fields and the environment variables each script reads.
+- [x] Hand Kris the no-change change set command for the first binding's values; record the result in Review.
 
 ## Files touched
 
@@ -109,6 +109,43 @@ The recipe manifest schema `techne/recipe/v1` is specified by the manifest check
 
 This record. Its origin is KI-ARCADIA-GOV-025, which records this identifier.
 
+## Review
+
+### Delivered
+
+GOV-025's H1 within the boundary, offline only: the `direct-host` manifest, a parameterised stack, binding inputs in every stack and host script, the configurable instruction list, offline checks and the runbook. Delivery in `b37b16c` and the commit that moves this record to `awaiting-review`. No remote call was made.
+
+### Change Summary
+
+- `recipes/direct-host/recipe.toml`: the `techne/recipe/v1` manifest, with each field's recipe default or `required = true`, its variable and the scripts that read it, the AWS selectors, recipe-owned tags and both footprints.
+- `infra/aws/agent-host-stack.yaml`: `HostName` and `TailscaleHostname` parameters, both defaulting to `ki-techne-agent-host`, used by every `Name` tag, `set-hostname`, `/etc/hosts`, `tailscale up --hostname` and the `TailscaleHostname` output. With the defaults the rendered boot script is byte-identical to before.
+- `provision.sh`, `stop.sh`, `destroy.sh`: tag, host name, Tailscale name and tag, stack name and parameter prefix from variables, alongside the existing profile, region, account and size variables; the `Name` filter, the stack tag check and the `CONFIRM_DESTROY_AGENT_HOST` guard follow them.
+- `setup.sh`, `status.sh`, `host/converge.sh`, `host/status.sh`: Tailscale name, host name, repositories and workspace from variables, none AWS-specific; `AGENT_HOST_INSTRUCTIONS` lists the instruction files, each checked to be a plain Markdown file name.
+- `tooling/checks/recipe-manifest.py` and `.sh`: the manifest check and its refusal fixtures (twice, omitted, misplaced, AWS concept, AWS-named neutral variable, provider field read by a neutral script, `providers` list); with `tooling/checks/fixtures/agent-host.binding.toml`, each script default must equal the first binding's value.
+- `tooling/checks/agent-host-aws-scripts.sh`: a stub `aws` records every call of `provision.sh`, `stop.sh` and `destroy.sh`, which must match today's calls with no variable set and carry a second binding's values with no first-binding value left.
+- `tooling/checks/agent-host-stack.rb` and `agent-host-workspace.sh`: parameter defaults, no host literal left in resources or outputs, a second binding's render, and `setup.sh` and `status.sh` under a second binding with no AWS variable.
+- `docs/guides/operator/agent-host.md`: a "Recipe and binding" section with the field and variable table.
+
+### Verification
+
+`bun run test`, `bunx biome ci .`, `bunx rumdl check .` and `git diff --check` pass. `ki repo audit --repo .` reports `PASS=17 WARN=1 FAIL=0`; its warnings are earlier records' roadmap-schema migrations. `bun run self:aws:validate` was not run: it calls CloudFormation, a remote call this delivery had no authority for.
+
+### For Kris under GDR-KI-ARCADIA-004
+
+Not run. From the repository root with the admin profile signed in, create the change set for the first binding's values without executing it:
+
+```sh
+aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 \
+  --stack-name ki-techne-agent-host --template-file infra/aws/agent-host-stack.yaml \
+  --capabilities CAPABILITY_IAM --no-execute-changeset \
+  --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host \
+    TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host \
+    ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 \
+  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+```
+
+Expected: `No changes to deploy`. If it creates a change set instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect in this delivery. The result is to be recorded here.
+
 ## Discussion
 
 ### Handoff origin
@@ -122,3 +159,27 @@ The scripts keep defaults equal to today's values so that running one by hand, w
 ### Manifest location
 
 The manifest points at the existing `infra/aws/agent-host-stack.yaml` and `operations/aws/agent-host/` rather than moving them, so the runbook and existing script paths stay valid.
+
+### Supported providers are the provider tables
+
+The record's step names `providers = ["aws"]` beside a `[providers.aws]` table, but TOML forbids a key that is both an array and a table, so no manifest can carry both. Taking the most literal reading that is valid TOML, the manifest has no `providers` list: each `[providers.<provider>]` table names a supported provider, matching the binding's own provider table. The manifest check refuses the list form. The `tools-techne` reader for CLI-005 must take the supported providers from the table's keys.
+
+### Parameter keys
+
+Each parameter carries `required = true` or a `default`, which may be derived through `{name}`, `{<field>}` and `{<provider>.<field>}` placeholders; `env` names its one variable and `scripts` the scripts that read it. `summary` and `scripts` are additions a reader may ignore. Footprint entries are strings and selectors are string templates.
+
+### Variables
+
+One variable per field. Existing names are kept (`AWS_PROFILE`, `AWS_REGION`, `EXPECTED_AWS_ACCOUNT`, `AGENT_HOST_STACK_NAME`, `AGENT_HOST_INSTANCE_TYPE`, `AGENT_HOST_VOLUME_SIZE`, `AGENT_HOST_REPOSITORIES`, `KI_AGENT_HOST_WORKSPACE`); the new ones are `AGENT_HOST_ID`, `AGENT_HOST_NAME`, `AGENT_HOST_TAILSCALE_NAME`, `AGENT_HOST_TAILSCALE_TAG` and `AGENT_HOST_PARAMETER_PREFIX`. `AGENT_HOST_SSH` is replaced by `AGENT_HOST_TAILSCALE_NAME`, since the SSH target is the Tailscale name. `admin_profile` and `operator_profile` both reach `AWS_PROFILE`, in disjoint scripts. `operator_role` has no variable because only the CLI's adapter uses it. A trailing `/` on the parameter prefix is ignored.
+
+### Two stack parameters
+
+The record names one host-name parameter; the stack takes two, `HostName` and `TailscaleHostname`, so the binding's `host_name` and `tailscale_name` stay independent. Both default to today's name.
+
+### Repositories, workspace and instructions
+
+`repositories` is the path of a repository list file, defaulting to the harness's own; `workspace` is a path on the host whose leading `~/` the host scripts expand. `AGENT_HOST_INSTRUCTIONS` is person-specific rather than a binding field, so the manifest does not declare it. The Git identity is still copied from the Mac's global configuration.
+
+### Neutral paths under operations/aws
+
+`setup.sh` and `status.sh` stay at their existing paths under `operations/aws/agent-host/`. The manifest check exempts existing harness paths from its AWS-concept rule, because a location is not a concept.
