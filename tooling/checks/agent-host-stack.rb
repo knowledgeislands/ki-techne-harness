@@ -81,6 +81,9 @@ end
 check.call(rendered.include?("tailscale up --auth-key=\"file:$key_file\" --ssh --advertise-tags='tag:ki-techne-agent-host'"),
            'user data must join the tailnet with Tailscale SSH and the agent-host tag')
 check.call(rendered.include?('/ki/techne/agent-host/tailscale-auth-key'), 'user data must read the auth key parameter')
+check.call(rendered.include?('hostnamectl set-hostname ki-techne-agent-host'), 'user data must set the OS hostname')
+check.call(rendered.include?('preserve_hostname: true') && rendered.include?('127.0.1.1 ki-techne-agent-host'),
+           'user data must keep the hostname across boots and resolvable in /etc/hosts')
 check.call(!rendered.match?(/^\s*set -[a-z]*x/), 'user data must not trace commands')
 check.call(!rendered.match?(/sudoers|usermod|adduser|--groups|\s-G\s/), 'the operator user must not gain sudo or extra groups')
 check.call(rendered.include?("git config --global credential.https://github.com.helper ki-agent-host"),

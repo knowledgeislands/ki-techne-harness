@@ -246,6 +246,13 @@ Resources:
           exec > >(tee -a /var/log/ki-agent-host-bootstrap.log | logger -t ki-agent-host-bootstrap -s 2>/dev/console) 2>&1
           export DEBIAN_FRONTEND=noninteractive
 
+          # The OS reports the host's own name, not the AWS default ip-a-b-c-d.
+          # preserve_hostname stops cloud-init resetting it on later boots, and the
+          # /etc/hosts entry keeps sudo and local lookups resolving it.
+          printf 'preserve_hostname: true\n' > /etc/cloud/cloud.cfg.d/99-ki-agent-host-hostname.cfg
+          hostnamectl set-hostname ki-techne-agent-host
+          grep -qE '^127\.0\.1\.1[[:space:]]+ki-techne-agent-host$' /etc/hosts || printf '127.0.1.1 ki-techne-agent-host\n' >> /etc/hosts
+
           # Access is Tailscale SSH only: no session-manager agent and no OpenSSH listener.
           snap stop --disable amazon-ssm-agent 2>/dev/null || systemctl disable --now amazon-ssm-agent.service 2>/dev/null || true
           systemctl disable --now ssh.socket ssh.service 2>/dev/null || true
