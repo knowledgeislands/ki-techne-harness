@@ -4,12 +4,12 @@ area: OPS
 title: Manage agent-host footprint
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: a8e68e18f8d2c6109c77fa833589b980eab2a9c2
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T09:11:11Z
+updated_at: 2026-10-07T09:12:34Z
 ---
 
 # Manage Agent-Host Footprint
@@ -154,6 +154,10 @@ The goal is met for the in-scope part: one rerunnable command rebuilds the works
 
 OPS-011's first slice turns the hand set-up of the agent host into `setup.sh` and `status.sh`, verified live: a second run changes nothing, tools and hooks resolve non-interactively, and the estate audit's remaining failures are the MCP source and `zsh`. Proposed learning route: the three `ki` behaviours found live (`dev local set` while active, bootstrap without `--refresh`, `diag` exit status) to `tools-ki` through its own records if Kris wants them changed.
 
+## Done
+
+Accepted 2026-10-07 by Kris Brown on the review packet above.
+
 ## Discussion
 
 ### Rerunnable setup
@@ -221,3 +225,7 @@ The earlier `~/.ki-host-env`, sourced from both start-up files, was left in plac
 - **Not in the boot script.** The boot script runs as root once, before Kris signs in and before the token's repository access is known; the workspace changes after build and must be rerunnable, so it stays a separate user-level step.
 - **Codex through mise.** The global mise configuration pins `npm:@openai/codex` beside Bun and Node, so Codex has a shim on `PATH` for Zed and the terminal and changes version in the same place. Creating `~/.agents` lets `ki bootstrap` detect the Codex runtime and install its skills.
 - **Auto-memory.** The documented user setting is `autoMemoryEnabled: false` in `~/.claude/settings.json`, which the Mac already has; setup merges that one key and leaves the rest of the file alone.
+
+### Acceptance - 2026-10-07
+
+Kris approved acceptance on 2026-10-07 at 10:58 CEST, after the stale lapse wording above was corrected. Six follow-ups are not yet captured as records, pending Kris's decision: work durability in `stop.sh` and `destroy.sh`; the two-checkouts rule and the designated roadmap writing checkout; keeping the pins current; a standing expiry view; an MCP source for the host; and moving the three `ki` behaviour fixes found live to `tools-ki`. Until they are captured, this record is their only home, so it should not be pruned before then.
