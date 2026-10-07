@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!src/generated", "!.claude/skills", "!.claude/agents", "!.agents/skills"],
+    "includes": ["**", "!**/*.svg", "!src/generated", "!.claude/skills", "!.claude/agents", "!.agents/skills"],
     "ignoreUnknown": true
   },
   "formatter": {

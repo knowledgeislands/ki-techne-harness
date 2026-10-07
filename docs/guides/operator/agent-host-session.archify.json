@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One working session on the agent host",
+    "output": "agent-host-session.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "viewBox": [1080, 670],
+    "column_fit": "spread"
+  },
+  "participants": [
+    {
+      "id": "kris",
+      "type": "external",
+      "label": "Kris",
+      "sublabel": "opens the session"
+    },
+    {
+      "id": "helper",
+      "type": "frontend",
+      "label": "Helper",
+      "sublabel": "techne-agent-host"
+    },
+    {
+      "id": "zed",
+      "type": "frontend",
+      "label": "Zed",
+      "sublabel": "on the Mac"
+    },
+    {
+      "id": "tailnet",
+      "type": "security",
+      "label": "Tailscale",
+      "sublabel": "tailnet"
+    },
+    {
+      "id": "zedsrv",
+      "type": "backend",
+      "label": "Zed server",
+      "sublabel": "on the host"
+    },
+    {
+      "id": "claude",
+      "type": "backend",
+      "label": "Claude Code",
+      "sublabel": "as techne"
+    },
+    {
+      "id": "git",
+      "type": "backend",
+      "label": "git",
+      "sublabel": "credential helper"
+    },
+    {
+      "id": "params",
+      "type": "database",
+      "label": "Parameters",
+      "sublabel": "Parameter Store"
+    },
+    {
+      "id": "github",
+      "type": "external",
+      "label": "GitHub",
+      "sublabel": "knowledgeislands"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m-connect",
+      "from": "kris",
+      "to": "helper",
+      "y": 168,
+      "label": "connect [path]",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-status",
+      "from": "helper",
+      "to": "tailnet",
+      "y": 196,
+      "label": "status, ping host"
+    },
+    {
+      "id": "m-pong",
+      "from": "tailnet",
+      "to": "helper",
+      "y": 224,
+      "label": "host answers",
+      "variant": "return"
+    },
+    {
+      "id": "m-open",
+      "from": "helper",
+      "to": "zed",
+      "y": 252,
+      "label": "zed ssh://ki-techne-agent-host",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-ssh",
+      "from": "zed",
+      "to": "tailnet",
+      "y": 280,
+      "label": "SSH as techne over tailnet",
+      "variant": "security"
+    },
+    {
+      "id": "m-ssh-ok",
+      "from": "tailnet",
+      "to": "zed",
+      "y": 308,
+      "label": "policy allows Kris as techne",
+      "variant": "return"
+    },
+    {
+      "id": "m-upload",
+      "from": "zed",
+      "to": "zedsrv",
+      "y": 336,
+      "label": "upload server binary from Mac",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-open-repo",
+      "from": "kris",
+      "to": "zed",
+      "y": 364,
+      "label": "open repository, terminal"
+    },
+    {
+      "id": "m-run",
+      "from": "zedsrv",
+      "to": "claude",
+      "y": 392,
+      "label": "run claude in repository",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-commit",
+      "from": "claude",
+      "to": "git",
+      "y": 420,
+      "label": "commit explicit paths"
+    },
+    {
+      "id": "m-ask",
+      "from": "kris",
+      "to": "claude",
+      "y": 448,
+      "label": "asks for a push",
+      "variant": "security"
+    },
+    {
+      "id": "m-push",
+      "from": "claude",
+      "to": "git",
+      "y": 476,
+      "label": "git push over HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m-get",
+      "from": "git",
+      "to": "params",
+      "y": 504,
+      "label": "read token, instance role",
+      "variant": "security"
+    },
+    {
+      "id": "m-token",
+      "from": "params",
+      "to": "git",
+      "y": 532,
+      "label": "token, never on disk",
+      "variant": "return"
+    },
+    {
+      "id": "m-send",
+      "from": "git",
+      "to": "github",
+      "y": 560,
+      "label": "push as x-access-token",
+      "variant": "emphasis"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "helper",
+      "from": 164,
+      "to": 258,
+      "type": "frontend"
+    },
+    {
+      "participant": "zed",
+      "from": 248,
+      "to": 370,
+      "type": "frontend"
+    },
+    {
+      "participant": "tailnet",
+      "from": 276,
+      "to": 314,
+      "type": "security"
+    },
+    {
+      "participant": "zedsrv",
+      "from": 332,
+      "to": 398,
+      "type": "backend"
+    },
+    {
+      "participant": "claude",
+      "from": 388,
+      "to": 482,
+      "type": "backend"
+    },
+    {
+      "participant": "git",
+      "from": 416,
+      "to": 566,
+      "type": "backend"
+    },
+    {
+      "participant": "params",
+      "from": 500,
+      "to": 538,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Before this",
+      "items": [
+        "With --aws the helper first assumes the agent-host profile",
+        "and starts the host if it is stopped",
+        "Kris has signed Claude Code in once on the host"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Rules in the session",
+      "items": [
+        "Only Kris opens sessions: no schedules, webhooks or messages",
+        "No push without Kris's request, no force-push, no --no-verify",
+        "The token reaches git on demand and is never written to disk"
+      ]
+    }
+  ]
+}

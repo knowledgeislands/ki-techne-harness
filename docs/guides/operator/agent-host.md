@@ -4,6 +4,16 @@ This runbook is for Kris, as the operator who builds, connects to, stops and tea
 
 Run nothing here until the gate in `KI-ARCADIA-GOV-020` has cleared and the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) names this prototype. Agents prepare and review this path; only Kris runs it.
 
+## At a glance
+
+![The agent host: Kris's Mac, the tailnet and the host in the Techne account, with its operator role, instance role and Parameter Store](agent-host-architecture.svg)
+
+On the Mac, the chezmoi helper `techne-agent-host` checks the host and opens Zed's `ssh://` remote; Zed reaches the host through the Tailscale client over WireGuard, and the tailnet policy admits only `techne` over Tailscale SSH. The host sits in its own security group with no inbound rule and talks out only over HTTPS, to GitHub with a fine-grained token and to the model provider through Kris's Claude account login. Its instance role reads only the parameters under `/ki/techne/agent-host/`.
+
+Granted turns Kris's SSO admin session into the account-local operator role, which may only start and stop the host. The controller `ki-techne-ops-007-primary` is drawn for contrast: it is held, has its own stack and is untouched.
+
+Two AWS profiles are in play. The build and teardown use the admin profile `knowledge-islands-techne`; stop, start and the kill switch use `knowledge-islands-techne-agent-host`. The diagram's source is [`agent-host-architecture.archify.json`](agent-host-architecture.archify.json).
+
 ## What the host is
 
 - **Operator OS user:** `techne`. It is a non-root user without `sudo`. Use `techne@ki-techne-agent-host` in the chezmoi SSH `Host` entry and in Zed's `ssh_connections` entry.
@@ -183,6 +193,14 @@ pbcopy </dev/null
 The boot script installs `/usr/local/bin/git-credential-ki-agent-host` and sets it as `techne`'s Git credential helper for `https://github.com`. When Git needs GitHub credentials, the helper reads the parameter through the instance role and answers with it; it ignores other hosts and other credential actions and writes nothing to disk. Clone over HTTPS, for example `git clone https://github.com/knowledgeislands/<repository>.git`; SSH remotes do not use the helper. To check the token from the host, run `git ls-remote https://github.com/knowledgeislands/<repository>.git`.
 
 To rotate the token, create a new one, overwrite the parameter by adding `--overwrite` to the command above, and revoke the old one in GitHub. The token expires after 30 days whether or not the host is still running.
+
+## A working session
+
+![One working session: Kris connects through the helper and Zed over Tailscale, runs Claude Code on the host, and pushes only on request through the credential helper](agent-host-session.svg)
+
+Kris runs `techne-agent-host connect [path]`. The helper checks that Tailscale is up and the host answers, then opens Zed's `ssh://` remote; with `--aws` it first assumes the agent-host profile and starts the host if it is stopped. Zed connects as `techne` over the tailnet, uploads its server binary from the Mac, and Kris opens a repository and a terminal.
+
+In that session Claude Code runs as `techne` and commits explicit paths. It pushes only when Kris asks. Git then asks the credential helper, which reads the token through the instance role and answers with it, so the token never reaches disk. Only Kris opens sessions: no schedule, webhook or message starts one. The diagram's source is [`agent-host-session.archify.json`](agent-host-session.archify.json).
 
 ## Kill switch
 

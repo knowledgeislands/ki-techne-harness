@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "GOV-020 remote agent host: what is built",
+    "output": "agent-host-architecture.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "legend": {
+      "mode": "all",
+      "entries": {
+        "frontend": {
+          "label": "On Kris's Mac (the Rig)"
+        },
+        "security": {
+          "label": "Access control and identity"
+        },
+        "backend": {
+          "label": "Built for the prototype"
+        },
+        "database": {
+          "label": "Secret store"
+        },
+        "external": {
+          "label": "Outside service"
+        },
+        "messagebus": {
+          "label": "HELD: untouched, not part of the prototype"
+        },
+        "cloud": {
+          "visible": false
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "helper",
+      "type": "frontend",
+      "label": "techne-agent-host",
+      "sublabel": "chezmoi helper",
+      "pos": [30, 200],
+      "size": [140, 64]
+    },
+    {
+      "id": "zed",
+      "type": "frontend",
+      "label": "Zed",
+      "sublabel": "uploads its own server",
+      "pos": [290, 70],
+      "size": [170, 64]
+    },
+    {
+      "id": "tsclient",
+      "type": "frontend",
+      "label": "Tailscale client",
+      "sublabel": "Kris's device",
+      "pos": [290, 200],
+      "size": [170, 64]
+    },
+    {
+      "id": "granted",
+      "type": "frontend",
+      "label": "Granted (assume)",
+      "sublabel": "SSO admin session, then role",
+      "pos": [290, 350],
+      "size": [170, 64]
+    },
+    {
+      "id": "tailnet",
+      "type": "security",
+      "label": "Tailnet policy",
+      "sublabel": "tag:ki-techne-agent-host",
+      "tag": "SSH as techne only",
+      "pos": [620, 60],
+      "size": [180, 64]
+    },
+    {
+      "id": "oprole",
+      "type": "security",
+      "label": "Operator IAM role",
+      "sublabel": "ki-techne-agent-host-operator",
+      "tag": "GOV-020 policy",
+      "pos": [640, 380],
+      "size": [210, 64]
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "ki-techne-agent-host",
+      "sublabel": "user techne: Claude Code, git",
+      "tag": "t3.medium, Ubuntu",
+      "pos": [980, 190],
+      "size": [210, 84]
+    },
+    {
+      "id": "role",
+      "type": "security",
+      "label": "Instance role",
+      "sublabel": "read own parameters only",
+      "pos": [980, 350],
+      "size": [210, 64]
+    },
+    {
+      "id": "params",
+      "type": "database",
+      "label": "Parameter Store",
+      "sublabel": "/ki/techne/agent-host/*",
+      "pos": [980, 480],
+      "size": [210, 64]
+    },
+    {
+      "id": "controller",
+      "type": "messagebus",
+      "label": "ki-techne-ops-007-primary",
+      "sublabel": "HELD: controller, untouched",
+      "tag": "own stack",
+      "pos": [980, 640],
+      "size": [210, 70]
+    },
+    {
+      "id": "github",
+      "type": "external",
+      "label": "GitHub",
+      "sublabel": "fine-grained token, 30 days",
+      "pos": [1340, 120],
+      "size": [180, 64]
+    },
+    {
+      "id": "model",
+      "type": "external",
+      "label": "Model provider",
+      "sublabel": "Claude account login",
+      "pos": [1340, 260],
+      "size": [180, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Kris's Mac (Rig)",
+      "wraps": ["helper", "zed", "tsclient", "granted"],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Kris's tailnet",
+      "wraps": ["tailnet"],
+      "pad": 18
+    },
+    {
+      "kind": "region",
+      "label": "AWS 655383751458, eu-west-1",
+      "wraps": ["oprole", "host", "role", "params", "controller"],
+      "pad": 34
+    },
+    {
+      "kind": "security-group",
+      "label": "Agent-host SG: no inbound",
+      "wraps": ["host"],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    {
+      "from": "helper",
+      "to": "tsclient",
+      "label": "status, ping"
+    },
+    {
+      "from": "helper",
+      "to": "zed",
+      "label": "opens ssh://",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "helper",
+      "to": "granted",
+      "label": "--aws: assume",
+      "variant": "dashed",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "zed",
+      "to": "tsclient",
+      "label": "SSH",
+      "variant": "emphasis"
+    },
+    {
+      "from": "tsclient",
+      "to": "tailnet",
+      "label": "WireGuard",
+      "variant": "emphasis"
+    },
+    {
+      "from": "tailnet",
+      "to": "host",
+      "label": "Tailscale SSH as techne",
+      "variant": "security"
+    },
+    {
+      "from": "granted",
+      "to": "oprole",
+      "label": "SSO, then assume role",
+      "variant": "security"
+    },
+    {
+      "from": "oprole",
+      "to": "host",
+      "label": "role: start, stop host",
+      "variant": "dashed",
+      "toSide": "left"
+    },
+    {
+      "from": "host",
+      "to": "role",
+      "label": "instance profile"
+    },
+    {
+      "from": "role",
+      "to": "params",
+      "label": "reads key, token"
+    },
+    {
+      "from": "host",
+      "to": "github",
+      "label": "git over HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "from": "host",
+      "to": "model",
+      "label": "Claude Code, HTTPS",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Held: not part of the prototype",
+      "items": [
+        "Controller instance, its K3s and Telegram dispatch stay untouched",
+        "Paperclip, Kitteth, Telegram and other K3s changes stay held",
+        "The model-api-key parameter stays unused: Claude Code logs in"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Two AWS profiles",
+      "items": [
+        "Build and teardown: admin profile knowledge-islands-techne",
+        "Stop, start, kill switch: knowledge-islands-techne-agent-host",
+        "The operator role is account-local and cannot create or tag resources",
+        "Nothing in the organisation or its management account is changed"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Limits a security group cannot hold",
+      "items": [
+        "Outbound 443 and 80 reach any address, not only named hosts",
+        "DNS through the VPC resolver stays open",
+        "Authority lapses 6 November 2026 unless Kris renews it"
+      ]
+    }
+  ]
+}
