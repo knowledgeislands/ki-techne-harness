@@ -1,5 +1,5 @@
 ---
-id: TECHNE-TOOLS-OPS-010
+id: TECHNE-TOOLS-OPS-011
 area: OPS
 title: Manage agent-host footprint
 theme: operations
@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T04:41:13Z
+updated_at: 2026-10-07T04:45:48Z
 ---
 
 # Manage Agent-Host Footprint
@@ -72,6 +72,10 @@ The GitHub token and the lapse fall close together, so a renewal under `KI-ARCAD
 - `KI-HARNESS-GOV-147` (`ki-agentic-harness`): the branch, not the checkout, as the durable unit of work.
 
 These are cross-repository references and are not recorded in `blocks` or `blocked_by`.
+
+### Identifier collision - 2026-10-07
+
+This record was first pushed as `TECHNE-TOOLS-OPS-010` from the host checkout, and that ID collided with `TECHNE-TOOLS-OPS-010` (diagram the agent-host runbook), which the Mac checkout had already reserved and pushed. Both reservation commits made the same ledger change, so the rebase dropped the host's one as already applied and raised no conflict. The record was renumbered to `TECHNE-TOOLS-OPS-011` under a fresh reservation. This is the two-checkout serial risk described above under "Two checkouts of the same repositories", happening for real.
 
 ### Open questions
 
