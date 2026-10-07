@@ -50,13 +50,21 @@ stub "${host_home}/.local/bin/mise" "case \$1 in
     else cd \"\$(dirname \"\$3\")\" && touch '${state}'/trust-${key}; fi ;;
 esac"
 stub "${host_home}/.local/bin/ki" "config=\$HOME/.config/ki/config.toml
-render() { mkdir -p \"\$(dirname \"\$config\")\"; { echo 'agents = claude-code'; [[ -d \$HOME/.agents ]] && echo 'agents += chatgpt-codex'; cat '${state}/ki-dev' 2>/dev/null; } >\"\$config\"; }
+render() { mkdir -p \"\$(dirname \"\$config\")\"; cat '${state}/ki-agents' '${state}/ki-dev' 2>/dev/null >\"\$config\"; }
+# Like ki, bootstrap detects agents only on its first run or with --refresh.
+detect() { { echo '\"claude-code\",'; [[ -d \$HOME/.agents ]] && echo '\"chatgpt-codex\",'; } >'${state}/ki-agents'; }
 case \$1 in
   --version) echo 0.7.1 ;;
-  bootstrap) render; mkdir -p \"\$HOME/.claude/skills\"; ln -sfn /stub/ki-next \"\$HOME/.claude/skills/ki-next\" ;;
-  dev) [[ \$3 == set ]] && echo \"local \$4 = \$5\" >'${state}/ki-dev'; render ;;
+  bootstrap) [[ \$2 == --refresh || ! -f '${state}/ki-agents' ]] && detect; render; mkdir -p \"\$HOME/.claude/skills\"; ln -sfn /stub/ki-next \"\$HOME/.claude/skills/ki-next\" ;;
+  dev) case \$3 in
+      set) [[ -f '${state}/ki-active' ]] && { echo 'ki: error: local development is active' >&2; exit 1; }
+        printf '[locals.\"%s\"]\npath = \"%s\"\n' \"\$4\" \"\$5\" >'${state}/ki-dev' ;;
+      on) touch '${state}/ki-active' ;;
+    esac; render ;;
   registry) if [[ \$2 == list ]]; then cat '${state}/registry' 2>/dev/null; else echo \"\$4\" >>'${state}/registry'; fi ;;
-  repo) if [[ \$3 == diag ]]; then [[ -f '${state}/repaired' ]]; else touch '${state}/repaired'; fi ;;
+  repo) if [[ \$3 == diag ]]; then
+      if [[ -f '${state}/repaired' ]]; then echo 'summary: REPAIRABLE=0 UNREPAIRABLE=0'; else echo 'summary: REPAIRABLE=1 UNREPAIRABLE=0'; fi
+    else touch '${state}/repaired'; fi ;;
 esac"
 stub "${host_home}/.local/bin/bun" 'if [[ -d node_modules ]]; then echo "Checked 1 install across 1 package (no changes)"; else mkdir node_modules; echo "1 package installed"; fi'
 stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.160.1"'
@@ -108,6 +116,8 @@ printf '%s\n\n\n%s\n\n# ~/.bashrc stock\ncase $- in\n    *i*) ;;\n      *) retur
 printf '%s\n' "${legacy}" >"${host_home}/.config/husky/init.sh"
 echo 'export KNIP_DISABLE_RAW_TRANSFER=1' >"${host_home}/.ki-host-env"
 echo '{"theme":"dark"}' >"${host_home}/.claude/settings.json"
+# ki was bootstrapped before Codex had a home, so only Claude Code is configured.
+echo '"claude-code",' >"${state}/ki-agents"
 
 export PATH="${stubs}:${PATH}"
 setup() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/setup.sh" --pull 2>&1; }
@@ -151,6 +161,8 @@ check '[[ $(HOME=${host_home} git config --global user.name) == "Test Operator" 
 check 'grep -qx local "${workspace}/gamma/README.md"' 'gamma must keep its uncommitted change'
 check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == $(git -C "${work}/origins/beta.git" rev-parse main) ]]' 'beta must match its origin'
 check 'grep -q "npm:@openai/codex" "${host_home}/.config/mise/config.toml"' 'the mise pins must include Codex'
+check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
+check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
 
 git -C "${workspace}/alpha" -c user.name=t -c user.email=t@example.invalid commit --quiet --allow-empty -m local
 report=$(HOME=${mac_home} bash "${scripts}/status.sh" 2>&1)

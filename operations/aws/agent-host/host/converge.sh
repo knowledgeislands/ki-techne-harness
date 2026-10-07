@@ -288,10 +288,31 @@ ki_run() {
   fi
 }
 
+# ki refuses to re-set a local checkout while it is active, so set it only when
+# the configuration does not already record this path.
+local_path() {
+  awk -v section="[locals.\"${harness_id}\"]" '
+    $0 == section { inside = 1; next }
+    /^\[/ { inside = 0 }
+    inside && $1 == "path" { sub(/^[^=]*= *"/, ""); sub(/"$/, ""); print }
+  ' "${HOME}/.config/ki/config.toml" 2>/dev/null || true
+}
+
+# Plain bootstrap reuses the configured agents; --refresh detects new ones, such
+# as Codex once ~/.agents exists, and keeps harnesses, skills and local checkouts.
+bootstrap_args=()
+for agent in claude-code:.claude chatgpt-codex:.agents; do
+  [[ -d ${HOME}/${agent#*:} ]] || continue
+  grep -qF "\"${agent%%:*}\"" "${HOME}/.config/ki/config.toml" 2>/dev/null || bootstrap_args=(--refresh)
+done
+
 before=$(ki_state)
-ki_run bootstrap &&
-  ki_run dev local set "${harness_id}" "${workspace}/${harness_path}" &&
-  ki_run dev local on "${harness_id}" || true
+if ki_run bootstrap ${bootstrap_args[@]+"${bootstrap_args[@]}"}; then
+  if [[ $(local_path) == "${workspace}/${harness_path}" ]] ||
+    ki_run dev local set "${harness_id}" "${workspace}/${harness_path}"; then
+    ki_run dev local on "${harness_id}" || true
+  fi
+fi
 [[ $(ki_state) == "${before}" ]] || changed 'ki agents, core skills and local harness'
 
 registered=$("${ki}" registry list 2>/dev/null || true)
@@ -302,9 +323,15 @@ for path in "${declared[@]}"; do
   ki_run registry add --repo "${dir}" && changed "registered ${path}"
 done
 
-if ! "${ki}" repo --estate diag >/dev/null 2>&1; then
+# diag exits 0 while projections are repairable, so read its summary instead.
+estate_healthy() {
+  local summary
+  summary=$("${ki}" repo --estate diag 2>&1 | grep -o 'REPAIRABLE=[0-9]* UNREPAIRABLE=[0-9]*' | tail -n 1 || true)
+  [[ ${summary} == 'REPAIRABLE=0 UNREPAIRABLE=0' ]]
+}
+if ! estate_healthy; then
   ki_run repo --estate repair && changed 'repository skill projections'
-  "${ki}" repo --estate diag >/dev/null 2>&1 || warn 'ki repo --estate diag still reports problems'
+  estate_healthy || warn 'ki repo --estate diag still reports problems'
 fi
 
 # Claude Code ------------------------------------------------------------------------
