@@ -168,7 +168,7 @@ git -C "${workspace}/alpha" -c user.name=t -c user.email=t@example.invalid commi
 report=$(HOME=${mac_home} bash "${scripts}/status.sh" 2>&1)
 check '[[ ${report} == *"summary: REPOSITORIES=3 AT_RISK=2"* ]]' "status must flag alpha and gamma, got:
 ${report}"
-check '[[ ${report} == *"Prototype authority"*"2026-11-06"* && ${report} == *"GitHub token"* ]]' 'status must list the expiry dates'
+check '[[ ${report} == *"Exemption review"*"2026-11-06"*"no lapse"* && ${report} == *"GitHub token"* ]]' 'status must list the expiry dates'
 check '[[ ! -e ${state}/curl.log ]]' 'nothing may reach the network'
 
 ((failures == 0)) || exit 1

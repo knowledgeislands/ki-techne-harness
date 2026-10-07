@@ -4,8 +4,9 @@
 set -euo pipefail
 
 workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
-# KI-ARCADIA-GOV-020 authorises the prototype until this date; KI-ARCADIA-GOV-021 reviews it.
-prototype_lapse=2026-11-06
+# The standing exemption (GDR-KI-ARCADIA-004, KI-ARCADIA-GOV-023) has no lapse;
+# Kris reviews it on this date under KI-ARCADIA-GOV-021.
+exemption_review=2026-11-06
 PATH="${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}"
 
 days_until() {
@@ -69,7 +70,7 @@ if command -v tailscale >/dev/null && status=$(tailscale status --json 2>/dev/nu
   fi
 fi
 printf '  %-24s %s\n' 'Tailscale node key' "${tailscale_expiry}"
-printf '  %-24s %s\n' 'Prototype authority' "${prototype_lapse} ($(days_until "${prototype_lapse}") days; KI-ARCADIA-GOV-020, GOV-021)"
+printf '  %-24s %s\n' 'Exemption review' "${exemption_review} ($(days_until "${exemption_review}") days; standing, no lapse; GDR-KI-ARCADIA-004)"
 
 echo
 echo "summary: REPOSITORIES=${count} AT_RISK=${at_risk}"
