@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T04:45:48Z
+updated_at: 2026-10-07T05:01:42Z
 ---
 
 # Manage Agent-Host Footprint
@@ -76,6 +76,18 @@ These are cross-repository references and are not recorded in `blocks` or `block
 ### Identifier collision - 2026-10-07
 
 This record was first pushed as `TECHNE-TOOLS-OPS-010` from the host checkout, and that ID collided with `TECHNE-TOOLS-OPS-010` (diagram the agent-host runbook), which the Mac checkout had already reserved and pushed. Both reservation commits made the same ledger change, so the rebase dropped the host's one as already applied and raised no conflict. The record was renumbered to `TECHNE-TOOLS-OPS-011` under a fresh reservation. This is the two-checkout serial risk described above under "Two checkouts of the same repositories", happening for real.
+
+### Hand-applied PATH fix - 2026-10-07
+
+Bun and Node were installed through mise, but their shims were not on `PATH` in shells that skip `~/.bashrc` or stop at its interactive-only early return. A plain `git commit` from Zed's Agent Panel or Claude Code's tool shells therefore failed the husky pre-commit hook for a missing `bun`. So that commits work on the train on 2026-10-08, the fix was applied by hand on the host on 2026-10-07. It must be folded into the rerunnable setup step above rather than left as a one-off.
+
+Files touched under `/home/techne`, each marked `# ki-agent-host: mise shims (TECHNE-TOOLS-OPS-011)` and adding `~/.local/share/mise/shims` and `~/.local/bin` to `PATH` only when absent:
+
+- `~/.profile` - block prepended; backup `~/.profile.bak-ops011-20261007050058`;
+- `~/.bashrc` - block prepended above Ubuntu's interactive-only early return; backup `~/.bashrc.bak-ops011-20261007050058`;
+- `~/.config/husky/init.sh` - new file, which husky 9 sources before every hook, so hooks find `bun` whatever shell started Git.
+
+The earlier `~/.ki-host-env`, sourced from both start-up files, was left in place. With `PATH` reduced to `/usr/bin:/bin`, `git hook run pre-commit` passed in `ki-techne-harness` and `tools-ki`.
 
 ### Open questions
 
