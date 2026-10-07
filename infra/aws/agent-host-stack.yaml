@@ -251,7 +251,7 @@ Resources:
           systemctl disable --now ssh.socket ssh.service 2>/dev/null || true
 
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git jq tmux xz-utils
+          apt-get install -y --no-install-recommends ca-certificates curl git jq tmux xz-utils zsh
           snap install aws-cli --classic
 
           node_base=https://nodejs.org/dist/latest-v${NodeMajorVersion}.x
