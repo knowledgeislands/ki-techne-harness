@@ -18,6 +18,13 @@ Never place credentials, kubeconfigs, raw Telegram updates, numeric operator ide
 
 Use the local roadmap under `docs/roadmap/` for prospective repository work. Preserve source provenance when moving implementation from another island. Do not push, publish, release or mutate live infrastructure without explicit authority.
 
+## Cross-repository choreography
+
+- Arcadia Principal, the KI Agentic Harness, `tools-ki`, KI Specifications, the KI Website, the Techne Harness, and `tools-techne` may add a concrete handoff item to one another's Stream or roadmap. The receiving repository owns its priority, plan, and execution.
+- Record the originating repository and item, then state whether the handoff `blocks` or is `blocked by` the local item. Keep the relationship reciprocal where both items exist.
+- Prefer independently executable, non-blocking work. Mark an item as blocking only when it is a genuine prerequisite; otherwise let the receiving repository schedule it in its own horizon.
+- A handoff transfers no ownership: ADR-TECHNE-003 still decides what this repository owns.
+
 ## Remote-environment hold
 
 There is no general hold on local Techné implementation, architecture work, testing or branch integration. Keep the harness building and current with its declared KI engineering and repository standards. The hold concerns managing remote environments, including remote-agent or infrastructure rollout and changes to running services. Do not treat a Ready record or task approval as authority for remote-environment operations. Preserve existing remote services and state until the principal explicitly authorises their management under a remote-delivery policy. Arcadia owns the scope and restart criteria in [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md).
