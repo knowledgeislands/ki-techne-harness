@@ -4,12 +4,12 @@ area: OPS
 title: Manage agent-host footprint
 theme: operations
 horizon: now
-status: in-progress
+status: awaiting-review
 blocks: []
 blocked_by: []
 baseline_ref: a8e68e18f8d2c6109c77fa833589b980eab2a9c2
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T07:03:43Z
+updated_at: 2026-10-07T07:31:06Z
 ---
 
 # Manage Agent-Host Footprint
@@ -54,14 +54,14 @@ The host was set up by hand on 2026-10-07 (17 clones, `ki` 0.7.1, mise 2026.10.3
 
 ## Steps
 
-- [ ] Add `operations/aws/agent-host/host/repositories.txt`, the declared repository set (path under `~/workspaces/kit` and HTTPS origin), mirroring the Mac's 21 Knowledge Islands checkouts.
-- [ ] Add `operations/aws/agent-host/host/converge.sh`, the host-side, idempotent convergence, runnable on the host from the harness clone or from a staged copy, which prints each change and ends with a summary that says `no changes` when nothing changed.
-- [ ] Add `operations/aws/agent-host/host/status.sh`, the read-only status report.
-- [ ] Add `operations/aws/agent-host/setup.sh` and `status.sh`, the Mac-side entry points: setup renders the Claude instructions with `chezmoi cat`, stages them with the host scripts over one SSH connection and runs the convergence; status runs the host status over SSH.
-- [ ] Add a stub-backed test, `tooling/checks/agent-host-workspace.sh`, run by the existing offline checks: a temporary home with local Git origins and stub `mise`, `ki`, `bun`, `codex` and `claude`, asserting first-run changes, a second run with no changes, an untouched dirty checkout, a fast-forwarded clean one, the migration of the hand-made shell blocks, the merged Claude setting and the status report; and extend the ShellCheck list to the new scripts.
-- [ ] Add `zsh` to the stack's package list.
-- [ ] Update the runbook with the setup and status commands.
-- [ ] Run the local gates, then run setup live twice and verify on the host.
+- [x] Add `operations/aws/agent-host/host/repositories.txt`, the declared repository set (path under `~/workspaces/kit` and HTTPS origin), mirroring the Mac's 21 Knowledge Islands checkouts.
+- [x] Add `operations/aws/agent-host/host/converge.sh`, the host-side, idempotent convergence, runnable on the host from the harness clone or from a staged copy, which prints each change and ends with a summary that says `no changes` when nothing changed.
+- [x] Add `operations/aws/agent-host/host/status.sh`, the read-only status report.
+- [x] Add `operations/aws/agent-host/setup.sh` and `status.sh`, the Mac-side entry points: setup renders the Claude instructions with `chezmoi cat`, stages them with the host scripts over one SSH connection and runs the convergence; status runs the host status over SSH.
+- [x] Add a stub-backed test, `tooling/checks/agent-host-workspace.sh`, run by the existing offline checks: a temporary home with local Git origins and stub `mise`, `ki`, `bun`, `codex` and `claude`, asserting first-run changes, a second run with no changes, an untouched dirty checkout, a fast-forwarded clean one, the migration of the hand-made shell blocks, the merged Claude setting and the status report; and extend the ShellCheck list to the new scripts.
+- [x] Add `zsh` to the stack's package list.
+- [x] Update the runbook with the setup and status commands.
+- [x] Run the local gates, then run setup live twice and verify on the host.
 
 ## Files touched
 
@@ -103,6 +103,50 @@ The operator runbook gains the workspace setup and status commands.
 ### Roadmap
 
 This record. The follow-ups above are captured separately when Kris wants them.
+
+## Review
+
+### Delivered
+
+The approved boundary: a rerunnable workspace setup driven from the Mac, a read-only status report, `zsh` in the host build and the runbook. Excluded, as planned and left as follow-ups: work durability in `stop.sh` and `destroy.sh`, the two-checkouts rule, keeping the host current, and a standing expiry view beyond the status report. Baseline `a8e68e18f8d2c6109c77fa833589b980eab2a9c2` (the ready plan); delivery in `634c1f1`, `f4d42be`, `c071d71`, `d7ccac2` and the commit that moves this record to `awaiting-review`.
+
+### Change Summary
+
+- `operations/aws/agent-host/host/repositories.txt`: the 21 Knowledge Islands repositories on the Mac, by path and HTTPS origin.
+- `operations/aws/agent-host/host/converge.sh`: idempotent convergence of the Git identity and settings, the repository set (clone if missing, skip a dirty checkout, fast-forward a clean one only with `--pull`), mise 2026.10.3 with global pins for Bun 1.4.2, Node 24 and Codex CLI 0.160.1, each repository's mise tools and Bun dependencies, one environment file `~/.config/ki-agent-host/env.sh` sourced from `.profile`, `.bashrc` and Husky's `init.sh` (folding in the hand-made blocks and `~/.ki-host-env`, keeping `KNIP_DISABLE_RAW_TRANSFER=1`), `ki` 0.7.1 by its signed installer, `ki bootstrap`, the local `ki-agentic-harness`, the registry and estate repair, the staged Claude instructions and `autoMemoryEnabled: false`. It backs up what it replaces, compares content before writing and ends with a summary that says `no changes` when nothing changed.
+- `operations/aws/agent-host/host/status.sh`: read-only report of branch, uncommitted files, unpushed commits, stashes and upstream counts per repository, and the GitHub token, Tailscale key and prototype expiry dates. The token reaches `curl` on standard input only.
+- `operations/aws/agent-host/setup.sh` and `status.sh`: the Mac entry points. Setup renders `CLAUDE.md`, `communication.md`, `delegation.md`, `memory-scope.md` and `markdown.md` with `chezmoi cat`, adds a source header, and stages them with the host scripts over one SSH connection.
+- `tooling/checks/agent-host-workspace.sh`, run by `tooling/checks/controller.sh`, which also adds the host scripts to ShellCheck: stub-backed checks of first-run changes, a second run with no changes, the dirty and behind checkouts, the shell-block migration, the merged Claude setting, Codex detection, estate repair and the status report.
+- `infra/aws/agent-host-stack.yaml`: `zsh` in the boot script's package list.
+- `docs/guides/operator/agent-host.md` and `operations/README.md`: "Workspace setup" and "Status" sections, and a status pointer in the kill switch.
+- Deviation from the plan: the first live run exposed three behaviours the plan did not foresee, fixed in `c071d71`. `ki dev local set` refuses while the checkout is active, so the step skips the set when the path is already recorded. Plain `ki bootstrap` reuses configured agents, so the script passes `--refresh` when an agent home exists but the agent is not configured. `ki repo --estate diag` exits 0 while projections are repairable, so repair keys on its counts. The stubs now reproduce each.
+
+### Verification
+
+- Local: `bun run test` passes, including the new checks and ShellCheck; `bunx biome ci .`, `bunx rumdl check .` and `git diff --check` are clean; `ki repo audit --repo .` passes with 18 skills.
+- Live, as `techne` over SSH only. The first run made 32 changes, including the four new clones, the Codex pin, the environment migration and the Claude instructions, with one failure (`ki dev local set`). After the fix, a run made 2 changes (the estate repair and a fast-forward), and the next run reported `CHANGES=0` and `no changes`.
+- `command -v bun codex ki claude` in a non-interactive SSH command resolves all four; `codex --version` reports 0.160.1 and `KNIP_DISABLE_RAW_TRANSFER` is 1.
+- `git hook run pre-commit` with `PATH=/usr/bin:/bin` passes in `ki-techne-harness` and `tools-ki`.
+- `ki doctor`: healthy, 12 checks pass, both `claude-code` and `chatgpt-codex` ready, local harness active.
+- `ki repo --estate diag`: 21 repositories healthy. `ki repo --estate audit` fell from 99 failing findings to 22. `SELECT-1` and `RUNTIMES-2` now pass. The remaining 22 are 21 `BIND-2` findings, because the host has no `~/.config/ki/mcp-servers.yaml` and MCP configuration is out of scope, and one `TEST-5` in `tools-ki`, whose completion test needs `zsh`, which the running host cannot install without `sudo`. Two warnings are content freshness in `ki-agentic-harness`.
+- `status.sh`: 21 repositories, none at risk; GitHub token expires 2026-11-06, the Tailscale key does not expire, and the prototype authority lapses 2026-11-06.
+
+### Outstanding concerns
+
+- **Codex is not signed in.** Kris runs `codex login` as `techne` on the host.
+- **`zsh` arrives only with a rebuild.** Until then `tools-ki`'s coverage test fails on the host.
+- **`BIND-2` fails everywhere on the host** while it has no MCP source. Whether the host should have one is a separate decision.
+- **Old hand-made backups remain.** `~/.profile.bak-ops011-*` and `~/.bashrc.bak-ops011-*` from the hand set-up are left for Kris to delete.
+- **The repository set is a copy.** `repositories.txt` mirrors the Mac by hand; a new repository needs a line there.
+- **Pins need upkeep.** The `ki`, mise, Bun, Node and Codex versions are pinned in `converge.sh`; keeping them current is the currency follow-up.
+
+### Post-change review
+
+The goal is met for the in-scope part: one rerunnable command rebuilds the workspace, a second run changes nothing, and Kris can see unlanded work and expiry dates before stopping the host. Scope held; the three fixes stayed inside the setup script and its checks. Regression risk is low for the controller, which is untouched; on the host the script never touches a dirty checkout, backs up replaced files and never copies credentials. The review was the implementing agent's own check against the plan, the gates and the live host, not an independent reviewer.
+
+### Mini recap
+
+OPS-011's first slice turns the hand set-up of the agent host into `setup.sh` and `status.sh`, verified live: a second run changes nothing, tools and hooks resolve non-interactively, and the estate audit's remaining failures are the MCP source and `zsh`. Proposed learning route: the three `ki` behaviours found live (`dev local set` while active, bootstrap without `--refresh`, `diag` exit status) to `tools-ki` through its own records if Kris wants them changed.
 
 ## Discussion
 
