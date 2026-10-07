@@ -1,14 +1,14 @@
 # Knowledge Islands repository configuration.
 # Its presence declares conformance with the Knowledge Islands repository standard.
 
-# =============================================================================
-
 # -----------------------------------------------------------------------------
 # Foundation
 # -----------------------------------------------------------------------------
 
 [repo]
-harnesses = ["knowledgeislands/ki-agentic-harness"]
+harnesses = [
+  "knowledgeislands/ki-agentic-harness",
+]
 
 [skills.ki-repo]
 repo_type = "project"
@@ -18,16 +18,15 @@ title = "Techne Harness"
 capital = "https://github.com/knowledgeislands/ki-arcadia-principal"
 description = "Runnable personal-controller and execution-fabric harness for the Knowledge Islands ecosystem."
 repo_code = "TECHNE-TOOLS"
-supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
+supported_runtimes = [
+  "claude-code",
+  "claude-desktop",
+  "chatgpt-codex",
+]
 visibility = "public"
 license = "MIT"
 
 [skills.ki-authoring]
-[skills.ki-binding]
-[skills.ki-binding-claude]
-[skills.ki-binding-chatgpt]
-[skills.ki-housekeeping-chatgpt]
-auto_memory = "disabled"
 
 # -----------------------------------------------------------------------------
 # Repository shape
@@ -39,15 +38,23 @@ auto_memory = "disabled"
 # Governance and runtime
 # -----------------------------------------------------------------------------
 
-[skills.ki-agent-coordination-paperclip]
-organisation_code = "KIS"
+[skills.ki-engineering]
 
 [skills.ki-guides]
 
-[skills.ki-tokenomics]
+[skills.ki-binding]
+
+[skills.ki-binding-claude]
+
+[skills.ki-binding-chatgpt]
 
 [skills.ki-housekeeping-claude]
 auto_memory = "disabled"
+
+[skills.ki-housekeeping-chatgpt]
+auto_memory = "disabled"
+
+[skills.ki-tokenomics]
 
 [skills.ki-tokenomics-claude]
 
@@ -56,6 +63,9 @@ auto_memory = "disabled"
 # -----------------------------------------------------------------------------
 # Change management
 # -----------------------------------------------------------------------------
+
+[skills.ki-agent-coordination-paperclip]
+organisation_code = "KIS"
 
 [skills.ki-git]
 
@@ -83,5 +93,3 @@ OPS = "Operations and delivery"
 # -----------------------------------------------------------------------------
 
 [skills.ki-trades]
-
-[skills.ki-engineering]
