@@ -28,6 +28,10 @@ A security group filters by address and port, not by name, so it cannot hold the
 
 Name-based enforcement needs a DNS firewall, a network firewall or an egress proxy. That is outside this prototype.
 
+## Operator access
+
+The `knowledge-islands-techne-agent-host` AWS profile assumes the IAM role `arn:aws:iam::655383751458:role/ki/ki-techne-agent-host-operator` from Kris's existing `knowledge-islands-techne` SSO profile. The role lives in the Techne account alone: only that account's `AWSAdministratorAccess` SSO role may assume it, sessions last at most 8 hours, and its inline policy is the `KI-ARCADIA-GOV-020` least-privilege policy unchanged. Nothing in the organisation or its management account is created or changed for the prototype; it relies only on Kris's existing SSO access to the account.
+
 ## Before the build
 
 1. In the Tailscale admin console, merge the [tailnet policy](#tailnet-policy) below into the existing policy file. The console is the policy's only record; no repository holds it.
@@ -39,7 +43,7 @@ Name-based enforcement needs a DNS firewall, a network firewall or an egress pro
    - **Expiration:** one day, the shortest the build needs.
 
    Copy the key to the clipboard.
-3. Sign in with the administrator profile: run `assume knowledge-islands-techne`. The `knowledge-islands-techne-agent-host` permission set cannot create or tag resources, so it cannot build the host.
+3. Sign in with the administrator profile: run `assume knowledge-islands-techne`. The `knowledge-islands-techne-agent-host` operator role cannot create or tag resources, so it cannot build the host.
 4. Store the key without putting it in a command argument, then clear the clipboard:
 
    ```sh
@@ -113,6 +117,12 @@ If the policy uses `grants` instead of `acls`, add this grant in place of the `a
 {"action": "accept", "src": ["autogroup:member"], "dst": ["autogroup:member:*"]},
 ```
 
+In a policy that uses `grants`, the replacement grant is:
+
+```jsonc
+{"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
+```
+
 `autogroup:member` covers devices that belong to a tailnet user, not tagged devices, so the agent host then has no outbound access to any node. Before saving, list what the old rule allowed that the new one does not, such as other tagged nodes, shared-in devices or exit nodes, and add a specific rule for each one still needed; for exit-node use, add `"autogroup:internet:*"` to the destination. Kris's access to the agent host stays limited to the explicit port 22 rule above.
 
 These entries follow Tailscale's documented policy-file schema as understood when this runbook was written; they were not validated against a live tailnet. The console validates the policy on save and rejects an invalid one without changing anything. Points to check there: whether the `tests` and `sshTests` forms are accepted as written, whether a tailnet that has moved to `grants` still accepts `acls` beside them, and whether `autogroup:member` is accepted as a destination in the tailnet's policy version.
@@ -134,10 +144,12 @@ aws ec2 get-console-output --profile knowledge-islands-techne --region eu-west-1
   --instance-id <AgentHostInstanceId> --output text
 ```
 
+The boot script ends by printing `ki-agent-host bootstrap complete`. It also writes a ready marker under `/var/lib/ki-agent-host/`, but that directory is root-only and `techne` has no `sudo`, so check the bootstrap log or console output for the completion line instead.
+
 ## Verify over Tailscale
 
 1. `tailscale status` lists `ki-techne-agent-host` with the tag.
-2. `ssh techne@ki-techne-agent-host 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions.
+2. `ssh techne@ki-techne-agent-host 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions. The first connection asks you to accept the host key. Claude Code is at `~/.local/bin/claude`, which is not on the `PATH` of a non-interactive SSH command, so name it in full there; an interactive login shell finds it as `claude`.
 3. In Zed, open the `ki-techne-agent-host` remote with `upload_binary_over_ssh` enabled; the host never downloads the Zed server itself.
 4. Delete the spent auth-key parameter: `aws ssm delete-parameter --profile knowledge-islands-techne --region eu-west-1 --name /ki/techne/agent-host/tailscale-auth-key`. Tailscale keeps the node joined across reboots.
 
@@ -198,4 +210,4 @@ It refuses a stack that is not tagged `ki-agent-host-id = agent-host`, deletes t
 
 1. Remove the device, its tag owner, grant and `ssh` rule from the tailnet policy, and revoke any remaining auth key.
 2. Revoke any GitHub token or model API key issued for the host.
-3. Remove the `KnowledgeIslandsTechneAgentHost` permission set assignment and permission set, and the `knowledge-islands-techne-agent-host` profile and SSH and Zed entries from the chezmoi source, applying only after reviewing `chezmoi diff`.
+3. With `assume knowledge-islands-techne`, delete the inline policy and then the `ki-techne-agent-host-operator` role in account `655383751458`, and remove the `knowledge-islands-techne-agent-host` profile and SSH and Zed entries from the chezmoi source, applying only after reviewing `chezmoi diff`.
