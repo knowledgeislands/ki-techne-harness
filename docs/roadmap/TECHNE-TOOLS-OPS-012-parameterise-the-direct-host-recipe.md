@@ -12,7 +12,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T12:58:15Z
-updated_at: 2026-10-07T14:05:00Z
+updated_at: 2026-10-07T14:48:32Z
 ---
 
 # Parameterise Direct-Host Recipe
@@ -130,21 +130,33 @@ GOV-025's H1 within the boundary, offline only: the `direct-host` manifest, a pa
 
 `bun run test`, `bunx biome ci .`, `bunx rumdl check .` and `git diff --check` pass. `ki repo audit --repo .` reports `PASS=17 WARN=1 FAIL=0`; its warnings are earlier records' roadmap-schema migrations. `bun run self:aws:validate` was not run: it calls CloudFormation, a remote call this delivery had no authority for.
 
-### For Kris under GDR-KI-ARCADIA-004
+### Outstanding concerns
 
-Not run. From the repository root with the admin profile signed in, create the change set for the first binding's values without executing it:
+- **The no-change change set was not run.** The live Verify check, a CloudFormation change set for `ki-techne-agent-host` with the first binding's values showing no change, needs the admin profile, and this delivery had no authority for a remote call. It moves to the planned host rebuild, where it is run before anything is executed:
 
-```sh
-aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 \
-  --stack-name ki-techne-agent-host --template-file infra/aws/agent-host-stack.yaml \
-  --capabilities CAPABILITY_IAM --no-execute-changeset \
-  --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host \
-    TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host \
-    ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 \
-  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
-```
+  ```sh
+  aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 \
+    --stack-name ki-techne-agent-host --template-file infra/aws/agent-host-stack.yaml \
+    --capabilities CAPABILITY_IAM --no-execute-changeset \
+    --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host \
+      TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host \
+      ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 \
+    --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+  ```
 
-Expected: `No changes to deploy`. If it creates a change set instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect in this delivery. The result is to be recorded here.
+  Expected: `No changes to deploy`. If it creates a change set instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect in this delivery.
+- **`bun run self:aws:validate` was not run** for the same reason: it calls CloudFormation. The offline template, ShellCheck, stub-`aws` and manifest checks passed.
+- **Recipe manifest contract decision.** `providers = ["aws"]` beside a `[providers.aws]` table is invalid TOML, so the manifest has no `providers` list: supported providers are named only by `[providers.<name>]` tables, and the manifest check refuses the list form. `tools-techne`'s reader for CLI-005 (`src/recipes.ts`) currently expects both and must take the table keys instead.
+- **`AGENT_HOST_SSH` is replaced by `AGENT_HOST_TAILSCALE_NAME`.** Anyone setting `AGENT_HOST_SSH` for `setup.sh` or `status.sh` must switch to the new variable; the default still reaches today's host.
+- **No `baseline_ref` was recorded.** The delivery commit `b37b16c`'s parent is `cda3304`, the commit that placed this record.
+
+### Post-change review
+
+The goal is met offline: `direct-host` is a harness-defined recipe, every host-identifying value is a binding field read through one environment variable, and with no variable set each script and the stack render today's host unchanged, which the stub-`aws` checks and the byte-identical boot script show. A second binding renders with no first-binding value left. Scope held to GOV-025's H1 step; no remote call was made. Regression risk is low: defaults equal today's literals, and the one renamed variable is listed above. The live no-change proof is still owed and moves to the host rebuild. Kris's live read-only checks of `techne host list`, `techne host status`, `techne host status --host agent-host --json` and `techne controller status` passed on 2026-10-07. The review was the delivering agent's own check against the plan and gates, not an independent reviewer.
+
+### Mini recap
+
+OPS-012 makes the agent host the first binding of the `direct-host` recipe: a `techne/recipe/v1` manifest, a parameterised stack and binding inputs in all seven scripts, with offline checks proving today's host is unchanged and a second binding is possible. Outstanding: the no-change change set at the host rebuild, and `tools-techne` adopting the provider-table contract. Proposed learning route: the provider-table contract to `tools-techne` CLI-005 through its own record, if Kris wants it carried there.
 
 ## Discussion
 
