@@ -7,13 +7,12 @@ purpose: capability
 project: agent-host
 component: recipes
 transferred_from: knowledgeislands/ki-arcadia-principal:KI-ARCADIA-GOV-025
-horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: cda3304a9dc80473f41555e0b71f703b0e2daf61
 created_at: 2026-10-07T12:58:15Z
-updated_at: 2026-10-07T15:34:43Z
+updated_at: 2026-10-07T16:56:47Z
 ---
 
 # Parameterise Direct-Host Recipe
@@ -159,6 +158,10 @@ The goal is met offline: `direct-host` is a harness-defined recipe, every host-i
 
 OPS-012 makes the agent host the first binding of the `direct-host` recipe: a `techne/recipe/v1` manifest, a parameterised stack and binding inputs in all seven scripts, with offline checks proving today's host is unchanged and a second binding is possible. Outstanding: the no-change change set at the host rebuild, and `tools-techne` adopting the provider-table contract. Proposed learning route: the provider-table contract to `tools-techne` CLI-005 through its own record, if Kris wants it carried there.
 
+## Done
+
+Accepted 2026-10-07 by Kris Brown on the review packet above.
+
 ## Discussion
 
 ### Handoff origin
@@ -196,3 +199,7 @@ The record names one host-name parameter; the stack takes two, `HostName` and `T
 ### Neutral paths under operations/aws
 
 `setup.sh` and `status.sh` stay at their existing paths under `operations/aws/agent-host/`. The manifest check exempts existing harness paths from its AWS-concept rule, because a location is not a concept.
+
+### Acceptance - 2026-10-07
+
+Kris Brown accepted every awaiting-review record in the Agora on 2026-10-07 ("everything that's awaiting review can be considered to be done and we can get pruned"; decision 12, state-of-play design loop). Outstanding concerns now live elsewhere: the no-change change set and `self:aws:validate` run are the operator guide's "Before a rebuild" step; `tools-techne` already reads only `[providers.<name>]` tables (`src/recipes.ts`); no consumer still sets `AGENT_HOST_SSH`.

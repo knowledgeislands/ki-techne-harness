@@ -276,6 +276,22 @@ Do both steps; either one alone stops access.
 
 2. In the Tailscale admin console, remove the `ki-techne-agent-host` device and revoke any unused auth key for its tag.
 
+## Before a rebuild
+
+Before rebuilding the host or deploying a changed stack template, prove that the template still describes the running host. With `assume knowledge-islands-techne`, run `bun run self:aws:validate`, then create a change set for the first binding's values without executing it:
+
+```sh
+aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 \
+  --stack-name ki-techne-agent-host --template-file infra/aws/agent-host-stack.yaml \
+  --capabilities CAPABILITY_IAM --no-execute-changeset \
+  --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host \
+    TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host \
+    ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 \
+  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+```
+
+Expect `No changes to deploy`. If a change set is created instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect to fix before the rebuild.
+
 ## Teardown
 
 With `assume knowledge-islands-techne`:
