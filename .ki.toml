@@ -76,7 +76,7 @@ components = [
 [skills.ki-work-roadmap.areas]
 CTRL = "Controller"
 FAB = "Execution fabric"
-OPS = "Operations"
+OPS = "Operations and delivery"
 
 # -----------------------------------------------------------------------------
 # Relationships
