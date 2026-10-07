@@ -6,8 +6,14 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 export AWS_PROFILE=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 expected_account=${EXPECTED_AWS_ACCOUNT:-655383751458}
+# Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
+host_id=${AGENT_HOST_ID:-agent-host}
+host_name=${AGENT_HOST_NAME:-ki-techne-agent-host}
+tailscale_name=${AGENT_HOST_TAILSCALE_NAME:-ki-techne-agent-host}
+tailscale_tag=${AGENT_HOST_TAILSCALE_TAG:-tag:ki-techne-agent-host}
 stack_name=${AGENT_HOST_STACK_NAME:-ki-techne-agent-host}
-parameter_prefix=/ki/techne/agent-host
+parameter_prefix=${AGENT_HOST_PARAMETER_PREFIX:-/ki/techne/agent-host}
+parameter_prefix=${parameter_prefix%/}
 instance_type=${AGENT_HOST_INSTANCE_TYPE:-t3.medium}
 volume_size=${AGENT_HOST_VOLUME_SIZE:-40}
 
@@ -42,8 +48,15 @@ aws cloudformation deploy \
   --stack-name "${stack_name}" \
   --template-file "${repo_root}/infra/aws/agent-host-stack.yaml" \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides AgentHostId=agent-host InstanceType="${instance_type}" VolumeSize="${volume_size}" \
-  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+  --parameter-overrides \
+    AgentHostId="${host_id}" \
+    HostName="${host_name}" \
+    TailscaleHostname="${tailscale_name}" \
+    TailscaleTag="${tailscale_tag}" \
+    ParameterPrefix="${parameter_prefix}" \
+    InstanceType="${instance_type}" \
+    VolumeSize="${volume_size}" \
+  --tags ki-agent-host-id="${host_id}" ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
 
 aws cloudformation describe-stacks \
   --region "${region}" \

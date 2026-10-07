@@ -35,7 +35,7 @@ stub() {
 }
 
 # Mac-side tools. ssh runs the remote command locally as the host user.
-stub "${stubs}/ssh" "HOME='${host_home}' exec bash -c \"\$2\""
+stub "${stubs}/ssh" "echo \"\$1\" >>'${state}/ssh.log'; HOME='${host_home}' exec bash -c \"\$2\""
 stub "${stubs}/chezmoi" 'echo "# instructions from $(basename "$2")"'
 stub "${stubs}/curl" "echo \"\$*\" >>'${state}/curl.log'; exit 1"
 
@@ -169,6 +169,33 @@ report=$(HOME=${mac_home} bash "${scripts}/status.sh" 2>&1)
 check '[[ ${report} == *"summary: REPOSITORIES=3 AT_RISK=2"* ]]' "status must flag alpha and gamma, got:
 ${report}"
 check '[[ ${report} == *"Exemption review"*"2026-11-06"*"no lapse"* && ${report} == *"GitHub token"* ]]' 'status must list the expiry dates'
+check '[[ $(sort -u "${state}/ssh.log") == ki-techne-agent-host ]]' 'with no binding variable, SSH must reach only ki-techne-agent-host'
+
+# A second binding's provider-neutral values, with no AWS variable set
+# (TECHNE-TOOLS-OPS-012): another SSH name, workspace and instruction set.
+: >"${state}/ssh.log"
+rm -f "${state}/ki-active" "${state}/ki-dev"
+bound() {
+  (
+    unset "${!AWS_@}" EXPECTED_AWS_ACCOUNT
+    # shellcheck disable=SC2088 # the binding carries a literal ~/ for the host.
+    HOME=${mac_home} AGENT_HOST_NAME=ki-techne-scratch AGENT_HOST_TAILSCALE_NAME=scratch-tail \
+      AGENT_HOST_REPOSITORIES=${repositories} KI_AGENT_HOST_WORKSPACE='~/elsewhere' \
+      AGENT_HOST_INSTRUCTIONS='CLAUDE.md markdown.md' bash "${scripts}/$1" 2>&1
+  )
+}
+rm "${host_home}"/.claude/*.md
+bound_setup=$(bound setup.sh) || { echo "${bound_setup}" >&2; echo 'agent-host-workspace: setup with binding values failed' >&2; exit 1; }
+check '[[ -d ${host_home}/elsewhere/knowledgeislands/alpha/.git && ${bound_setup} == *"cloned knowledgeislands/alpha"* ]]' 'setup must clone into the binding workspace on the host'
+check '[[ $(head -n 1 "${host_home}/.claude/CLAUDE.md") == "<!-- Rendered for ki-techne-scratch "* ]]' 'instructions must be rendered for the binding host name'
+check '[[ $(cd "${host_home}/.claude" && echo *.md) == "CLAUDE.md markdown.md" ]]' 'only the configured instruction files may be rendered'
+bound_report=$(bound status.sh)
+check '[[ ${bound_report} == *"Repositories under ${host_home}/elsewhere"* ]]' "status must report the binding workspace, got:
+${bound_report}"
+check '[[ $(sort -u "${state}/ssh.log") == scratch-tail ]]' 'with binding values, SSH must reach only the binding Tailscale name'
+refused=$(HOME=${mac_home} AGENT_HOST_INSTRUCTIONS='../secrets.md' bash "${scripts}/setup.sh" 2>&1) && check false 'setup must refuse an instruction path'
+check '[[ ${refused} == *"is not a Markdown file name"* ]]' 'setup must name the refused instruction file'
+
 check '[[ ! -e ${state}/curl.log ]]' 'nothing may reach the network'
 
 ((failures == 0)) || exit 1

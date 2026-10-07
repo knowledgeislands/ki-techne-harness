@@ -16,6 +16,8 @@ harness_path=knowledgeislands/ki-agentic-harness
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
+# shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
+[[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 repositories=${script_dir}/repositories.txt
 claude_source=${script_dir}/claude
 pull=false

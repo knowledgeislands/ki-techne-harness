@@ -4,8 +4,11 @@ set -euo pipefail
 profile=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 expected_account=${EXPECTED_AWS_ACCOUNT:-655383751458}
+# Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
+host_id=${AGENT_HOST_ID:-agent-host}
 stack_name=${AGENT_HOST_STACK_NAME:-ki-techne-agent-host}
-parameter_prefix=/ki/techne/agent-host
+parameter_prefix=${AGENT_HOST_PARAMETER_PREFIX:-/ki/techne/agent-host}
+parameter_prefix=${parameter_prefix%/}
 
 if [[ ${CONFIRM_DESTROY_AGENT_HOST:-} != "${stack_name}" ]]; then
   echo "set CONFIRM_DESTROY_AGENT_HOST=${stack_name} to tear down the agent host and its parameters" >&2
@@ -17,8 +20,8 @@ actual_account=$(aws sts get-caller-identity --profile "${profile}" --query Acco
 
 # JMESPath expression, not shell interpolation.
 # shellcheck disable=SC2016
-host_id=$(aws cloudformation describe-stacks --profile "${profile}" --region "${region}" --stack-name "${stack_name}" --query 'Stacks[0].Tags[?Key==`ki-agent-host-id`].Value | [0]' --output text)
-[[ ${host_id} == agent-host ]] || { echo "refusing unrecognised stack ${stack_name}" >&2; exit 1; }
+stack_host_id=$(aws cloudformation describe-stacks --profile "${profile}" --region "${region}" --stack-name "${stack_name}" --query 'Stacks[0].Tags[?Key==`ki-agent-host-id`].Value | [0]' --output text)
+[[ ${stack_host_id} == "${host_id}" ]] || { echo "refusing unrecognised stack ${stack_name}" >&2; exit 1; }
 
 aws cloudformation delete-stack --profile "${profile}" --region "${region}" --stack-name "${stack_name}"
 aws cloudformation wait stack-delete-complete --profile "${profile}" --region "${region}" --stack-name "${stack_name}"

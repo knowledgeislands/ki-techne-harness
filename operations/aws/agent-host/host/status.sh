@@ -4,6 +4,8 @@
 set -euo pipefail
 
 workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
+# shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
+[[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 # The standing exemption (GDR-KI-ARCADIA-004, KI-ARCADIA-GOV-023) has no lapse;
 # Kris reviews it on this date under KI-ARCADIA-GOV-021.
 exemption_review=2026-11-06

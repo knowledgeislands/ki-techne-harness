@@ -6,6 +6,14 @@ Parameters:
     Type: String
     AllowedPattern: '[a-z0-9-]+'
     Default: agent-host
+  HostName:
+    Type: String
+    AllowedPattern: '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+    Default: ki-techne-agent-host
+  TailscaleHostname:
+    Type: String
+    AllowedPattern: '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+    Default: ki-techne-agent-host
   ImageId:
     Type: AWS::EC2::Image::Id
     Default: ami-0526a6499f6470118
@@ -50,7 +58,7 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -63,7 +71,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -86,7 +94,7 @@ Resources:
       VpcId: !Ref AgentHostVpc
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -100,7 +108,7 @@ Resources:
       VpcId: !Ref AgentHostVpc
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -152,7 +160,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -188,7 +196,7 @@ Resources:
                     kms:ViaService: !Sub ssm.${AWS::Region}.amazonaws.com
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -230,7 +238,7 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: ki-techne-agent-host
+          Value: !Ref HostName
         - Key: ki-agent-host-id
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
@@ -250,8 +258,8 @@ Resources:
           # preserve_hostname stops cloud-init resetting it on later boots, and the
           # /etc/hosts entry keeps sudo and local lookups resolving it.
           printf 'preserve_hostname: true\n' > /etc/cloud/cloud.cfg.d/99-ki-agent-host-hostname.cfg
-          hostnamectl set-hostname ki-techne-agent-host
-          grep -qE '^127\.0\.1\.1[[:space:]]+ki-techne-agent-host$' /etc/hosts || printf '127.0.1.1 ki-techne-agent-host\n' >> /etc/hosts
+          hostnamectl set-hostname ${HostName}
+          grep -qE '^127\.0\.1\.1[[:space:]]+${HostName}$' /etc/hosts || printf '127.0.1.1 ${HostName}\n' >> /etc/hosts
 
           # Access is Tailscale SSH only: no session-manager agent and no OpenSSH listener.
           snap stop --disable amazon-ssm-agent 2>/dev/null || systemctl disable --now amazon-ssm-agent.service 2>/dev/null || true
@@ -299,7 +307,7 @@ Resources:
           key_file=$(mktemp /run/ki-agent-host-tailscale.XXXXXX)
           trap 'rm -f "$key_file"' EXIT
           /snap/bin/aws ssm get-parameter --region '${AWS::Region}' --name '${ParameterPrefix}/tailscale-auth-key' --with-decryption --query Parameter.Value --output text > "$key_file"
-          tailscale up --auth-key="file:$key_file" --ssh --advertise-tags='${TailscaleTag}' --hostname=ki-techne-agent-host
+          tailscale up --auth-key="file:$key_file" --ssh --advertise-tags='${TailscaleTag}' --hostname=${TailscaleHostname}
           rm -f "$key_file"
 
           install -d -m 0700 /var/lib/ki-agent-host
@@ -318,7 +326,7 @@ Outputs:
   OperatorUser:
     Value: !Ref OperatorUser
   TailscaleHostname:
-    Value: ki-techne-agent-host
+    Value: !Ref TailscaleHostname
   TailscaleTag:
     Value: !Ref TailscaleTag
   VpcId:

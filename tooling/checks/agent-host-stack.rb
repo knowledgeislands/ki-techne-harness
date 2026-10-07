@@ -16,7 +16,7 @@ failures = []
 check = ->(condition, message) { failures << message unless condition }
 
 expected_tags = {
-  'Name' => 'ki-techne-agent-host',
+  'Name' => 'HostName',
   'ki-agent-host-id' => 'AgentHostId',
   'ki-lifecycle' => 'prototype',
   'ki-work-item' => 'KI-ARCADIA-GOV-020'
@@ -54,7 +54,24 @@ statements.each do |statement|
     check.call(statement['Resource'].to_s.end_with?(':parameter${ParameterPrefix}/*'), 'parameter access must be limited to the prefix')
   end
 end
-check.call(parameters.dig('ParameterPrefix', 'Default') == '/ki/techne/agent-host', 'parameter prefix default changed')
+# Binding values (recipes/direct-host/recipe.toml) arrive as parameters whose
+# defaults are the agent-host binding's, so the first binding changes nothing.
+{
+  'AgentHostId' => 'agent-host',
+  'HostName' => 'ki-techne-agent-host',
+  'TailscaleHostname' => 'ki-techne-agent-host',
+  'TailscaleTag' => 'tag:ki-techne-agent-host',
+  'ParameterPrefix' => '/ki/techne/agent-host',
+  'InstanceType' => 't3.medium',
+  'VolumeSize' => 40
+}.each do |name, default|
+  check.call(parameters.dig(name, 'Default') == default, "#{name} default must be #{default.inspect}")
+end
+%w[Resources Outputs].each do |section|
+  body = YAML.dump(template.fetch(section))
+  check.call(!body.match?(%r{ki-techne-agent-host|/ki/techne/agent-host}), "#{section} must take host values from parameters, not literals")
+end
+check.call(template.dig('Outputs', 'TailscaleHostname', 'Value') == 'TailscaleHostname', 'TailscaleHostname output must be the parameter')
 check.call(parameters.dig('OperatorUser', 'Default') == 'techne', 'operator user default must be techne')
 
 instance = resources.fetch('AgentHostInstance').fetch('Properties')
@@ -67,17 +84,30 @@ check.call(instance.fetch('NetworkInterfaces').all? { |nic| nic['GroupSet'] == [
 # shell variables are written without braces.
 user_data = instance.dig('UserData', 'Fn::Base64')
 pseudo = { 'AWS::Region' => 'eu-west-1', 'AWS::AccountId' => '000000000000', 'AWS::Partition' => 'aws' }
-rendered = user_data.gsub(/\$\{([^}]+)\}/) do
-  name = Regexp.last_match(1)
-  if pseudo.key?(name)
-    pseudo[name]
-  elsif parameters.key?(name)
-    parameters.dig(name, 'Default').to_s
-  else
-    failures << "user data references unknown substitution ${#{name}}"
-    ''
+render = lambda do |overrides = {}|
+  user_data.gsub(/\$\{([^}]+)\}/) do
+    name = Regexp.last_match(1)
+    if pseudo.key?(name)
+      pseudo[name]
+    elsif parameters.key?(name)
+      overrides.fetch(name) { parameters.dig(name, 'Default') }.to_s
+    else
+      failures << "user data references unknown substitution ${#{name}}"
+      ''
+    end
   end
 end
+rendered = render.call
+
+# A second binding's values reach the host name, tailnet name, tag and prefix.
+other = render.call('HostName' => 'ki-techne-scratch', 'TailscaleHostname' => 'scratch-tail',
+                    'TailscaleTag' => 'tag:ki-techne-scratch', 'ParameterPrefix' => '/ki/techne/scratch')
+check.call(other.include?('hostnamectl set-hostname ki-techne-scratch') && other.include?('127.0.1.1 ki-techne-scratch'),
+           'user data must set the OS hostname from HostName')
+check.call(other.include?("--advertise-tags='tag:ki-techne-scratch' --hostname=scratch-tail"),
+           'user data must join the tailnet with TailscaleTag and TailscaleHostname')
+check.call(other.include?('/ki/techne/scratch/tailscale-auth-key') && !other.include?('/ki/techne/agent-host'),
+           'user data must read parameters only under ParameterPrefix')
 check.call(rendered.include?("tailscale up --auth-key=\"file:$key_file\" --ssh --advertise-tags='tag:ki-techne-agent-host'"),
            'user data must join the tailnet with Tailscale SSH and the agent-host tag')
 check.call(rendered.include?('/ki/techne/agent-host/tailscale-auth-key'), 'user data must read the auth key parameter')

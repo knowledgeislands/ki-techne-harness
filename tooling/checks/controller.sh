@@ -18,6 +18,8 @@ ruby -e 'require "yaml"; ARGV.each { |path| YAML.parse_stream(File.read(path)) }
 
 ruby "${repo_root}/tooling/checks/agent-host-stack.rb" "${repo_root}/infra/aws/agent-host-stack.yaml"
 "${repo_root}/tooling/checks/agent-host-workspace.sh"
+"${repo_root}/tooling/checks/agent-host-aws-scripts.sh"
+"${repo_root}/tooling/checks/recipe-manifest.sh"
 
 shellcheck \
   "${repo_root}"/tooling/checks/*.sh \
