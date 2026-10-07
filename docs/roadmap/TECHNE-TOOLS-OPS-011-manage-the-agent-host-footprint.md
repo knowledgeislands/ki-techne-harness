@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: a8e68e18f8d2c6109c77fa833589b980eab2a9c2
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T07:31:06Z
+updated_at: 2026-10-07T08:00:00Z
 ---
 
 # Manage Agent-Host Footprint
@@ -62,6 +62,7 @@ The host was set up by hand on 2026-10-07 (17 clones, `ki` 0.7.1, mise 2026.10.3
 - [x] Add `zsh` to the stack's package list.
 - [x] Update the runbook with the setup and status commands.
 - [x] Run the local gates, then run setup live twice and verify on the host.
+- [x] Deviation, 2026-10-07: set the OS hostname to `ki-techne-agent-host` in the stack's boot script, and align the status report and runbook with the standing exemption.
 
 ## Files touched
 
@@ -75,6 +76,8 @@ The host was set up by hand on 2026-10-07 (17 clones, `ki` 0.7.1, mise 2026.10.3
 - `infra/aws/agent-host-stack.yaml`
 - `operations/README.md`
 - `docs/guides/operator/agent-host.md`
+- `docs/guides/operator/agent-host-architecture.archify.json` (deviation)
+- `tooling/checks/agent-host-stack.rb` (deviation)
 - This record
 
 ## Verify
@@ -120,6 +123,7 @@ The approved boundary: a rerunnable workspace setup driven from the Mac, a read-
 - `infra/aws/agent-host-stack.yaml`: `zsh` in the boot script's package list.
 - `docs/guides/operator/agent-host.md` and `operations/README.md`: "Workspace setup" and "Status" sections, and a status pointer in the kill switch.
 - Deviation from the plan: the first live run exposed three behaviours the plan did not foresee, fixed in `c071d71`. `ki dev local set` refuses while the checkout is active, so the step skips the set when the path is already recorded. Plain `ki bootstrap` reuses configured agents, so the script passes `--refresh` when an agent home exists but the agent is not configured. `ki repo --estate diag` exits 0 while projections are repairable, so repair keys on its counts. The stubs now reproduce each.
+- Deviation after review submission, approved by Kris on 2026-10-07 at 09:10 CEST and folded in while this record is open: the host reported the AWS default hostname `ip-10-90-0-40`. The boot script in `infra/aws/agent-host-stack.yaml` now sets the OS hostname to `ki-techne-agent-host` with `hostnamectl`, writes a cloud-init drop-in with `preserve_hostname: true` so later boots keep it, and adds `127.0.1.1 ki-techne-agent-host` to `/etc/hosts` so `sudo` and local lookups resolve it; `tooling/checks/agent-host-stack.rb` asserts all three. It takes effect at the next build; the live stack and instance were not changed, so the current host keeps its name until it is rebuilt, as the runbook says. In the same pass, the status report, runbook and architecture diagram source stop describing a prototype lapse: `KI-ARCADIA-GOV-023` made the exemption standing, recorded in `GDR-KI-ARCADIA-004`, with no lapse and a scheduled review on 2026-11-06.
 
 ### Verification
 
@@ -129,10 +133,12 @@ The approved boundary: a rerunnable workspace setup driven from the Mac, a read-
 - `git hook run pre-commit` with `PATH=/usr/bin:/bin` passes in `ki-techne-harness` and `tools-ki`.
 - `ki doctor`: healthy, 12 checks pass, both `claude-code` and `chatgpt-codex` ready, local harness active.
 - `ki repo --estate diag`: 21 repositories healthy. `ki repo --estate audit` fell from 99 failing findings to 22. `SELECT-1` and `RUNTIMES-2` now pass. The remaining 22 are 21 `BIND-2` findings, because the host has no `~/.config/ki/mcp-servers.yaml` and MCP configuration is out of scope, and one `TEST-5` in `tools-ki`, whose completion test needs `zsh`, which the running host cannot install without `sudo`. Two warnings are content freshness in `ki-agentic-harness`.
+- Deviation: `bun run test` (stack validation with `bash -n` and ShellCheck on the rendered user data, and the workspace checks), `bunx biome ci .`, `bunx rumdl check .`, `git diff --check` and `ki repo audit --repo .` (pass, 18 skills) are clean. `cfn-lint` is not installed, so the repository's own stack check stands in for it. Nothing was run against the live host or AWS.
 - `status.sh`: 21 repositories, none at risk; GitHub token expires 2026-11-06, the Tailscale key does not expire, and the prototype authority lapses 2026-11-06.
 
 ### Outstanding concerns
 
+- **The hostname arrives only with a rebuild.** The current host stays `ip-10-90-0-40` until Kris rebuilds it under the standing exemption.
 - **Codex is not signed in.** Kris runs `codex login` as `techne` on the host.
 - **`zsh` arrives only with a rebuild.** Until then `tools-ki`'s coverage test fails on the host.
 - **`BIND-2` fails everywhere on the host** while it has no MCP source. Whether the host should have one is a separate decision.

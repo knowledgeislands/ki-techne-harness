@@ -2,7 +2,7 @@
 
 This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host that `KI-ARCADIA-GOV-020` authorises. The host is a separate EC2 instance, `ki-techne-agent-host`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
 
-Run nothing here until the gate in `KI-ARCADIA-GOV-020` has cleared and the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) names this prototype. Agents prepare and review this path; only Kris runs it.
+The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in `GDR-KI-ARCADIA-004` and set through `KI-ARCADIA-GOV-023` within the bounds `KI-ARCADIA-GOV-020` accepted. The exemption has no automatic lapse: it stands until Kris changes or withdraws it, and Kris reviews it on 2026-11-06. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
 
 ## At a glance
 
@@ -19,7 +19,8 @@ Two AWS profiles are in play. The build and teardown use the admin profile `know
 - **Operator OS user:** `techne`. It is a non-root user without `sudo`. Use `techne@ki-techne-agent-host` in the chezmoi SSH `Host` entry and in Zed's `ssh_connections` entry.
 - **Tailnet name:** `ki-techne-agent-host`, advertising `tag:ki-techne-agent-host`.
 - **Access:** Tailscale SSH only. The security group has no inbound rule; the boot script disables the OpenSSH listener and the session-manager agent, and the instance role has no session-manager permission.
-- **Image:** Ubuntu from the controller's pinned image, with Git, `tmux`, `jq`, Node.js from the latest `24.x` release (checksum-verified), the AWS CLI and Tailscale. Claude Code is installed for `techne` by the native installer in `~/.local/bin`, and `techne`'s Git uses the `ki-agent-host` credential helper for GitHub.
+- **Image:** Ubuntu from the controller's pinned image, with Git, `tmux`, `jq`, `zsh`, Node.js from the latest `24.x` release (checksum-verified), the AWS CLI and Tailscale. Claude Code is installed for `techne` by the native installer in `~/.local/bin`, and `techne`'s Git uses the `ki-agent-host` credential helper for GitHub.
+- **Hostname:** the boot script sets the OS hostname to `ki-techne-agent-host`, keeps it across reboots with cloud-init's `preserve_hostname` and adds it to `/etc/hosts` so `sudo` and local lookups resolve it. This applies from the next build: a host built before it, including the current one, keeps the AWS default name such as `ip-10-90-0-40` until it is rebuilt, because `techne` has no `sudo` to rename it. The same holds for `zsh`.
 - **Size:** `t3.medium` with a 40 GB encrypted `gp3` volume by default. At list prices this is roughly 33 USD a month while running, plus about 3.50 USD for the volume and 3.65 USD for the public IPv4 address, which exists only for outbound traffic.
 - **Secrets:** the instance role may read only Parameter Store names under `/ki/techne/agent-host/`, decrypting only through Parameter Store. The boot script reads `tailscale-auth-key` and nothing else. The Git credential helper reads `github-token` when Git asks for GitHub credentials. `model-api-key` stays unused: Claude Code signs in interactively as Kris instead, so no model API key is stored.
 - **Not on the host:** K3s, Paperclip, Kitteth, Telegram or any controller workload.
@@ -159,7 +160,7 @@ The boot script ends by printing `ki-agent-host bootstrap complete`. It also wri
 ## Verify over Tailscale
 
 1. `tailscale status` lists `ki-techne-agent-host` with the tag.
-2. `ssh techne@ki-techne-agent-host 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions. The first connection asks you to accept the host key. Claude Code is at `~/.local/bin/claude`, which is not on the `PATH` of a non-interactive SSH command, so name it in full there; an interactive login shell finds it as `claude`.
+2. `ssh techne@ki-techne-agent-host 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions, and `ssh techne@ki-techne-agent-host hostname` prints `ki-techne-agent-host`. The first connection asks you to accept the host key. Claude Code is at `~/.local/bin/claude`, which is not on the `PATH` of a non-interactive SSH command, so name it in full there; an interactive login shell finds it as `claude`.
 3. In Zed, open the `ki-techne-agent-host` remote with `upload_binary_over_ssh` enabled; the host never downloads the Zed server itself.
 4. Delete the spent auth-key parameter: `aws ssm delete-parameter --profile knowledge-islands-techne --region eu-west-1 --name /ki/techne/agent-host/tailscale-auth-key`. Tailscale keeps the node joined across reboots.
 
@@ -223,7 +224,7 @@ Before you stop or tear down the host, and whenever you want to know what is at 
 bash operations/aws/agent-host/status.sh
 ```
 
-For each repository it lists the branch, uncommitted files, commits that no remote branch contains, stashes and the ahead and behind counts as of the last fetch, and flags any with work at risk. It also lists the GitHub token's expiry, the Tailscale node key's expiry and the date the prototype authority lapses. It changes and fetches nothing.
+For each repository it lists the branch, uncommitted files, commits that no remote branch contains, stashes and the ahead and behind counts as of the last fetch, and flags any with work at risk. It also lists the GitHub token's expiry, the Tailscale node key's expiry and the date of the exemption's scheduled review, which is not a lapse. It changes and fetches nothing.
 
 ## A working session
 
