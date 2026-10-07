@@ -4,12 +4,12 @@ area: OPS
 title: Diagram the agent-host runbook
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: f0e7fa031b72c72346986210099d87497c0ee8b2
 created_at: 2026-10-07T05:00:00Z
-updated_at: 2026-10-07T05:15:00Z
+updated_at: 2026-10-07T06:32:16Z
 ---
 
 # Diagram the Agent-Host Runbook
@@ -113,6 +113,10 @@ The goal is met: the runbook shows what is built and how a session runs, with ed
 ### Mini recap
 
 OPS-010 filed the architecture and session diagrams beside the agent-host runbook and explained them in two new sections, with a Biome exclusion for generated SVGs. Every gate passes. Proposed learning route: how to export Archify diagrams for Markdown, to the `archify` guidance through its own record.
+
+## Done
+
+Accepted 2026-10-07 by Kris Brown on the review packet above.
 
 ## Discussion
 
