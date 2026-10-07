@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: a8e68e18f8d2c6109c77fa833589b980eab2a9c2
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T08:00:00Z
+updated_at: 2026-10-07T09:11:11Z
 ---
 
 # Manage Agent-Host Footprint
@@ -26,7 +26,7 @@ Origin: Kris, 2026-10-07, after the first remote session on the host.
 
 The host also holds a second checkout of repositories that Kris works on from the Mac. Work committed on the host but not pushed exists nowhere else, and `stop.sh` and `destroy.sh` do not check for it. `KI-HARNESS-GOV-147` in `ki-agentic-harness` addresses the same risk for coordinated worktrees: it makes the branch, not the checkout, the durable unit, so that removing a checkout is always safe. The agent host is that problem at the scale of a whole machine.
 
-Several credentials and authorities on the host expire on their own. The fine-grained GitHub token at `/ki/techne/agent-host/github-token` expires after 30 days. The Tailscale node key expires on the tailnet's key-expiry schedule unless expiry is disabled for the device. The prototype authority itself lapses on 2026-11-06, the review date that `KI-ARCADIA-GOV-021` tracks. None of these dates is visible from the host or from this repository.
+Several credentials and authorities on the host expire on their own. The fine-grained GitHub token at `/ki/techne/agent-host/github-token` expires after 30 days. The Tailscale node key expires on the tailnet's key-expiry schedule unless expiry is disabled for the device. The host's authority itself is a standing exemption with no lapse, set through `KI-ARCADIA-GOV-023` and recorded in `GDR-KI-ARCADIA-004`, with a scheduled review on 2026-11-06. None of these dates is visible from the host or from this repository.
 
 ## Boundary
 
@@ -134,7 +134,7 @@ The approved boundary: a rerunnable workspace setup driven from the Mac, a read-
 - `ki doctor`: healthy, 12 checks pass, both `claude-code` and `chatgpt-codex` ready, local harness active.
 - `ki repo --estate diag`: 21 repositories healthy. `ki repo --estate audit` fell from 99 failing findings to 22. `SELECT-1` and `RUNTIMES-2` now pass. The remaining 22 are 21 `BIND-2` findings, because the host has no `~/.config/ki/mcp-servers.yaml` and MCP configuration is out of scope, and one `TEST-5` in `tools-ki`, whose completion test needs `zsh`, which the running host cannot install without `sudo`. Two warnings are content freshness in `ki-agentic-harness`.
 - Deviation: `bun run test` (stack validation with `bash -n` and ShellCheck on the rendered user data, and the workspace checks), `bunx biome ci .`, `bunx rumdl check .`, `git diff --check` and `ki repo audit --repo .` (pass, 18 skills) are clean. `cfn-lint` is not installed, so the repository's own stack check stands in for it. Nothing was run against the live host or AWS.
-- `status.sh`: 21 repositories, none at risk; GitHub token expires 2026-11-06, the Tailscale key does not expire, and the prototype authority lapses 2026-11-06.
+- `status.sh`: 21 repositories, none at risk; GitHub token expires 2026-11-06, the Tailscale key does not expire, and the prototype authority lapses 2026-11-06. That was the wording of the run on 2026-10-07; the status script now reports the standing exemption's review date instead (fix `888101b`), verified locally only and not re-run live.
 
 ### Outstanding concerns
 
@@ -178,7 +178,7 @@ One view, on the host and in the runbook, should show what expires and when:
 
 - the GitHub token, 30 days from creation, with the rotation steps in `docs/guides/operator/agent-host.md`;
 - the Tailscale node key, from the device's key expiry in the admin console, or a note that expiry is disabled for it;
-- the prototype lapse on 2026-11-06, under `KI-ARCADIA-GOV-020` and `KI-ARCADIA-GOV-021`.
+- the prototype lapse on 2026-11-06, under `KI-ARCADIA-GOV-020` and `KI-ARCADIA-GOV-021`. Since superseded: `KI-ARCADIA-GOV-023` made the exemption standing (`GDR-KI-ARCADIA-004`), with no lapse and a scheduled review on 2026-11-06, which the status script now reports (fix `888101b`).
 
 The GitHub token and the lapse fall close together, so a renewal under `KI-ARCADIA-GOV-021` also needs a new token. The view could be a message of the day, a `ki` or shell command, or a table in the runbook; a dated table alone goes stale.
 
