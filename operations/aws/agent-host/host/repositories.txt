@@ -1,0 +1,23 @@
+# Repositories the agent host keeps under ~/workspaces/kit, in the Mac's layout.
+# One per line: <path under ~/workspaces/kit> <HTTPS origin>. Read by host/converge.sh.
+knowledgeislands/apps-observatory https://github.com/knowledgeislands/apps-observatory.git
+knowledgeislands/homebrew-tap https://github.com/knowledgeislands/homebrew-tap.git
+knowledgeislands/ki-agentic-harness https://github.com/knowledgeislands/ki-agentic-harness.git
+knowledgeislands/ki-arcadia-principal https://github.com/knowledgeislands/ki-arcadia-principal.git
+knowledgeislands/ki-specifications https://github.com/knowledgeislands/ki-specifications.git
+knowledgeislands/ki-techne-harness https://github.com/knowledgeislands/ki-techne-harness.git
+knowledgeislands/ki-website https://github.com/knowledgeislands/ki-website.git
+knowledgeislands/mcp-acquire-whatsapp https://github.com/knowledgeislands/mcp-acquire-whatsapp.git
+knowledgeislands/mcp-git-audit https://github.com/knowledgeislands/mcp-git-audit.git
+knowledgeislands/mcp-gsuite https://github.com/knowledgeislands/mcp-gsuite.git
+knowledgeislands/mcp-housekeeping-chatgpt https://github.com/knowledgeislands/mcp-housekeeping-chatgpt.git
+knowledgeislands/mcp-housekeeping-claude https://github.com/knowledgeislands/mcp-housekeeping-claude.git
+knowledgeislands/mcp-housekeeping-codex https://github.com/knowledgeislands/mcp-housekeeping-codex.git
+knowledgeislands/mcp-ki-kb-fs https://github.com/knowledgeislands/mcp-ki-kb-fs.git
+knowledgeislands/mcp-ki-kb-notion-mirror https://github.com/knowledgeislands/mcp-ki-kb-notion-mirror.git
+knowledgeislands/mcp-m365 https://github.com/knowledgeislands/mcp-m365.git
+knowledgeislands/tools-git-almanac https://github.com/knowledgeislands/tools-git-almanac.git
+knowledgeislands/tools-ki https://github.com/knowledgeislands/tools-ki.git
+knowledgeislands/tools-mgit https://github.com/knowledgeislands/tools-mgit.git
+knowledgeislands/tools-rig https://github.com/knowledgeislands/tools-rig.git
+knowledgeislands/tools-techne https://github.com/knowledgeislands/tools-techne.git

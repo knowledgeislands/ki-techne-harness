@@ -4,12 +4,12 @@ area: OPS
 title: Manage agent-host footprint
 theme: operations
 horizon: now
-status: ready
+status: in-progress
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: a8e68e18f8d2c6109c77fa833589b980eab2a9c2
 created_at: 2026-10-07T04:41:13Z
-updated_at: 2026-10-07T06:56:00Z
+updated_at: 2026-10-07T07:03:43Z
 ---
 
 # Manage Agent-Host Footprint
