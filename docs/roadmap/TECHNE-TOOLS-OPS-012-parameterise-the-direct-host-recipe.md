@@ -5,6 +5,7 @@ title: Parameterise direct-host recipe
 kind: deliver
 purpose: capability
 project: agent-host
+component: recipes
 transferred_from: knowledgeislands/ki-arcadia-principal:KI-ARCADIA-GOV-025
 horizon: now
 status: awaiting-review
@@ -12,7 +13,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T12:58:15Z
-updated_at: 2026-10-07T14:48:32Z
+updated_at: 2026-10-07T14:56:44Z
 ---
 
 # Parameterise Direct-Host Recipe
