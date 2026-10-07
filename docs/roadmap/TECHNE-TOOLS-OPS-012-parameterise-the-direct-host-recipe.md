@@ -11,9 +11,9 @@ horizon: now
 status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: cda3304a9dc80473f41555e0b71f703b0e2daf61
 created_at: 2026-10-07T12:58:15Z
-updated_at: 2026-10-07T14:56:44Z
+updated_at: 2026-10-07T15:34:43Z
 ---
 
 # Parameterise Direct-Host Recipe
