@@ -4,12 +4,12 @@ area: OPS
 title: Prepare agent-host build
 theme: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: f4e4ba22dbd65368f5a85216e8c0233789854dac
 created_at: 2026-10-07T00:10:08Z
-updated_at: 2026-10-07T00:30:34Z
+updated_at: 2026-10-07T00:31:22Z
 ---
 
 # Prepare Agent-Host Build
@@ -137,6 +137,10 @@ The goal is met locally: the path to build, reach, stop and remove the host exis
 ### Mini recap
 
 Added a separate CloudFormation stack, three operations scripts, an offline structural check and an operator runbook for the GOV-020 agent host, with local gates passing and nothing run remotely. Proposed learning routes: the component-naming principle and the security-group limits on name-based egress could inform a Techne Engineering Practice note in Arcadia; a DNS firewall or egress proxy is a candidate future item if the prototype continues.
+
+## Done
+
+Accepted 2026-10-07 by Kris Brown on the review packet above, with express authority given at 02:25 CEST. Kris confirmed the build choices listed under Outstanding concerns: `t3.medium` with 40 GB, the outbound TCP 80 rule, no session-manager access and Node.js tracking the latest `24.x`. The exception was the operator user, which Kris changed from `kris` to `techne`, still without `sudo`; that change, the credential helper, the tailnet policy and the credentials decision landed before acceptance and are recorded above. The tailnet policy now has a paste-ready form in the runbook, which answers the policy-location concern by keeping the admin console as its only record. Kris also delegated the `TECHNE-TOOLS-OPS-008` disposition. The remote build remains Kris's operation under `KI-ARCADIA-GOV-020`.
 
 ## Discussion
 
