@@ -4,6 +4,7 @@ These guides are for the operator responsible for the deployed personal controll
 
 ## Start here
 
+- [Build and operate the agent host](agent-host.md) — create the prototype agent host, connect over Tailscale SSH, use the kill switch and tear it down.
 - [Use Telegram commands](telegram-commands.md) — discover targets, dispatch deterministic work, interpret results and request cancellation safely.
 - Use the [`tools-techne` operator guides](https://github.com/knowledgeislands/tools-techne/tree/main/docs/guides/user) to install and authenticate `techne`, inspect controller readiness and open the private bootstrap session.
 

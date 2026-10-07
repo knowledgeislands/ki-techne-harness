@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Prototype agent host reached only over Tailscale SSH (KI-ARCADIA-GOV-020)
+
+Parameters:
+  AgentHostId:
+    Type: String
+    AllowedPattern: '[a-z0-9-]+'
+    Default: agent-host
+  ImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0526a6499f6470118
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues: [t3.medium, t3.large, t3.xlarge]
+  VolumeSize:
+    Type: Number
+    Default: 40
+    MinValue: 16
+    MaxValue: 100
+  OperatorUser:
+    Type: String
+    AllowedPattern: '[a-z][a-z0-9-]{0,30}'
+    Default: kris
+  TailscaleTag:
+    Type: String
+    AllowedPattern: 'tag:[a-z0-9-]+'
+    Default: tag:ki-techne-agent-host
+  ParameterPrefix:
+    Type: String
+    AllowedPattern: '/[a-z0-9/-]+'
+    Default: /ki/techne/agent-host
+  NodeMajorVersion:
+    Type: String
+    AllowedPattern: '[0-9]+'
+    Default: '24'
+  VpcCidr:
+    Type: String
+    Default: 10.90.0.0/24
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.90.0.0/25
+
+Resources:
+  AgentHostVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref AgentHostVpc
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref AgentHostVpc
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref AgentHostVpc
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnet
+
+  # No ingress rules. DNS to the VPC resolver, instance metadata and Amazon
+  # Time Sync are not filtered by security groups, so they need no egress rule.
+  AgentHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: No ingress; agent-host egress for GitHub, model API, packages and Tailscale
+      VpcId: !Ref AgentHostVpc
+      SecurityGroupEgress:
+        - Description: HTTPS for GitHub, model API, package registries, SSM and Tailscale control and DERP
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: Signed Ubuntu package archives over HTTP
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Description: Tailscale STUN for DERP path discovery
+          IpProtocol: udp
+          FromPort: 3478
+          ToPort: 3478
+          CidrIp: 0.0.0.0/0
+        - Description: Tailscale direct peer connections to the default port
+          IpProtocol: udp
+          FromPort: 41641
+          ToPort: 41641
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  AgentHostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: read-agent-host-parameters
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadAgentHostParameters
+                Effect: Allow
+                Action: ['ssm:GetParameter', 'ssm:GetParameters']
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterPrefix}/*
+              - Sid: DecryptOnlyThroughParameterStore
+                Effect: Allow
+                Action: kms:Decrypt
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    kms:ViaService: !Sub ssm.${AWS::Region}.amazonaws.com
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+
+  AgentHostInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref AgentHostRole]
+
+  AgentHostInstance:
+    Type: AWS::EC2::Instance
+    DependsOn: DefaultRoute
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref AgentHostInstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpProtocolIpv6: disabled
+        HttpPutResponseHopLimit: 1
+        HttpTokens: required
+        InstanceMetadataTags: disabled
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: '0'
+          GroupSet: [!Ref AgentHostSecurityGroup]
+          SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: !Ref VolumeSize
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: ki-techne-agent-host
+        - Key: ki-agent-host-id
+          Value: !Ref AgentHostId
+        - Key: ki-lifecycle
+          Value: prototype
+        - Key: ki-work-item
+          Value: KI-ARCADIA-GOV-020
+      # Shell variables are written $name, never with braces, so Fn::Sub
+      # substitutes only the template parameters and pseudo parameters.
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec > >(tee -a /var/log/ki-agent-host-bootstrap.log | logger -t ki-agent-host-bootstrap -s 2>/dev/console) 2>&1
+          export DEBIAN_FRONTEND=noninteractive
+
+          # Access is Tailscale SSH only: no session-manager agent and no OpenSSH listener.
+          snap stop --disable amazon-ssm-agent 2>/dev/null || systemctl disable --now amazon-ssm-agent.service 2>/dev/null || true
+          systemctl disable --now ssh.socket ssh.service 2>/dev/null || true
+
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git jq tmux xz-utils
+          snap install aws-cli --classic
+
+          node_base=https://nodejs.org/dist/latest-v${NodeMajorVersion}.x
+          node_tarball=$(curl -fsSL "$node_base/SHASUMS256.txt" | awk '/linux-x64\.tar\.xz$/ { print $2 }')
+          curl -fsSL -o "/tmp/$node_tarball" "$node_base/$node_tarball"
+          (cd /tmp && curl -fsSL "$node_base/SHASUMS256.txt" | grep " $node_tarball\$" | sha256sum --check --strict)
+          tar -xJf "/tmp/$node_tarball" -C /usr/local --strip-components=1 --no-same-owner
+          rm -f "/tmp/$node_tarball"
+
+          if ! id -u '${OperatorUser}' >/dev/null 2>&1; then
+            useradd --create-home --shell /bin/bash '${OperatorUser}'
+          fi
+          sudo -u '${OperatorUser}' -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+
+          curl -fsSL https://tailscale.com/install.sh | sh
+          umask 077
+          key_file=$(mktemp /run/ki-agent-host-tailscale.XXXXXX)
+          trap 'rm -f "$key_file"' EXIT
+          /snap/bin/aws ssm get-parameter --region '${AWS::Region}' --name '${ParameterPrefix}/tailscale-auth-key' --with-decryption --query Parameter.Value --output text > "$key_file"
+          tailscale up --auth-key="file:$key_file" --ssh --advertise-tags='${TailscaleTag}' --hostname=ki-techne-agent-host
+          rm -f "$key_file"
+
+          install -d -m 0700 /var/lib/ki-agent-host
+          touch /var/lib/ki-agent-host/ready
+          echo 'ki-agent-host bootstrap complete'
+
+Outputs:
+  AgentHostInstanceId:
+    Value: !Ref AgentHostInstance
+  AgentHostPrivateIp:
+    Value: !GetAtt AgentHostInstance.PrivateIp
+  AgentHostSecurityGroupId:
+    Value: !Ref AgentHostSecurityGroup
+  AgentHostRoleName:
+    Value: !Ref AgentHostRole
+  OperatorUser:
+    Value: !Ref OperatorUser
+  TailscaleHostname:
+    Value: ki-techne-agent-host
+  TailscaleTag:
+    Value: !Ref TailscaleTag
+  VpcId:
+    Value: !Ref AgentHostVpc

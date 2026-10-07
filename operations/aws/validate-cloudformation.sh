@@ -5,7 +5,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 profile=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 
-for template in controller-stack.yaml target-stack.yaml; do
+for template in agent-host-stack.yaml controller-stack.yaml target-stack.yaml; do
   aws cloudformation validate-template \
     --profile "${profile}" \
     --region "${region}" \
