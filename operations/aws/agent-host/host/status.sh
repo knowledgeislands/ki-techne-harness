@@ -167,15 +167,16 @@ else
 fi
 
 if [[ ${json} == true ]]; then
-  # cloud-init records the instance ID readably for every user.
-  instance_id=$(cat /var/lib/cloud/data/instance-id 2>/dev/null || true)
+  # host.id is the provider-defined identity of the machine. On AWS it is the
+  # instance ID, which cloud-init records readably for every user.
+  host_id=$(cat /var/lib/cloud/data/instance-id 2>/dev/null || true)
   printf '%s\n' ${problems[@]+"${problems[@]}"} |
     jq -n --slurpfile repositories "${entries}" --rawfile problems /dev/stdin \
       --arg schema "${schema}" --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      --arg hostname "$(hostname)" --arg instance_id "${instance_id}" --arg workspace "${workspace}" \
+      --arg hostname "$(hostname)" --arg host_id "${host_id}" --arg workspace "${workspace}" \
       --argjson fetched "${fetch}" --arg outcome "${outcome}" \
       '{schema: $schema, generated_at: $generated_at,
-        host: {hostname: $hostname, instance_id: (if $instance_id == "" then null else $instance_id end)},
+        host: {hostname: $hostname, id: (if $host_id == "" then null else $host_id end)},
         workspace: $workspace, fetched: $fetched, outcome: $outcome,
         repositories: $repositories, problems: ($problems | split("\n") | map(select(. != "")))}'
   exit "${status}"

@@ -2,7 +2,7 @@
 
 This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host that `KI-ARCADIA-GOV-020` authorises. The host is a separate EC2 instance, `ki-techne-agent-host`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
 
-The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in `GDR-KI-ARCADIA-004` and set through `KI-ARCADIA-GOV-023` within the bounds `KI-ARCADIA-GOV-020` accepted. The exemption has no automatic lapse: it stands until Kris changes or withdraws it, and Kris reviews it on 2026-11-06. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
+The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in `GDR-KI-ARCADIA-004` and set through `KI-ARCADIA-GOV-023` within the bounds `KI-ARCADIA-GOV-020` accepted. The exemption has no automatic lapse: it stands until Kris changes or withdraws it. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
 
 ## At a glance
 
@@ -256,7 +256,7 @@ Work on the host is safe only once it is in Git on a remote, on any branch (`ODR
 
 For each repository the report lists the branch, uncommitted files, unpushed commits, stashes and the ahead and behind counts as of the last fetch, and flags it `AT RISK` or `UNKNOWN`. The inventory fails closed: a missing workspace, a declared repository that is absent, a repository outside the declared set or a Git read that fails makes the outcome **unknown** rather than clean, and the report lists why. It then lists the GitHub token's expiry, the Tailscale node key's expiry and the exemption review line, and ends with a summary line such as `summary: REPOSITORIES=3 AT_RISK=1 UNKNOWN=0 OUTCOME=at-risk`. It changes nothing; `--fetch` runs `git fetch --all --prune` in each repository, which updates only remote-tracking branches, and a failed fetch makes that repository unknown.
 
-The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the report itself fails, and SSH's own 255 when the host cannot be reached. `--json` prints one `techne/host-workspace/v1` document instead of the table, naming the host and its instance ID, and `--connect-timeout <seconds>` bounds the wait for an unreachable host. `stop.sh` and `destroy.sh` read this document; the `techne` CLI reads it through the `[status]` table of the recipe manifest.
+The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the report itself fails, and SSH's own 255 when the host cannot be reached. `--json` prints one `techne/host-workspace/v1` document instead of the table, naming the host by its hostname and `host.id`, the provider-defined identity of the machine: the cloud-init instance ID on AWS, and a hardware or install UUID on owned hardware, and `--connect-timeout <seconds>` bounds the wait for an unreachable host. `stop.sh` and `destroy.sh` read this document; the `techne` CLI reads it through the `[status]` table of the recipe manifest.
 
 ## A working session
 
@@ -320,12 +320,12 @@ Before deleting anything, both operations read [Status](#status) as JSON with a 
 | At risk | Refuses, listing the repositories at risk and the recovery routes, unless `--discard <repository>...` names exactly those repositories. |
 | Unknown, or the status cannot be read | Refuses, listing the reasons and the recovery routes, unless `--discard-unreadable-host` is given; then it asks you to type `discard ki-techne-agent-host`. |
 
-A report counts as read only when it parses, carries the `techne/host-workspace/v1` schema and its outcome matches its exit status. The instance ID in the report must also match the stack's `AgentHostInstanceId` output, so a status read from another host cannot clear this one; only `--discard-unreadable-host`, which has no report to check, skips that check and says so.
+A report counts as read only when it parses, carries the `techne/host-workspace/v1` schema and its outcome matches its exit status. The report's `host.id` must also match the stack's `AgentHostInstanceId` output, so a status read from another host cannot clear this one; only `--discard-unreadable-host`, which has no report to check, skips that check and says so.
 
 The recovery routes, in order:
 
 1. **Push.** On the host, push each repository's unlanded branches.
-2. **Bundle.** On the host, run `git bundle create ~/<repository>.bundle --all` and `git bundle verify ~/<repository>.bundle` in each repository, copy the bundles to the Mac with `scp` over Tailscale SSH, and verify them again there.
+2. **Bundle.** On the host, run `git bundle create ~/<repository>.bundle --all` and `git bundle verify ~/<repository>.bundle` in each repository, copy the bundles to the operator's machine with `scp` over Tailscale SSH, and verify them again there.
 
 There is no EBS snapshot route.
 
@@ -333,7 +333,7 @@ There is no EBS snapshot route.
 
 1. Start the host if it is stopped, with `techne-agent-host connect --aws` or the operator profile.
 2. Run `status.sh --fetch` and read what is at risk or unknown.
-3. Land the work: push it, or bundle it to the Mac and verify the bundle.
+3. Land the work: push it, or bundle it to the operator's machine and verify the bundle.
 4. Run `status.sh` again until it reports clean, then rebuild or withdraw without an override.
 
 ### In an emergency

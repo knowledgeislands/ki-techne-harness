@@ -62,7 +62,7 @@ mkdir "${work}/reports"
 report() {
   jq -n --arg outcome "$3" --argjson repositories "$4" --argjson problems "${5:-[]}" --arg instance "${6:-i-0123456789abcdef0}" \
     '{schema: "techne/host-workspace/v1", generated_at: "2026-10-08T00:00:00Z",
-      host: {hostname: "ki-techne-agent-host", instance_id: $instance}, workspace: "/home/techne/workspaces/kit",
+      host: {hostname: "ki-techne-agent-host", id: $instance}, workspace: "/home/techne/workspaces/kit",
       fetched: false, outcome: $outcome, repositories: $repositories, problems: $problems}' >"${work}/reports/$1.json"
   echo "$2" >"${work}/reports/$1.exit"
 }

@@ -89,7 +89,7 @@ Before discarding, land the work if the host can be reached:
   1. Push: on the host, push each repository's unlanded branches.
   2. Bundle: on the host, run 'git bundle create ~/<repository>.bundle --all' and
      'git bundle verify ~/<repository>.bundle' in each repository, copy the bundles
-     to the Mac with scp over Tailscale SSH, and verify them again there.
+     to the operator's machine with scp over Tailscale SSH, and verify them again there.
 EOF
 }
 
@@ -144,7 +144,7 @@ if [[ ${stack_present} == true ]]; then
   if [[ ${outcome} == unreadable ]]; then
     echo "the status could not be read, so the same-host check is skipped under --discard-unreadable-host"
   else
-    reported=$(jq -r '.host.instance_id // empty' <<<"${report}")
+    reported=$(jq -r '.host.id // empty' <<<"${report}")
     if [[ -z ${instance_id} || ${instance_id} == None || ${reported} != "${instance_id}" ]]; then
       echo "refusing: the status came from instance ${reported:-(none)}, but stack ${stack_name} holds ${instance_id}" >&2
       exit 1
