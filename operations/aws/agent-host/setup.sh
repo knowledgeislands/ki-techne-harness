@@ -32,6 +32,9 @@ converge_args+=(--git-name "$(git config --global user.name)" --git-email "$(git
 stage=$(mktemp -d)
 trap 'rm -rf "${stage}"' EXIT
 cp "${here}/host/converge.sh" "${here}/host/status.sh" "${stage}/"
+# The recipe's pins, their Rig provider and its own host instructions (TECHNE-TOOLS-OPS-014).
+cp "${here}/../../../recipes/direct-host/rig.toml" "${here}/../../../recipes/direct-host/rig-pins.sh" \
+  "${here}/../../../recipes/direct-host/host-instructions.md" "${stage}/"
 cp "${repositories}" "${stage}/repositories.txt"
 mkdir "${stage}/claude"
 for name in "${instructions[@]}"; do

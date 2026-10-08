@@ -26,6 +26,8 @@ footprint = [
 [paths]
 setup = "operations/aws/agent-host/setup.sh"
 status = "operations/aws/agent-host/status.sh"
+# The pins (TECHNE-TOOLS-OPS-014): Rig's direct-host profile, one variant per target OS.
+pins = "recipes/direct-host/rig.toml"
 
 # The status report (ODR-KI-ARCADIA-001): `status --json` prints one document
 # of this schema, and the exit status carries its outcome. `--fetch` updates

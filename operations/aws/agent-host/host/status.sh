@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Read-only report of work on the agent host that exists nowhere else, and of
-# what expires (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-013). Changes nothing;
-# with --fetch it updates remote-tracking refs and nothing else.
+# what expires and has drifted from the pins (TECHNE-TOOLS-OPS-011,
+# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014). Changes nothing but the expiry
+# cache the login banner reads; with --fetch it also updates remote-tracking refs.
 #
 # usage: status.sh [--json] [--fetch] [--repositories <file>] [--expect <path>]...
 #
@@ -18,9 +19,8 @@ schema=techne/host-workspace/v1
 workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
 # shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
-# The standing exemption (GDR-KI-ARCADIA-004, KI-ARCADIA-GOV-023) has no lapse;
-# Kris reviews it on this date under KI-ARCADIA-GOV-021.
-exemption_review=2026-11-06
+# Text mode records what it finds here for the login banner.
+expiry_cache=${HOME}/.cache/ki-agent-host/expiry
 PATH="${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}"
 export GIT_TERMINAL_PROMPT=0
 
@@ -198,34 +198,72 @@ days_until() {
   echo $(((target - now) / 86400))
 }
 
+# soon <date>: its days left, marked when 14 or fewer (ODR-KI-ARCADIA-001).
+soon() {
+  local days
+  days=$(days_until "$1")
+  if [[ ${days} != '?' ]] && ((days <= 14)); then
+    echo "${days} days  EXPIRES SOON"
+  else
+    echo "${days} days"
+  fi
+}
+
+# Drift from the recipe's pins, through Rig's direct-host profile (unknown when
+# Rig is absent or cannot read it).
+echo
+echo 'Pins'
+drift=''
+if ! command -v rig >/dev/null; then
+  printf '  %s\n' 'unknown (Rig is not installed; rerun setup)'
+elif ! pins=$(RIG_PROGRESS=never RIG_OUTCOME=never rig status --profile direct-host --format json 2>/dev/null </dev/null ||
+  [[ $? == 1 ]]) || ! jq -e '.tools | type == "array"' >/dev/null 2>&1 <<<"${pins}"; then
+  printf '  %s\n' 'unknown (rig status failed)'
+else
+  while IFS=$'\t' read -r tool state; do
+    flag=''
+    if [[ ${state} != present ]]; then
+      flag='  DRIFT'
+      drift+="${drift:+,}${tool}"
+    fi
+    printf '  %-24s %s%s\n' "${tool}" "${state}" "${flag}"
+  done < <(jq -r '.tools[] | [.id, .state] | @tsv' <<<"${pins}")
+fi
+
 echo
 echo 'Expiry'
 
 # GitHub reports a fine-grained token's expiry in a response header. The token
 # goes to curl through its standard-input configuration, never an argument.
-github='unknown (no GitHub credential)'
+github='unknown (no GitHub credential)' github_date=''
 token=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p' || true)
 if [[ -n ${token} ]]; then
   github='unknown (GitHub did not report an expiry)'
   expiry=$(printf 'header = "Authorization: Bearer %s"\n' "${token}" |
     curl --silent --show-error --max-time 15 --output /dev/null --dump-header - --config - https://api.github.com/rate_limit 2>/dev/null |
     tr -d '\r' | awk -F': ' 'tolower($1) == "github-authentication-token-expiration" { print $2 }' || true)
-  [[ -n ${expiry} ]] && github="${expiry} ($(days_until "${expiry%% *}") days)"
+  [[ -n ${expiry} ]] && github_date=${expiry%% *} && github="${expiry} ($(soon "${github_date}"))"
 fi
 unset token
 printf '  %-24s %s\n' 'GitHub token' "${github}"
 
-tailscale_expiry='unknown (tailscale not available)'
+tailscale_expiry='unknown (tailscale not available)' tailscale_date=''
 if command -v tailscale >/dev/null && status_json=$(tailscale status --json 2>/dev/null); then
   key_expiry=$(jq -r '.Self.KeyExpiry // empty' <<<"${status_json}")
   if [[ -n ${key_expiry} ]]; then
-    tailscale_expiry="${key_expiry} ($(days_until "${key_expiry%%T*}") days)"
+    tailscale_date=${key_expiry%%T*}
+    tailscale_expiry="${key_expiry} ($(soon "${tailscale_date}"))"
   else
     tailscale_expiry='does not expire (key expiry disabled)'
   fi
 fi
 printf '  %-24s %s\n' 'Tailscale node key' "${tailscale_expiry}"
-printf '  %-24s %s\n' 'Exemption review' "${exemption_review} ($(days_until "${exemption_review}") days; standing, no lapse; GDR-KI-ARCADIA-004)"
+
+# The banner's only input: the dates, drift and when they were checked.
+mkdir -p "$(dirname "${expiry_cache}")"
+printf 'checked %s\ngithub %s\ntailscale %s\ndrift %s\n' "$(date -u +%s)" "${github_date:--}" "${tailscale_date:--}" "${drift}" \
+  >"${expiry_cache}.tmp.$$"
+mv "${expiry_cache}.tmp.$$" "${expiry_cache}"
 
 echo
 echo "summary: REPOSITORIES=${count} AT_RISK=${at_risk} UNKNOWN=${unknown} OUTCOME=${outcome}"

@@ -1,0 +1,131 @@
+# The direct-host recipe's pins (ODR-KI-ARCADIA-001, ADR-KI-ARCADIA-003 stage 1,
+# TECHNE-TOOLS-OPS-014): the one file declaring the host's tool versions, as
+# Rig's direct-host profile. converge.sh installs it as ~/.config/rig/rig.toml,
+# reads each tool's locator for the host's OS and installs that version itself;
+# status.sh reports drift through `rig status --profile direct-host`. Bump a pin
+# by an ordinary commit, then rerun setup.
+#
+# Each tool has a variant per target OS. Its locator is the exact version, or
+# the minimum for kind "minimum". The observe-only direct-host-pins provider
+# (rig-pins.sh beside this file) compares the running tool's version with it;
+# no tool here installs through Rig until TECHNE-TOOLS-OPS-018.
+
+[rig]
+default-profile = "direct-host"
+
+[profile.direct-host]
+name = "Direct host"
+purpose = "Tools every agent session on a direct-host recipe host needs"
+
+[provider.direct-host-pins]
+adapter = "custom"
+capabilities = ["observe"]
+
+[category.agent-host]
+name = "Agent host"
+purpose = "Shared tools of the direct-host recipe"
+
+[tool.rig]
+name = "Rig"
+category = "agent-host"
+purpose = "Observe the host's tools against these pins"
+rationale = "The recipe's pins are a Rig profile"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "0.4.0"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "0.4.0"
+
+[tool.ki]
+name = "ki"
+category = "agent-host"
+purpose = "Install the KI skills and run repository governance"
+rationale = "Moves to the current ki release"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "0.9.0"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "0.9.0"
+
+[tool.mise]
+name = "mise"
+category = "agent-host"
+purpose = "Install the global tool pins and each repository's mise.toml"
+rationale = "Repositories declare their own tools through mise"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "2026.10.4"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "2026.10.4"
+
+[tool.bun]
+name = "Bun"
+category = "agent-host"
+purpose = "Run the KI TypeScript repositories"
+rationale = "KI repositories use Bun"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "1.4.2"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "1.4.2"
+
+[tool.node]
+name = "Node.js"
+category = "agent-host"
+purpose = "Run Codex and Node-based tooling"
+rationale = "Codex and repository tooling need Node"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "24.21.0"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "24.21.0"
+
+[tool.codex]
+name = "Codex"
+category = "agent-host"
+purpose = "Run Codex agent sessions"
+rationale = "The host serves both Claude and Codex"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "exact"
+variant.linux.install.locator = "0.161.0"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "exact"
+variant.macos.install.locator = "0.161.0"
+
+[tool.claude]
+name = "Claude Code"
+category = "agent-host"
+purpose = "Run Claude agent sessions"
+rationale = "It updates itself, so the pin is a minimum"
+platforms = ["linux", "macos"]
+variant.linux.platforms = ["linux"]
+variant.linux.install.provider = "direct-host-pins"
+variant.linux.install.kind = "minimum"
+variant.linux.install.locator = "2.1.285"
+variant.macos.platforms = ["macos"]
+variant.macos.install.provider = "direct-host-pins"
+variant.macos.install.kind = "minimum"
+variant.macos.install.locator = "2.1.285"

@@ -1,20 +1,43 @@
 #!/usr/bin/env bash
 # Converge techne's workspace on the agent host to the declared state
-# (TECHNE-TOOLS-OPS-011). Runs on the host as techne, without sudo; setup.sh
+# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014). Runs on the host as techne, without sudo; setup.sh
 # stages and runs it from the Mac, and it also runs from the host's harness
 # clone. It prints each change and ends with "no changes" when there were none.
 set -euo pipefail
 
-# Pins, matching the Mac.
-ki_version=0.7.1
-mise_version=2026.10.3
-bun_version=1.4.2
-node_version=24
-codex_version=0.160.1
 harness_id=knowledgeislands/ki-agentic-harness
 harness_path=knowledgeislands/ki-agentic-harness
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# The recipe's files: staged beside this script by setup.sh, or in the harness
+# checkout this script runs from.
+recipe_dir=${script_dir}
+[[ -f ${recipe_dir}/rig.toml ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/direct-host
+
+# Pins (TECHNE-TOOLS-OPS-014): the recipe's Rig profile declares them; each
+# tool's locator for this OS is its version.
+pins=${recipe_dir}/rig.toml
+case $(uname -s) in
+  Linux) os=linux ;;
+  Darwin) os=macos ;;
+  *) echo "converge.sh: unsupported OS $(uname -s)" >&2; exit 1 ;;
+esac
+pin() {
+  local value
+  value=$(awk -v table="[tool.$1]" -v key="variant.${os}.install.locator" '
+    $0 == table { inside = 1; next }
+    /^\[/ { inside = 0 }
+    inside && $1 == key { gsub(/"/, "", $3); print $3 }
+  ' "${pins}")
+  [[ -n ${value} ]] || { echo "converge.sh: ${pins} has no ${os} pin for $1" >&2; exit 1; }
+  printf '%s\n' "${value}"
+}
+rig_version=$(pin rig)
+ki_version=$(pin ki)
+mise_version=$(pin mise)
+bun_version=$(pin bun)
+node_version=$(pin node)
+codex_version=$(pin codex)
 workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
 # shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
@@ -123,10 +146,54 @@ export KNIP_DISABLE_RAW_TRANSFER=1
 # Interactive bash also gets mise'"'"'s hook, which applies repository [env].
 if [ -n "${BASH_VERSION:-}" ] && [ -z "${ki_agent_host_mise_active:-}" ] && [ -x "$HOME/.local/bin/mise" ]; then
   case $- in *i*) ki_agent_host_mise_active=1; eval "$("$HOME/.local/bin/mise" activate bash)" ;; esac
-fi'
+fi
+
+# An interactive session prints the expiry banner once, from the status cache.
+case $- in *i*)
+  if [ -z "${KI_AGENT_HOST_BANNER:-}" ] && [ -r "$HOME/.config/ki-agent-host/banner.sh" ]; then
+    KI_AGENT_HOST_BANNER=1; export KI_AGENT_HOST_BANNER; . "$HOME/.config/ki-agent-host/banner.sh"
+  fi ;;
+esac'
+
+# The banner reads only host/status.sh'"'"'s cache and the clock: no network or
+# credential call (ODR-KI-ARCADIA-001 expiries).
+# shellcheck disable=SC2016
+banner_content='# Agent-host login banner, managed by ki-techne-harness
+# operations/aws/agent-host (TECHNE-TOOLS-OPS-014); rerun setup rather than
+# editing. Reads only the expiry cache host/status.sh writes.
+ki_agent_host_banner() {
+  cache=$HOME/.cache/ki-agent-host/expiry
+  if [ ! -r "$cache" ]; then
+    echo "ki-agent-host: expiries not checked yet; run status from the operator'"'"'s workstation"
+    return 0
+  fi
+  now=$(date -u +%s)
+  while read -r key value; do
+    case $key in
+      checked)
+        age=$(( (now - value) / 86400 ))
+        [ "$age" -ge 7 ] && echo "ki-agent-host: expiries last checked $age days ago; run status from the operator'"'"'s workstation" ;;
+      github|tailscale)
+        case $value in [0-9]*) ;; *) continue ;; esac
+        target=$(date -u -d "$value" +%s 2>/dev/null || date -u -j -f %Y-%m-%d "$value" +%s 2>/dev/null) || continue
+        days=$(( (target - now) / 86400 ))
+        label="GitHub token"; [ "$key" = tailscale ] && label="Tailscale node key"
+        [ "$days" -le 14 ] && echo "ki-agent-host: $label expires $value ($days days)" ;;
+      drift)
+        [ -n "$value" ] && echo "ki-agent-host: tools differ from the recipe pins: $value; rerun setup" ;;
+    esac
+  done <"$cache"
+  return 0
+}
+ki_agent_host_banner
+unset -f ki_agent_host_banner'
 
 if write_file "${env_file}" "${env_content}"; then
   changed "${env_file}"
+fi
+banner_file=${HOME}/.config/ki-agent-host/banner.sh
+if write_file "${banner_file}" "${banner_content}"; then
+  changed "${banner_file}"
 fi
 source_block "${HOME}/.profile"
 source_block "${HOME}/.bashrc"
@@ -169,7 +236,7 @@ if [[ $("${mise}" --version 2>/dev/null | awk '{ print $1 }') != "${mise_version
   changed "mise ${mise_version}"
 fi
 
-mise_config="# Managed by ki-techne-harness operations/aws/agent-host (TECHNE-TOOLS-OPS-011).
+mise_config="# Managed by ki-techne-harness operations/aws/agent-host from the recipe's pins (TECHNE-TOOLS-OPS-014).
 [tools]
 bun = \"${bun_version}\"
 node = \"${node_version}\"
@@ -202,6 +269,27 @@ if [[ $("${ki}" --version 2>/dev/null || true) != "${ki_version}" ]]; then
   rm -f "${installer}"
   changed "ki ${ki_version}"
 fi
+
+# Rig and the pins profile ------------------------------------------------------------
+
+# Rig only observes the pins until TECHNE-TOOLS-OPS-018 (ADR-KI-ARCADIA-003 stage 1).
+rig=${HOME}/.local/bin/rig
+if [[ $("${rig}" --version 2>/dev/null || true) != "rig ${rig_version}" ]]; then
+  installer=$(mktemp)
+  curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --output "${installer}" \
+    "https://raw.githubusercontent.com/knowledgeislands/tools-rig/v${rig_version}/install.sh"
+  RIG_INSTALL_DIR=${HOME}/.local/bin bash "${installer}" "v${rig_version}" >/dev/null
+  rm -f "${installer}"
+  changed "rig ${rig_version}"
+fi
+if write_file "${HOME}/.config/rig/rig.toml" "$(cat "${pins}")"; then
+  changed "${HOME}/.config/rig/rig.toml pins"
+fi
+provider=${HOME}/.local/share/rig/providers/direct-host-pins
+if write_file "${provider}" "$(cat "${recipe_dir}/rig-pins.sh")"; then
+  changed "${provider}"
+fi
+[[ -x ${provider} ]] || chmod 755 "${provider}"
 
 # repositories ---------------------------------------------------------------------
 
@@ -334,6 +422,29 @@ estate_healthy() {
 if ! estate_healthy; then
   ki_run repo --estate repair && changed 'repository skill projections'
   estate_healthy || warn 'ki repo --estate diag still reports problems'
+fi
+
+# Host instructions and marker -------------------------------------------------------
+
+# The recipe's own rules reach both runtimes, with or without the owner's files.
+instructions=$(cat "${recipe_dir}/host-instructions.md")
+header='<!-- Rendered by ki-techne-harness operations/aws/agent-host from recipes/direct-host/host-instructions.md; rerun setup rather than editing. -->'
+for target in "${HOME}/.claude/rules/ki-agent-host.md" "${HOME}/.codex/AGENTS.md"; do
+  if write_file "${target}" "${header}
+
+${instructions}"; then
+    changed "${target}"
+  fi
+done
+
+# ODR-KI-ARCADIA-001: the operator's workstation checkout is the roadmap
+# writing checkout; KI-TOOL-CLI-115 has ki refuse roadmap writes where this is.
+marker="# ki agent-host marker, managed by ki-techne-harness operations/aws/agent-host.
+# This machine is a direct-host recipe agent host, not a roadmap writing
+# checkout: roadmap writes belong to the operator's workstation checkout.
+recipe = \"direct-host\""
+if write_file "${HOME}/.config/ki/host-marker" "${marker}"; then
+  changed "${HOME}/.config/ki/host-marker"
 fi
 
 # Claude Code ------------------------------------------------------------------------

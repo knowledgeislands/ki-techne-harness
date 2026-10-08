@@ -3,7 +3,9 @@ set -euo pipefail
 
 # Report, read-only, the agent host's unlanded work per repository and what
 # expires (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-013). SSH only; runs
-# host/status.sh on the host against the binding's declared repositories.
+# host/status.sh on the host against the binding's declared repositories. Text
+# mode then compares this workstation's tools with the recipe's pins, as a
+# signal only that never changes the exit status (TECHNE-TOOLS-OPS-014).
 #
 # usage: status.sh [--json] [--fetch] [--connect-timeout <seconds>]
 #
@@ -19,9 +21,11 @@ workspace=${KI_AGENT_HOST_WORKSPACE:-}
 
 ssh_options=()
 host_args=()
+json=false
 while (($#)); do
   case $1 in
-    --json | --fetch) host_args+=("$1") ;;
+    --json) json=true; host_args+=("$1") ;;
+    --fetch) host_args+=("$1") ;;
     --connect-timeout)
       [[ ${2:-} =~ ^[1-9][0-9]*$ ]] || { echo 'status.sh: --connect-timeout needs whole seconds' >&2; exit 1; }
       ssh_options+=(-o "ConnectTimeout=$2" -o ServerAliveInterval=5 -o ServerAliveCountMax=2)
@@ -43,5 +47,25 @@ done <"${repositories}"
 remote="bash -s --$(printf ' %q' "${host_args[@]}")"
 [[ -n ${workspace} ]] && remote="KI_AGENT_HOST_WORKSPACE=$(printf '%q' "${workspace}") ${remote}"
 
+if [[ ${json} == true ]]; then
+  # shellcheck disable=SC2029 # remote is built for the host shell on purpose.
+  exec ssh ${ssh_options[@]+"${ssh_options[@]}"} "${host}" "${remote}" <"${here}/host/status.sh"
+fi
+status=0
 # shellcheck disable=SC2029 # remote is built for the host shell on purpose.
-exec ssh ${ssh_options[@]+"${ssh_options[@]}"} "${host}" "${remote}" <"${here}/host/status.sh"
+ssh ${ssh_options[@]+"${ssh_options[@]}"} "${host}" "${remote}" <"${here}/host/status.sh" || status=$?
+
+# The workstation against the same pins, through the recipe's own provider.
+recipe=${here}/../../../recipes/direct-host
+case $(uname -s) in Darwin) os=macos ;; *) os=linux ;; esac
+echo
+echo 'This workstation against the pins (signal only)'
+awk -v os="${os}" '
+  /^\[tool\./ { tool = substr($1, 7, length($1) - 7) }
+  $1 == "variant." os ".install.kind" { gsub(/"/, "", $3); kind[tool] = $3 }
+  $1 == "variant." os ".install.locator" { gsub(/"/, "", $3); print tool, kind[tool], $3 }
+' "${recipe}/rig.toml" | while read -r tool kind pin; do
+  state=$("${recipe}/rig-pins.sh" rig-provider-v1 observe direct-host-pins "${tool}" "${kind}" "${pin}" 2>/dev/null </dev/null || echo unknown)
+  printf '  %-24s %s (%s %s)\n' "${tool}" "${state}" "${kind}" "${pin}"
+done
+exit "${status}"

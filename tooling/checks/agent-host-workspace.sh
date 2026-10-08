@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Offline checks for the agent-host workspace scripts (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013). A temporary Mac home and host home, local Git origins
-# and stub ssh, chezmoi, curl, tailscale, mise, ki, bun, codex and claude stand
-# in for the network and the host.
+# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014). A temporary Mac home and host
+# home, local Git origins and stub ssh, chezmoi, curl, tailscale, mise, ki, rig,
+# bun, codex and claude stand in for the network and the host.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 scripts=${repo_root}/operations/aws/agent-host
@@ -40,12 +40,13 @@ stub() {
 stub "${stubs}/ssh" "while [[ \$1 == -o ]]; do shift 2; done; echo \"\$1\" >>'${state}/ssh.log'; HOME='${host_home}' exec bash -c \"\$2\""
 stub "${stubs}/chezmoi" 'echo "# instructions from $(basename "$2")"'
 stub "${stubs}/curl" "echo \"\$*\" >>'${state}/curl.log'; exit 1"
-stub "${stubs}/tailscale" 'exit 1'
+# tailscale reports a node key only once a check writes one.
+stub "${stubs}/tailscale" "cat '${state}/tailscale.json' 2>/dev/null"
 
 # Host-side tools, where converge.sh expects them.
 key='$(pwd | tr / _)'
 stub "${host_home}/.local/bin/mise" "case \$1 in
-  --version) echo '2026.10.3 linux-x64 (stub)' ;;
+  --version) echo '2026.10.4 linux-x64 (stub)' ;;
   ls) [[ -f '${state}'/mise-${key} ]] || echo 'node 24 (missing)' ;;
   install) touch '${state}'/mise-${key} ;;
   trust) if [[ \$2 == --show ]]; then
@@ -57,7 +58,7 @@ render() { mkdir -p \"\$(dirname \"\$config\")\"; cat '${state}/ki-agents' '${st
 # Like ki, bootstrap detects agents only on its first run or with --refresh.
 detect() { { echo '\"claude-code\",'; [[ -d \$HOME/.agents ]] && echo '\"chatgpt-codex\",'; } >'${state}/ki-agents'; }
 case \$1 in
-  --version) echo 0.7.1 ;;
+  --version) echo 0.9.0 ;;
   bootstrap) [[ \$2 == --refresh || ! -f '${state}/ki-agents' ]] && detect; render; mkdir -p \"\$HOME/.claude/skills\"; ln -sfn /stub/ki-next \"\$HOME/.claude/skills/ki-next\" ;;
   dev) case \$3 in
       set) [[ -f '${state}/ki-active' ]] && { echo 'ki: error: local development is active' >&2; exit 1; }
@@ -70,8 +71,17 @@ case \$1 in
     else touch '${state}/repaired'; fi ;;
 esac"
 stub "${host_home}/.local/bin/bun" 'if [[ -d node_modules ]]; then echo "Checked 1 install across 1 package (no changes)"; else mkdir node_modules; echo "1 package installed"; fi'
-stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.160.1"'
-stub "${host_home}/.local/bin/claude" 'echo "2.1.0 (Claude Code)"'
+stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.161.0"'
+stub "${host_home}/.local/bin/claude" 'echo "2.2.0 (Claude Code)"'
+# rig status reports Codex drifted once a check asks for it.
+stub "${host_home}/.local/bin/rig" "case \$1 in
+  --version) echo 'rig 0.4.0' ;;
+  status) [[ \$* == 'status --profile direct-host --format json' ]] || exit 2
+    if [[ -f '${state}/rig-drift' ]]; then
+      echo '{\"tools\":[{\"id\":\"bun\",\"state\":\"present\"},{\"id\":\"codex\",\"state\":\"drifted\"}],\"healthy\":false}'; exit 1
+    fi
+    echo '{\"tools\":[{\"id\":\"bun\",\"state\":\"present\"},{\"id\":\"codex\",\"state\":\"present\"}],\"healthy\":true}' ;;
+esac"
 
 # Origins: alpha is a KI repository with Bun and mise; beta and gamma are plain.
 origin() {
@@ -164,6 +174,36 @@ check '[[ $(HOME=${host_home} git config --global user.name) == "Test Operator" 
 check 'grep -qx local "${workspace}/gamma/README.md"' 'gamma must keep its uncommitted change'
 check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == $(git -C "${work}/origins/beta.git" rev-parse main) ]]' 'beta must match its origin'
 check 'grep -q "npm:@openai/codex" "${host_home}/.config/mise/config.toml"' 'the mise pins must include Codex'
+
+# The pins (TECHNE-TOOLS-OPS-014): converge applies the pin file's Linux and
+# macOS locators alike, installs it and the provider for Rig, and renders the
+# recipe's instructions and the host marker.
+pins=${repo_root}/recipes/direct-host/rig.toml
+check 'python3 "${repo_root}/tooling/checks/recipe-pins.py" "${pins}"' 'the pin file must declare every tool for both OSes through the observe-only provider'
+for tool in bun node; do
+  pin=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["tool"][sys.argv[2]]["variant"]["macos"]["install"]["locator"])' "${pins}" "${tool}")
+  check 'grep -qx "${tool} = \"${pin}\"" "${host_home}/.config/mise/config.toml"' "the mise configuration must pin ${tool} ${pin} exactly"
+done
+check 'grep -qx "\"npm:@openai/codex\" = \"0.161.0\"" "${host_home}/.config/mise/config.toml"' 'the mise configuration must pin Codex from the pin file'
+check 'cmp -s "${pins}" "${host_home}/.config/rig/rig.toml"' 'the pin file must be Rig'"'"'s configuration'
+check '[[ -x ${host_home}/.local/share/rig/providers/direct-host-pins ]] && cmp -s "${repo_root}/recipes/direct-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/direct-host-pins"' 'the provider must be installed for Rig'
+for file in .claude/rules/ki-agent-host.md .codex/AGENTS.md; do
+  check 'grep -qF "Push where you worked" "${host_home}/${file}" && grep -qF "roadmap writing checkout" "${host_home}/${file}"' "${file} must carry the two-checkout and writing-checkout rules"
+done
+check 'grep -qx "recipe = \"direct-host\"" "${host_home}/.config/ki/host-marker"' 'converge must write the host marker'
+
+# The provider's verdicts against stub tools.
+tools=${work}/tools
+mkdir -p "${tools}"
+stub "${tools}/bun" 'echo 1.4.2'
+stub "${tools}/node" 'echo v24.20.1'
+stub "${tools}/claude" 'echo "2.1.300 (Claude Code)"'
+stub "${tools}/codex" 'echo "codex-cli (no version)"'
+verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/direct-host/rig-pins.sh" rig-provider-v1 observe direct-host-pins "$@"; }
+check '[[ $(verdict bun exact 1.4.2) == present && $(verdict node exact 24.21.0) == drifted ]]' 'the provider must compare exact pins'
+check '[[ $(verdict claude minimum 2.1.285) == present && $(verdict claude minimum 2.2.0) == drifted ]]' 'the provider must compare minimum pins numerically'
+check '[[ $(verdict codex exact 0.161.0) == unknown && $(verdict rig exact 0.4.0) == missing ]]' 'the provider must report unknown and missing tools'
+check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/direct-host/rig-pins.sh" rig-provider-v1 apply direct-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
 check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
 
@@ -172,7 +212,44 @@ code=0
 report=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" 2>&1) || code=$?
 check '[[ ${code} == 3 && ${report} == *"summary: REPOSITORIES=3 AT_RISK=2 UNKNOWN=0 OUTCOME=at-risk"* ]]' "status must flag alpha and gamma and exit 3, got ${code}:
 ${report}"
-check '[[ ${report} == *"Exemption review"*"2026-11-06"*"no lapse"* && ${report} == *"GitHub token"* ]]' 'status must list the expiry dates'
+check '[[ ${report} == *"GitHub token"* && ${report} == *"Tailscale node key"* && ${report} != *"Exemption review"* ]]' 'status must list the expiries and no review line'
+check '[[ ${report} == *"Pins"*"codex"*"present"* && ${report} != *"DRIFT"* ]]' "status must report the pins through Rig, got:
+${report}"
+check '[[ ${report} == *"This workstation against the pins"*"bun"* ]]' 'status text mode must compare this workstation with the pins'
+
+# Drift and an expiry within 14 days are marked, and cached for the banner.
+in_days() { date -u -d "@$(($(date -u +%s) + $1 * 86400))" +%Y-%m-%d 2>/dev/null || date -u -r "$(($(date -u +%s) + $1 * 86400))" +%Y-%m-%d; }
+soon=$(in_days 5)
+echo "{\"Self\":{\"KeyExpiry\":\"${soon}T00:00:00Z\"}}" >"${state}/tailscale.json"
+touch "${state}/rig-drift"
+code=0
+report=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" 2>&1) || code=$?
+check '[[ ${code} == 3 && ${report} == *"codex"*"drifted  DRIFT"* && ${report} == *"Tailscale node key"*"${soon}"*"EXPIRES SOON"* ]]' "status must mark drift and a near expiry without changing its outcome, got ${code}:
+${report}"
+cache=${host_home}/.cache/ki-agent-host/expiry
+check 'grep -qx "tailscale ${soon}" "${cache}" && grep -qx "drift codex" "${cache}" && grep -qx "github -" "${cache}"' "status must cache the expiries and drift, got:
+$(cat "${cache}" 2>/dev/null)"
+check '[[ $(HOME=${host_home} bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null | jq -r "keys | join(\",\")") == "fetched,generated_at,host,outcome,problems,repositories,schema,workspace" ]]' 'status --json must keep its document unchanged'
+
+# The banner reads the cache and the clock alone: only date is on its PATH.
+quiet_path=${work}/quiet-path
+mkdir -p "${quiet_path}"
+ln -s "$(command -v date)" "${quiet_path}/date"
+banner() { HOME=${host_home} PATH=${quiet_path} /bin/bash -c '. "$HOME/.config/ki-agent-host/banner.sh"' 2>&1; }
+shown=$(banner)
+check '[[ ${shown} == *"Tailscale node key expires ${soon}"* && ${shown} == *"differ from the recipe pins: codex"* && ${shown} != *"GitHub"* && ${shown} != *"last checked"* ]]' "the banner must show the near expiry and the drift, got:
+${shown}"
+printf 'checked %s\ngithub %s\ntailscale -\ndrift \n' "$(($(date -u +%s) - 8 * 86400))" "$(in_days 60)" >"${cache}"
+shown=$(banner)
+check '[[ ${shown} == *"last checked 8 days ago"* && $(grep -c . <<<"${shown}") == 1 ]]' "the banner must flag a stale check and nothing else, got:
+${shown}"
+rm "${cache}"
+check '[[ $(banner) == *"expiries not checked yet"* ]]' 'the banner must flag a missing check'
+shown=$(HOME=${host_home} PATH=${quiet_path}:/usr/bin:/bin /bin/bash -i -c true 2>/dev/null)
+check '[[ ${shown} == *"expiries not checked yet"* ]]' "an interactive shell must show the banner, got:
+${shown}"
+check '[[ -z $(HOME=${host_home} KI_AGENT_HOST_BANNER=1 PATH=${quiet_path}:/usr/bin:/bin /bin/bash -i -c true 2>/dev/null) ]]' 'a nested interactive shell must not repeat the banner'
+rm "${state}/rig-drift" "${state}/tailscale.json"
 check '[[ $(sort -u "${state}/ssh.log") == ki-techne-agent-host ]]' 'with no binding variable, SSH must reach only ki-techne-agent-host'
 
 # The techne/host-workspace/v1 document (TECHNE-TOOLS-OPS-013).
