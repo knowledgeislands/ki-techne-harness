@@ -260,7 +260,7 @@
       "items": [
         "Outbound 443 and 80 reach any address, not only named hosts",
         "DNS through the VPC resolver stays open",
-        "Standing exemption, no lapse; Kris reviews it on 6 November 2026"
+        "Standing exemption, no lapse"
       ]
     }
   ]

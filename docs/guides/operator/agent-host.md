@@ -225,7 +225,7 @@ To rotate the token, create a new one, overwrite the parameter by adding `--over
 
 ## Workspace setup
 
-One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a tool pin or Kris's Claude instructions change:
+One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a pin in [`recipes/direct-host/rig.toml`](../../../recipes/direct-host/rig.toml) or Kris's Claude instructions change:
 
 ```sh
 bash operations/aws/agent-host/setup.sh          # add --pull to fast-forward clean checkouts
@@ -235,10 +235,14 @@ It needs `chezmoi` on the Mac and uses SSH to the binding's Tailscale name only,
 
 - the Git identity from the Mac's global configuration and the house pull, branch and push settings;
 - the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/kit/<organisation>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
-- mise and its global pins for Bun, Node and the Codex CLI, each repository's own mise tools and its Bun dependencies;
+- mise and its global pins for Bun, Node and the Codex CLI, exact versions read from the recipe's pin file, then each repository's own mise tools and Bun dependencies, leaving each repository's `mise.toml` alone;
 - one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc` and Husky's `init.sh`, so tools are on `PATH` in non-interactive SSH and Git hooks too;
 - the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;
-- Kris's Claude instructions in `~/.claude`, the files `AGENT_HOST_INSTRUCTIONS` names, each with a header naming its source, and `autoMemoryEnabled` set to `false`.
+- Rig at its pinned tag, with the pin file as `~/.config/rig/rig.toml` and the observe-only `direct-host-pins` provider: Rig reports drift and installs nothing yet;
+- Kris's Claude instructions in `~/.claude`, the files `AGENT_HOST_INSTRUCTIONS` names, each with a header naming its source, and `autoMemoryEnabled` set to `false`;
+- the recipe's own host instructions, `recipes/direct-host/host-instructions.md`, as `~/.claude/rules/ki-agent-host.md` for Claude Code and `~/.codex/AGENTS.md` for Codex: push where you worked, be level before working on the other machine, and leave roadmap writes to the workstation checkout;
+- the host marker, `~/.config/ki/host-marker`, which `ki` will honour by refusing roadmap writes once [KI-TOOL-CLI-115](https://github.com/knowledgeislands/tools-ki/blob/main/docs/roadmap/KI-TOOL-CLI-115-refuse-host-roadmap-writes.md) lands;
+- the login banner, `~/.config/ki-agent-host/banner.sh`, which an interactive shell shows once.
 
 It never copies credentials, MCP configuration or any other part of `~/.claude`. It backs up any file it replaces under `~/.local/state/ki-agent-host/backups/`. A run that finds nothing to do ends with `no changes`; a failed step makes it exit non-zero. On the host, `bash host/converge.sh` from the harness checkout does the same without the Claude instructions.
 
@@ -254,7 +258,7 @@ bash operations/aws/agent-host/status.sh             # add --fetch to refresh th
 
 Work on the host is safe only once it is in Git on a remote, on any branch (`ODR-KI-ARCADIA-001`). The report covers the repositories the binding declares, `host/repositories.txt` by default. A repository is **at risk** when it has uncommitted or untracked files, commits on any local branch that no remote branch contains, or stashes; files Git ignores do not count, and a linked worktree's uncommitted files count towards its repository. Everything else on the host is disposable by rule: Claude Code and Codex sign-ins and transcripts, caches, hand-made backups and any checkout outside the declared set. Land anything you want to keep from those by hand.
 
-For each repository the report lists the branch, uncommitted files, unpushed commits, stashes and the ahead and behind counts as of the last fetch, and flags it `AT RISK` or `UNKNOWN`. The inventory fails closed: a missing workspace, a declared repository that is absent, a repository outside the declared set or a Git read that fails makes the outcome **unknown** rather than clean, and the report lists why. It then lists the GitHub token's expiry, the Tailscale node key's expiry and the exemption review line, and ends with a summary line such as `summary: REPOSITORIES=3 AT_RISK=1 UNKNOWN=0 OUTCOME=at-risk`. It changes nothing; `--fetch` runs `git fetch --all --prune` in each repository, which updates only remote-tracking branches, and a failed fetch makes that repository unknown.
+For each repository the report lists the branch, uncommitted files, unpushed commits, stashes and the ahead and behind counts as of the last fetch, and flags it `AT RISK` or `UNKNOWN`. The inventory fails closed: a missing workspace, a declared repository that is absent, a repository outside the declared set or a Git read that fails makes the outcome **unknown** rather than clean, and the report lists why. It then lists each pinned tool's state from `rig status --profile direct-host`, flagging `DRIFT`, and the GitHub token's and the Tailscale node key's expiries, flagging `EXPIRES SOON` within 14 days, and ends with a summary line such as `summary: REPOSITORIES=3 AT_RISK=1 UNKNOWN=0 OUTCOME=at-risk`. Last, it compares the Mac's own tools with the same pins, as a signal that never changes the exit status. The text report records the expiry dates, the drifted tools and the time of the check in `~/.cache/ki-agent-host/expiry` on the host; the login banner reads only that file and the clock, and shows one line for an expiry within 14 days, for drift, and for a check older than 7 days or none. Run the text report at least weekly. The report changes nothing else; `--fetch` runs `git fetch --all --prune` in each repository, which updates only remote-tracking branches, and a failed fetch makes that repository unknown.
 
 The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the report itself fails, and SSH's own 255 when the host cannot be reached. `--json` prints one `techne/host-workspace/v1` document instead of the table, naming the host by its hostname and `host.id`, the provider-defined identity of the machine: the cloud-init instance ID on AWS, and a hardware or install UUID on owned hardware, and `--connect-timeout <seconds>` bounds the wait for an unreachable host. `stop.sh` and `destroy.sh` read this document; the `techne` CLI reads it through the `[status]` table of the recipe manifest.
 
