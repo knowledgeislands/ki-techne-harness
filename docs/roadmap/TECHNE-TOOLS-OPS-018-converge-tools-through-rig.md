@@ -7,10 +7,10 @@ project: agent-host
 component: operations
 status: triage
 blocks: []
-blocked_by: [TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-016]
+blocked_by: [TECHNE-TOOLS-OPS-016]
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T07:32:00Z
+updated_at: 2026-10-08T19:18:25Z
 ---
 
 # Converge Tools Through Rig

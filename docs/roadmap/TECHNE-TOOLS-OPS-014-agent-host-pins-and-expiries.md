@@ -6,13 +6,12 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: operations
-horizon: now
-status: awaiting-review
-blocks: [TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-018]
+status: done
+blocks: []
 blocked_by: []
 baseline_ref: 14987b5960a7cb1b829a9f02b9d83de907d5f8fa
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-08T13:42:04Z
+updated_at: 2026-10-08T19:18:25Z
 ---
 
 # Agent-Host Pins and Expiries
@@ -146,6 +145,10 @@ The goal holds: one pin file declares the versions for both OSes, converge appli
 ### Mini recap
 
 The pins now live in one Rig profile that converge applies and status observes, expiries reach a login banner from a cache, and the recipe's own rules and marker reach the host; the offline checks pass and catch deliberate breakage. The open point is agreeing the marker shape under KI-TOOL-CLI-115. Proposed learning route, not promoted: Rig's built-in mise observation cannot see versions, which a future `tools-rig` record could address before TECHNE-TOOLS-OPS-018.
+
+## Done
+
+Accepted 2026-10-08 under Kris's decision in the Techne decisions log, Decision 19 (2026-10-08): "Accept TECHNE-TOOLS-OPS-014" through ki-accept with the host-marker path `~/.config/ki/host-marker`, once the first live setup run came back clean. The `--pull` rerun recorded under First live run did: setup exited 0, `rig status --profile direct-host` showed every pin present with no drift, the banner, host instructions and marker were in place, and none of the 21 repositories was at risk. The marker shape still waits on KI-TOOL-CLI-115, and TECHNE-TOOLS-OPS-018 keeps its own gate that stage 1 report clean through a pin bump. TECHNE-TOOLS-OPS-015 and TECHNE-TOOLS-OPS-018 no longer wait on this record, so both dependency fields are cleared.
 
 ## Discussion
 

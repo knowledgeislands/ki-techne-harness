@@ -9,10 +9,10 @@ component: operations
 horizon: next
 status: draft
 blocks: [TECHNE-TOOLS-OPS-017]
-blocked_by: [TECHNE-TOOLS-OPS-014]
+blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T13:00:38Z
+updated_at: 2026-10-08T19:18:25Z
 ---
 
 # Agent-Host Workstation Pilot
@@ -64,7 +64,7 @@ Captured and selected as the workstation pilot on 2026-10-08 under Kris's grant;
 
 ## Dependencies / blocks
 
-Blocked by TECHNE-TOOLS-OPS-014, which installs Rig. The durability pilot, TECHNE-TOOLS-OPS-013, was accepted on 2026-10-08. Paired for the current binding with DOTFILES-UE-073 in Kris's chezmoi source. Blocks TECHNE-TOOLS-OPS-017. Lands together with TECHNE-TOOLS-OPS-019's removal of the person-specific instruction defaults; neither blocks the other.
+No longer blocked: TECHNE-TOOLS-OPS-014, which installs Rig, and the durability pilot, TECHNE-TOOLS-OPS-013, were both accepted on 2026-10-08. Paired for the current binding with DOTFILES-UE-073 in Kris's chezmoi source. Blocks TECHNE-TOOLS-OPS-017. Lands together with TECHNE-TOOLS-OPS-019's removal of the person-specific instruction defaults; neither blocks the other.
 
 ## Documentation impact
 
