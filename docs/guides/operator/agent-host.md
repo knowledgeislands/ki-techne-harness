@@ -262,6 +262,12 @@ For each repository the report lists the branch, uncommitted files, unpushed com
 
 The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the report itself fails, and SSH's own 255 when the host cannot be reached. `--json` prints one `techne/host-workspace/v1` document instead of the table, naming the host by its hostname and `host.id`, the provider-defined identity of the machine: the cloud-init instance ID on AWS, and a hardware or install UUID on owned hardware, and `--connect-timeout <seconds>` bounds the wait for an unreachable host. `stop.sh` and `destroy.sh` read this document; the `techne` CLI reads it through the `[status]` table of the recipe manifest.
 
+### Expiries and pins
+
+The GitHub token expires 90 days after it is created and the Tailscale node key on its own schedule; the status report and the login banner warn within 14 days, so rotate the token as in [GitHub](#github) when either shows it. The banner knows only what the last text report found, which is why it also says when that report is more than 7 days old.
+
+To bump a pin, change its locator in `recipes/direct-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; `rig apply` comes later, under TECHNE-TOOLS-OPS-018.
+
 ## A working session
 
 ![One working session: Kris connects through the helper and Zed over Tailscale, runs Claude Code on the host, and pushes only on request through the credential helper](agent-host-session.svg)
