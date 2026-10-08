@@ -8,11 +8,11 @@ project: agent-host
 component: operations
 horizon: next
 status: draft
-blocks: []
+blocks: [TECHNE-TOOLS-OPS-015]
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-07T20:50:00Z
+updated_at: 2026-10-08T07:32:00Z
 ---
 
 # Guard Agent-Host Work
