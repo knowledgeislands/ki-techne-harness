@@ -6,13 +6,12 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: operations
-horizon: now
-status: awaiting-review
-blocks: [TECHNE-TOOLS-OPS-015]
+status: done
+blocks: []
 blocked_by: []
 baseline_ref: c10575379e2cd45366c1d6f35aa08aff938f5ccb
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-08T08:38:00Z
+updated_at: 2026-10-08T13:00:38Z
 ---
 
 # Guard Agent-Host Work
@@ -145,6 +144,10 @@ The change stays inside the planned files. The status contract and `[status]` ta
 ### Mini recap
 
 The agent host now says whether its work is clean, at risk or unknown; stop warns and always works, and rebuild and withdraw refuse to discard unlanded work unless the operator names it or confirms an unreadable host.
+
+## Done
+
+Accepted 2026-10-08 under Kris's decision in the Techne decisions log, Decision 12 (2026-10-08): "Accept KI-ARCADIA-GOV-031, Accept TECHNE-TOOLS-OPS-013" (accept through ki-accept and prune both). The exemption review line and the guide's description of it are left for TECHNE-TOOLS-OPS-014, as planned; the first live stop or teardown remains the first live test of the guard. TECHNE-TOOLS-OPS-015 no longer waits on this record, so both dependency fields are cleared.
 
 ## Discussion
 
