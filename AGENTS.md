@@ -4,7 +4,7 @@ The Techne Harness is the runnable personal-controller and execution-fabric impl
 
 ## Authority
 
-Arcadia owns the architecture, roles, invariants and decision criteria. This repository owns harness applications, packaging, deployment resources, runtime payloads, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here. The [implementation ownership decision (ADR-TECHNE-003)](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-TECHNE-003-techne-implementation-ownership.md) defines this boundary.
+Arcadia owns the architecture, roles, invariants and decision criteria. This repository owns harness applications, packaging, deployment resources, runtime payloads, provider adapters and operational guidance. Do not duplicate or silently redefine canonical architecture here. The [implementation ownership decision (ADR-KI-ARCADIA-006)](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-006-techne-implementation-ownership.md) defines this boundary.
 
 ## Dependencies
 
@@ -23,7 +23,7 @@ Use the local roadmap under `docs/roadmap/` for prospective repository work. Pre
 - Arcadia Principal, the KI Agentic Harness, `tools-ki`, KI Specifications, the KI Website, the Techne Harness, and `tools-techne` may add a concrete handoff item to one another's Stream or roadmap. The receiving repository owns its priority, plan, and execution.
 - Record the originating repository and item, then state whether the handoff `blocks` or is `blocked by` the local item. Keep the relationship reciprocal where both items exist.
 - Prefer independently executable, non-blocking work. Mark an item as blocking only when it is a genuine prerequisite; otherwise let the receiving repository schedule it in its own horizon.
-- A handoff transfers no ownership: ADR-TECHNE-003 still decides what this repository owns.
+- A handoff transfers no ownership: ADR-KI-ARCADIA-006 still decides what this repository owns.
 
 ## Remote-environment hold
 

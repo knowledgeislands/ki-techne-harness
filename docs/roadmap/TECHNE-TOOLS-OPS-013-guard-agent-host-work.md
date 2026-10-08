@@ -92,7 +92,7 @@ None in this repository: ODR-KI-ARCADIA-001 in `ki-arcadia-principal` records th
 
 ### Specifications
 
-The structured status report is a new contract between this harness and `tools-techne`, carried by `recipe.toml` and its schema version under ADR-TECHNE-003; no separate specification.
+The structured status report is a new contract between this harness and `tools-techne`, carried by `recipe.toml` and its schema version under ADR-KI-ARCADIA-006; no separate specification.
 
 ### Guides
 

@@ -2,7 +2,7 @@
 
 Techne Harness is the product monorepo for runnable personal-controller and execution-fabric implementations in the Knowledge Islands ecosystem. The independently released [`tools-techne`](https://github.com/knowledgeislands/tools-techne) repository owns the `techne` operator interface.
 
-Arcadia remains the authority for engineering architecture, role boundaries and decision criteria. This repository owns implementation source, verification, packaging, bootstrap, deployment resources and provider adapters. It does not store credentials or canonical operational state. The [implementation ownership decision (ADR-TECHNE-003)](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-TECHNE-003-techne-implementation-ownership.md) defines this boundary.
+Arcadia remains the authority for engineering architecture, role boundaries and decision criteria. This repository owns implementation source, verification, packaging, bootstrap, deployment resources and provider adapters. It does not store credentials or canonical operational state. The [implementation ownership decision (ADR-KI-ARCADIA-006)](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-006-techne-implementation-ownership.md) defines this boundary.
 
 ## Repository map
 

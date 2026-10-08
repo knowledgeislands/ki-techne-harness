@@ -245,5 +245,5 @@ The simplest proof topology is one Paperclip service plus one Hermes VM dedicate
 - [Governed Work Controller](https://github.com/knowledgeislands/ki-techne-principal/blob/main/Pillars/Engineering%20Practice/Architecture/Governed%20Work%20Controller.md)
 - [Techne Fabric](https://github.com/knowledgeislands/ki-techne-principal/blob/main/Pillars/Engineering%20Practice/Architecture/AI%20Execution%20Fabric.md)
 - [Techne Fabric Execution Contract](https://github.com/knowledgeislands/ki-techne-principal/blob/main/Pillars/Engineering%20Practice/Architecture/Techne%20Fabric%20Execution%20Contract.md)
-- [ADR-TECHNE-001: Provider-neutral isolated agent execution](https://github.com/knowledgeislands/ki-techne-principal/blob/main/Admin/Governance/Decisions/ADR-TECHNE-001-provider-neutral-isolated-agent-execution.md)
-- [ADR-TECHNE-002: One persona across explicit working contexts](https://github.com/knowledgeislands/ki-techne-principal/blob/main/Admin/Governance/Decisions/ADR-TECHNE-002-one-persona-across-explicit-working-contexts.md)
+- [ADR-KI-ARCADIA-004: Provider-neutral isolated agent execution](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-004-provider-neutral-isolated-agent-execution.md)
+- [ADR-KI-ARCADIA-005: One persona across explicit working contexts](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-005-one-persona-across-explicit-working-contexts.md)
