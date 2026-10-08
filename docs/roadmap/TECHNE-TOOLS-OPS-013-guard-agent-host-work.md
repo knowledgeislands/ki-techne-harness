@@ -6,13 +6,13 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: operations
-horizon: next
-status: ready
+horizon: now
+status: in-progress
 blocks: [TECHNE-TOOLS-OPS-015]
 blocked_by: []
-baseline_ref: null
+baseline_ref: c10575379e2cd45366c1d6f35aa08aff938f5ccb
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-08T08:14:00Z
+updated_at: 2026-10-08T08:26:00Z
 ---
 
 # Guard Agent-Host Work

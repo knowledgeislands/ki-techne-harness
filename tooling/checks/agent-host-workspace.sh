@@ -3,9 +3,10 @@
 # shellcheck disable=SC2016,SC2034
 set -euo pipefail
 
-# Offline checks for the agent-host workspace scripts (TECHNE-TOOLS-OPS-011).
-# A temporary Mac home and host home, local Git origins and stub ssh, chezmoi,
-# mise, ki, bun, codex and claude stand in for the network and the host.
+# Offline checks for the agent-host workspace scripts (TECHNE-TOOLS-OPS-011,
+# TECHNE-TOOLS-OPS-013). A temporary Mac home and host home, local Git origins
+# and stub ssh, chezmoi, curl, tailscale, mise, ki, bun, codex and claude stand
+# in for the network and the host.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 scripts=${repo_root}/operations/aws/agent-host
@@ -34,10 +35,12 @@ stub() {
   chmod +x "$1"
 }
 
-# Mac-side tools. ssh runs the remote command locally as the host user.
-stub "${stubs}/ssh" "echo \"\$1\" >>'${state}/ssh.log'; HOME='${host_home}' exec bash -c \"\$2\""
+# Mac-side tools. ssh skips its options and runs the remote command locally as
+# the host user.
+stub "${stubs}/ssh" "while [[ \$1 == -o ]]; do shift 2; done; echo \"\$1\" >>'${state}/ssh.log'; HOME='${host_home}' exec bash -c \"\$2\""
 stub "${stubs}/chezmoi" 'echo "# instructions from $(basename "$2")"'
 stub "${stubs}/curl" "echo \"\$*\" >>'${state}/curl.log'; exit 1"
+stub "${stubs}/tailscale" 'exit 1'
 
 # Host-side tools, where converge.sh expects them.
 key='$(pwd | tr / _)'
@@ -165,11 +168,64 @@ check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki m
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
 
 git -C "${workspace}/alpha" -c user.name=t -c user.email=t@example.invalid commit --quiet --allow-empty -m local
-report=$(HOME=${mac_home} bash "${scripts}/status.sh" 2>&1)
-check '[[ ${report} == *"summary: REPOSITORIES=3 AT_RISK=2"* ]]' "status must flag alpha and gamma, got:
+code=0
+report=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" 2>&1) || code=$?
+check '[[ ${code} == 3 && ${report} == *"summary: REPOSITORIES=3 AT_RISK=2 UNKNOWN=0 OUTCOME=at-risk"* ]]' "status must flag alpha and gamma and exit 3, got ${code}:
 ${report}"
 check '[[ ${report} == *"Exemption review"*"2026-11-06"*"no lapse"* && ${report} == *"GitHub token"* ]]' 'status must list the expiry dates'
 check '[[ $(sort -u "${state}/ssh.log") == ki-techne-agent-host ]]' 'with no binding variable, SSH must reach only ki-techne-agent-host'
+
+# The techne/host-workspace/v1 document (TECHNE-TOOLS-OPS-013).
+code=0
+document=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" --json --connect-timeout 5 2>/dev/null) || code=$?
+check '[[ ${code} == 3 ]] && jq -e ".schema == \"techne/host-workspace/v1\" and .outcome == \"at-risk\" and .fetched == false and .problems == []
+  and ([.repositories[] | {path, state, dirty, unpushed}] == [
+    {path: \"knowledgeislands/alpha\", state: \"at-risk\", dirty: 0, unpushed: 1},
+    {path: \"knowledgeislands/beta\", state: \"clean\", dirty: 0, unpushed: 0},
+    {path: \"knowledgeislands/gamma\", state: \"at-risk\", dirty: 1, unpushed: 0}])" <<<"${document}" >/dev/null' "status --json must report alpha and gamma at risk, got ${code}:
+${document}"
+
+# host_status [argument...]: the host script's document, with ${code} set.
+host_status() {
+  code=0
+  document=$(HOME=${host_home} bash "${scripts}/host/status.sh" --json --repositories "${repositories}" "$@" 2>/dev/null) || code=$?
+}
+# A linked worktree's .git file is no repository, but its uncommitted files count for alpha.
+git -C "${workspace}/alpha" worktree add --quiet --detach "${workspace}/alpha-review"
+echo draft >"${workspace}/alpha-review/draft.md"
+host_status
+check '[[ ${code} == 3 ]] && jq -e "[.repositories[].path] == [\"knowledgeislands/alpha\", \"knowledgeislands/beta\", \"knowledgeislands/gamma\"]
+  and (.repositories[0].dirty == 1)" <<<"${document}" >/dev/null' "a linked worktree must count for alpha and not as a repository, got ${code}:
+${document}"
+
+# --fetch updates remote-tracking refs only.
+before=$(git -C "${workspace}/beta" rev-parse HEAD)
+host_status --fetch
+check '[[ ${code} == 3 ]] && jq -e ".fetched == true" <<<"${document}" >/dev/null' "status --fetch must report a fetch, got ${code}:
+${document}"
+check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == "${before}" ]] && grep -qx local "${workspace}/gamma/README.md"' 'status --fetch must leave the working trees alone'
+
+host_status --expect knowledgeislands/omega
+check '[[ ${code} == 4 ]] && jq -e ".outcome == \"unknown\" and .problems == [\"declared repository knowledgeislands/omega is absent\"]" <<<"${document}" >/dev/null' "an absent declared repository must make the outcome unknown, got ${code}:
+${document}"
+
+git init --quiet "${workspace}/delta"
+host_status
+check '[[ ${code} == 4 ]] && jq -e ".repositories[] | select(.path == \"knowledgeislands/delta\") | .state == \"unknown\" and (.problem | endswith(\"not in the declared repository list\"))" <<<"${document}" >/dev/null' "an undeclared repository must be unknown, got ${code}:
+${document}"
+
+# A repository whose Git read fails is unknown; the rest are still reported.
+echo 'ref: broken' >"${workspace}/delta/.git/HEAD"
+host_status --expect knowledgeislands/delta
+check '[[ ${code} == 4 ]] && jq -e "(.repositories | length) == 4 and ([.repositories[] | select(.state == \"unknown\") | .path] == [\"knowledgeislands/delta\"])" <<<"${document}" >/dev/null' "a broken repository must be unknown without hiding the rest, got ${code}:
+${document}"
+rm -rf "${workspace}/delta"
+
+code=0
+# shellcheck disable=SC2088 # the binding carries a literal ~/ for the host.
+document=$(HOME=${host_home} KI_AGENT_HOST_WORKSPACE='~/nowhere' bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null) || code=$?
+check '[[ ${code} == 4 ]] && jq -e ".repositories == [] and (.problems | index(\"workspace ${host_home}/nowhere does not exist\"))" <<<"${document}" >/dev/null' "a missing workspace must make the outcome unknown, got ${code}:
+${document}"
 
 # A second binding's provider-neutral values, with no AWS variable set
 # (TECHNE-TOOLS-OPS-012): another SSH name, workspace and instruction set.
@@ -189,8 +245,8 @@ bound_setup=$(bound setup.sh) || { echo "${bound_setup}" >&2; echo 'agent-host-w
 check '[[ -d ${host_home}/elsewhere/knowledgeislands/alpha/.git && ${bound_setup} == *"cloned knowledgeislands/alpha"* ]]' 'setup must clone into the binding workspace on the host'
 check '[[ $(head -n 1 "${host_home}/.claude/CLAUDE.md") == "<!-- Rendered for ki-techne-scratch "* ]]' 'instructions must be rendered for the binding host name'
 check '[[ $(cd "${host_home}/.claude" && echo *.md) == "CLAUDE.md markdown.md" ]]' 'only the configured instruction files may be rendered'
-bound_report=$(bound status.sh)
-check '[[ ${bound_report} == *"Repositories under ${host_home}/elsewhere"* ]]' "status must report the binding workspace, got:
+bound_report=$(bound status.sh) || true
+check '[[ ${bound_report} == *"Repositories under ${host_home}/elsewhere"* && ${bound_report} == *"OUTCOME=clean"* ]]' "status must report the binding workspace, got:
 ${bound_report}"
 check '[[ $(sort -u "${state}/ssh.log") == scratch-tail ]]' 'with binding values, SSH must reach only the binding Tailscale name'
 refused=$(HOME=${mac_home} AGENT_HOST_INSTRUCTIONS='../secrets.md' bash "${scripts}/setup.sh" 2>&1) && check false 'setup must refuse an instruction path'
