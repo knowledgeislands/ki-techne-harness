@@ -7,12 +7,12 @@ purpose: capability
 project: agent-host
 component: operations
 horizon: now
-status: in-progress
+status: awaiting-review
 blocks: [TECHNE-TOOLS-OPS-015]
 blocked_by: []
 baseline_ref: c10575379e2cd45366c1d6f35aa08aff938f5ccb
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-08T08:26:00Z
+updated_at: 2026-10-08T08:31:00Z
 ---
 
 # Guard Agent-Host Work
@@ -57,13 +57,13 @@ The planning choices, within ODR-KI-ARCADIA-001:
 
 ## Steps
 
-- [ ] Give `host/status.sh` a versioned structured report (`techne/host-workspace/v1`) with `clean`, `at-risk` and `unknown` outcomes and exit statuses 0, 3, 4 and 1; make it tolerate one repository's failure, fail closed on inventory, match only working-tree `.git` directories, and add a read-only `--fetch`. Make the Mac-side `status.sh` pass the declared repository list, `--json`, `--fetch` and a connect timeout.
-- [ ] Make `stop.sh` read the status with a short connect timeout, print anything at risk or unknown, and stop regardless; add `--now`.
-- [ ] Replace the single destroy with rebuild (stack only, keeping `github-token` and `model-api-key`, then requiring a fresh Tailscale key and removal of the old device) and withdraw (stack and every parameter, then the manual footprint list), both through the recipe's destroy path under the binding's `aws.admin_profile`.
-- [ ] Guard both: refuse unless clean; `--discard <repo>...` naming exactly the repositories at risk; `--discard-unreadable-host` with typed confirmation after printing the recovery routes (push, then a verified bundle to the Mac); a same-host check before deletion; idempotent clean-up.
-- [ ] Update `recipes/direct-host/recipe.toml` and the recipe manifest check for the new status inputs, the `[status]` contract and the `[operations]` table.
-- [ ] Add offline checks with stubs for the clean, at-risk, unknown, unreachable, stopped and malformed cases.
-- [ ] Update `docs/guides/operator/agent-host.md`: the protection boundary and disposable list, the work-matters and emergency sequences, the operator role's actual permissions, rebuild and withdraw, and the GitHub token's 90-day expiry in both places.
+- [x] Give `host/status.sh` a versioned structured report (`techne/host-workspace/v1`) with `clean`, `at-risk` and `unknown` outcomes and exit statuses 0, 3, 4 and 1; make it tolerate one repository's failure, fail closed on inventory, match only working-tree `.git` directories, and add a read-only `--fetch`. Make the Mac-side `status.sh` pass the declared repository list, `--json`, `--fetch` and a connect timeout.
+- [x] Make `stop.sh` read the status with a short connect timeout, print anything at risk or unknown, and stop regardless; add `--now`.
+- [x] Replace the single destroy with rebuild (stack only, keeping `github-token` and `model-api-key`, then requiring a fresh Tailscale key and removal of the old device) and withdraw (stack and every parameter, then the manual footprint list), both through the recipe's destroy path under the binding's `aws.admin_profile`.
+- [x] Guard both: refuse unless clean; `--discard <repo>...` naming exactly the repositories at risk; `--discard-unreadable-host` with typed confirmation after printing the recovery routes (push, then a verified bundle to the Mac); a same-host check before deletion; idempotent clean-up.
+- [x] Update `recipes/direct-host/recipe.toml` and the recipe manifest check for the new status inputs, the `[status]` contract and the `[operations]` table.
+- [x] Add offline checks with stubs for the clean, at-risk, unknown, unreachable, stopped and malformed cases.
+- [x] Update `docs/guides/operator/agent-host.md`: the protection boundary and disposable list, the work-matters and emergency sequences, the operator role's actual permissions, rebuild and withdraw, and the GitHub token's 90-day expiry in both places.
 - [x] The exemption review line in the status output: removed by TECHNE-TOOLS-OPS-014; this record leaves the line untouched. Decision 6 of the Techne run's decisions log settled on 2026-10-07 that the exemption has no fixed review date.
 
 ## Files touched
@@ -101,6 +101,46 @@ The structured status report is a new contract between this harness and `tools-t
 ### Roadmap
 
 The pilot's lessons are written into TECHNE-TOOL-CLI-006 and TECHNE-TOOLS-OPS-014 before they start.
+
+## Review
+
+### Delivered
+
+- `host/status.sh` prints a `techne/host-workspace/v1` document with `--json`, reports `clean`, `at-risk` or `unknown` with exit statuses 0, 3 and 4 (1 for its own failure), fails closed on the inventory, tolerates one repository's failed Git read, counts a linked worktree's uncommitted files towards its repository and adds a read-only `--fetch`. The Mac-side `status.sh` passes the binding's declared repositories, `--json`, `--fetch` and `--connect-timeout`.
+- `stop.sh` reads the status with a 5-second connect timeout, warns about anything at risk, unknown or unreadable, and always stops; `--now` skips the read.
+- `destroy.sh rebuild` and `destroy.sh withdraw` replace the single teardown, guarded by the status, `--discard <repository>...`, `--discard-unreadable-host` with a typed confirmation, and a same-host check, and both may be rerun after a partial clean-up.
+- `recipe.toml` declares the `[status]` contract and the `[operations]` table, and the readers of the Tailscale name, repository list and workspace; the manifest check validates them.
+- The operator guide states the protection boundary and disposable list, the status outcomes, the stop warning, rebuild and withdraw with the guard and recovery routes, the work-matters and emergency sequences, the operator role's actual permissions and the 90-day token expiry.
+
+### Change Summary
+
+- `5c1515c` feat(agent-host): report host work as a versioned status contract — `host/status.sh`, `status.sh`, `tooling/checks/agent-host-workspace.sh`, and this record to in-progress.
+- `c47c970` feat(agent-host): guard stop, rebuild and withdraw on the host's status — `stop.sh`, `destroy.sh`, `recipe.toml`, `recipe-manifest.py`, `recipe-manifest.sh`, `agent-host-aws-scripts.sh`.
+- `2ac1fe5` docs(agent-host): document the protection boundary, rebuild and withdraw — `docs/guides/operator/agent-host.md`.
+
+Baseline `c10575379e2cd45366c1d6f35aa08aff938f5ccb`.
+
+### Verification
+
+- `bun run test`: pass, including `agent-host-workspace.sh`, `agent-host-aws-scripts.sh`, `recipe-manifest.sh` and shellcheck over every operations and check script.
+- New stubbed cases: status clean, at-risk, unknown for an absent, undeclared or broken repository and a missing workspace, a linked worktree, `--fetch` leaving working trees alone; stop for clean, at-risk, unknown, unreachable, malformed, mismatched-exit, `--now` and a stopped host; rebuild and withdraw for each outcome, each override and its refusals, a wrong typed confirmation, another instance's status, an already-gone stack, a second binding and a foreign stack tag; manifest refusals for the status schema, a shared exit status, an operation's unknown script, a missing operation and a reader that does not read its variable.
+- `ki repo audit --repo .`: PASS.
+- `grep -n "30 days\|30-day" docs/guides/operator/agent-host.md`: no match.
+- Nothing ran against AWS, Tailscale, SSM or the host.
+
+### Outstanding concerns
+
+- An empty repository with no commits reports `unknown` (it cannot list unpushed commits), which is fail-closed but may surprise.
+- The status report still prints the exemption review line; TECHNE-TOOLS-OPS-014 removes it, as the Steps record. The guide's opening paragraph still names that review date for the same reason.
+- No live run: the guard, the stop warning and the same-host check have been exercised only against stubs.
+
+### Post-change review
+
+The change stays inside the planned files. The status contract and `[status]` table are new inputs for TECHNE-TOOL-CLI-006 in `tools-techne`, which this record does not change.
+
+### Mini recap
+
+The agent host now says whether its work is clean, at risk or unknown; stop warns and always works, and rebuild and withdraw refuse to discard unlanded work unless the operator names it or confirms an unreadable host.
 
 ## Discussion
 
