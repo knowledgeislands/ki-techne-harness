@@ -7,12 +7,12 @@ purpose: capability
 project: agent-host
 component: operations
 horizon: now
-status: ready
+status: awaiting-review
 blocks: [TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-018]
 blocked_by: []
-baseline_ref: null
+baseline_ref: 14987b5960a7cb1b829a9f02b9d83de907d5f8fa
 created_at: 2026-10-07T20:50:00Z
-updated_at: 2026-10-08T13:31:00Z
+updated_at: 2026-10-08T13:42:04Z
 ---
 
 # Agent-Host Pins and Expiries
@@ -56,12 +56,12 @@ This is the harness's wave-2 record in the agent-host durability rollout. Kris B
 
 ## Steps
 
-- [ ] Add `recipes/direct-host/rig.toml` and `recipes/direct-host/rig-pins.sh`; name the pin file in `recipe.toml` under `[paths]`.
-- [ ] Change `host/converge.sh` to read the pins from the pin file, pin Node exactly, install Rig at its tag, install the pin file and provider, write the banner, the host instructions for both runtimes and the host marker; change `setup.sh` to stage the recipe files.
-- [ ] Change `host/status.sh`: drop the exemption review line, add the Pins section through `rig status`, write the expiry cache and mark expiries within 14 days. Add the workstation signal to the Mac-side `status.sh` text mode.
-- [ ] Extend the offline checks: the pin file loads under a stubbed `rig` and the provider's verdicts; converge's pin reading against the pin file; status text mode with stubbed `git`, `curl`, `tailscale` and `rig` writing the cache, showing drift and the 14-day mark and carrying no review line; the banner from a cache alone with no network tool on `PATH`; the rendered instructions and marker.
-- [ ] Update the operator guide (Workspace setup, Status, a short Expiries and pins part) and the architecture diagram's source, removing the review date.
-- [ ] Run `bun run test`, `ki repo audit --repo .` and the grep for any remaining review line.
+- [x] Add `recipes/direct-host/rig.toml` and `recipes/direct-host/rig-pins.sh`; name the pin file in `recipe.toml` under `[paths]`.
+- [x] Change `host/converge.sh` to read the pins from the pin file, pin Node exactly, install Rig at its tag, install the pin file and provider, write the banner, the host instructions for both runtimes and the host marker; change `setup.sh` to stage the recipe files.
+- [x] Change `host/status.sh`: drop the exemption review line, add the Pins section through `rig status`, write the expiry cache and mark expiries within 14 days. Add the workstation signal to the Mac-side `status.sh` text mode.
+- [x] Extend the offline checks: the pin file loads under a stubbed `rig` and the provider's verdicts; converge's pin reading against the pin file; status text mode with stubbed `git`, `curl`, `tailscale` and `rig` writing the cache, showing drift and the 14-day mark and carrying no review line; the banner from a cache alone with no network tool on `PATH`; the rendered instructions and marker.
+- [x] Update the operator guide (Workspace setup, Status, a short Expiries and pins part) and the architecture diagram's source, removing the review date.
+- [x] Run `bun run test`, `ki repo audit --repo .` and the grep for any remaining review line.
 
 ## Files touched
 
@@ -104,6 +104,48 @@ None: the pin file is a Rig configuration and `techne/host-workspace/v1` is unch
 ### Roadmap
 
 The first live run of the pins on the host is the operator's, after review; its result feeds TECHNE-TOOLS-OPS-018's clean-through-a-bump condition.
+
+## Review
+
+### Delivered
+
+Delivered within the approved boundary from baseline `14987b5960a7cb1b829a9f02b9d83de907d5f8fa` in commits `575e194451416f0f4fd50f31ca99e6f77bc9ea85` (pins, converge, status and checks), `37265b2750df8d21a638d254cc611ec087b5d48a` and `2964d53fec6ce9b08efe465bfaafbe9c01c613e4` (guide). The pin file is the recipe's Rig `direct-host` profile with a Linux and a macOS variant per tool; Rig observes drift only. Converge applies the pins, installs Rig, the pin file and the provider, and writes the login banner, the recipe's host instructions for Claude Code and Codex, and the host marker. Host status reports drift through `rig status`, caches expiries and drift for the banner and marks expiries within 14 days; the exemption review line is gone from host status, the guide and the diagram source. Excluded as planned: the `ki` refusal (KI-TOOL-CLI-115), `rig apply` (TECHNE-TOOLS-OPS-018), the owner's personal payload (TECHNE-TOOLS-OPS-015) and any live run on the host.
+
+### Change Summary
+
+- `recipes/direct-host/rig.toml`: the pins (Rig 0.4.0, `ki` 0.9.0, mise 2026.10.4, Bun 1.4.2, Node 24.21.0, Codex 0.161.0 exact; Claude Code at least 2.1.285), named in `recipe.toml` as `[paths] pins`.
+- `recipes/direct-host/rig-pins.sh`: the observe-only `direct-host-pins` provider; it refuses any action but `observe`.
+- `recipes/direct-host/host-instructions.md`: the two-checkout and writing-checkout rules, naming the marker.
+- `operations/aws/agent-host/host/converge.sh`: reads each locator for its OS from the pin file, pins Node exactly, installs Rig through its tagged `install.sh`, installs `~/.config/rig/rig.toml` and `~/.local/share/rig/providers/direct-host-pins`, writes `~/.config/ki-agent-host/banner.sh` (sourced once per interactive shell from `env.sh`), `~/.claude/rules/ki-agent-host.md`, `~/.codex/AGENTS.md` and `~/.config/ki/host-marker`. It finds the recipe files beside itself when staged, or in the harness checkout.
+- `operations/aws/agent-host/setup.sh`: stages the three recipe files.
+- `operations/aws/agent-host/host/status.sh`: Pins section, `EXPIRES SOON` mark, `~/.cache/ki-agent-host/expiry`; `--json` unchanged.
+- `operations/aws/agent-host/status.sh`: in text mode, a signal-only comparison of the workstation's tools with the pins through the same provider, keeping the host's exit status.
+- `tooling/checks/recipe-pins.py` (new), `tooling/checks/agent-host-workspace.sh`, `tooling/checks/controller.sh` (shellcheck covers `recipes/direct-host/*.sh`).
+- `docs/guides/operator/agent-host.md` (Workspace setup, Status, new Expiries and pins part) and `docs/guides/operator/agent-host-architecture.archify.json`.
+- Deviation: the guide names `recipes/direct-host/host-instructions.md` without a link, because the guides audit (GUIDE-4) forbids links to documents outside the collection.
+
+### Verification
+
+- `bun run test`: passed (2 tasks; offline checks, recipe manifest checks and root-only layout passed).
+- `tooling/checks/agent-host-workspace.sh`: passed, with ssh, chezmoi, curl, tailscale, mise, `ki`, `rig`, bun, codex and claude stubbed and no Git credential helper in the test homes; it ends by checking that nothing reached curl. Two deliberate breakages (a 1-day threshold for the expiry mark, and no banner sourcing) each made it fail.
+- Rig v0.4.0, built locally from the tag, loaded the pin file with `RIG_PLATFORM=linux` and `macos` against stub tools and reported `present`, `drifted` and `missing` correctly.
+- `grep -rn "Exemption review\|2026-11-06\|6 November" operations docs/guides tooling recipes` finds only the check that asserts the line is absent.
+- `ki repo audit --repo .`: PASS=16 WARN=2 FAIL=0. The two warnings, about the CI `ki` pin and the missing `.githooks/pre-commit`, concern files this record does not touch.
+- No host, AWS, Tailscale, SSM or GitHub API call was made.
+
+### Outstanding concerns
+
+- The marker path `~/.config/ki/host-marker` and its plain-text shape are the candidate KI-TOOL-CLI-115 names; that record still has to agree them before `ki` honours the marker.
+- The workstation comparison in the Mac-side status runs each pinned tool's `--version` locally.
+- The banner and converge's version reading have run only under offline stubs and macOS; their first Linux run is the operator's first live setup after review.
+
+### Post-change review
+
+The goal holds: one pin file declares the versions for both OSes, converge applies them, status and the banner surface drift and expiries without a network call from the banner, both runtimes receive the recipe's rules, and the host carries the marker. Scope held to the record; `tools-techne` and `tools-rig` are unchanged, and `techne` tolerates the new `[paths]` key. Regression risk is mainly the first live converge: it upgrades `ki` from 0.7.1 to 0.9.0, mise from 2026.10.3 to 2026.10.4 and Codex from 0.160.1 to 0.161.0, installs Rig, and pins Node to 24.21.0. Ready for acceptance review.
+
+### Mini recap
+
+The pins now live in one Rig profile that converge applies and status observes, expiries reach a login banner from a cache, and the recipe's own rules and marker reach the host; the offline checks pass and catch deliberate breakage. The open point is agreeing the marker shape under KI-TOOL-CLI-115. Proposed learning route, not promoted: Rig's built-in mise observation cannot see versions, which a future `tools-rig` record could address before TECHNE-TOOLS-OPS-018.
 
 ## Discussion
 
