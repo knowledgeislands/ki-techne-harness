@@ -161,3 +161,7 @@ The exemption review it was to show, `KI-ARCADIA-GOV-021`, was decided early as 
 
 - ADR-KI-ARCADIA-003 left open whether the mise pins are Rig locators or the native mise manifest Rig observes. Neither lets Rig v0.4.0 see a version, so every pin is a Rig locator read by a harness observe-only provider; converge still writes the mise manifest from the same locators.
 - Decision 13 of the Techne run's decisions log (2026-10-08) authorises planning and delivering this record to Awaiting review.
+
+### First live run
+
+On 2026-10-08, under Decision 18 of the Techne run's decisions log, `setup.sh` ran without `--pull` and exited 1 with 14 changes and one failure. The pins, Rig profile, banner, host instructions and host marker were written. `ki repo --estate repair` failed because the host's stale `ki-arcadia-principal` checkout still had the retired `[skills.ki-repo.territory]` table, which `origin/main` has already removed. The run stopped there, so status and on-host verification were not run. The next step is a rerun with `--pull`.
