@@ -228,8 +228,10 @@ To rotate the token, create a new one, overwrite the parameter by adding `--over
 One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a pin in [`recipes/direct-host/rig.toml`](../../../recipes/direct-host/rig.toml) or Kris's Claude instructions change:
 
 ```sh
-bash operations/aws/agent-host/setup.sh          # add --pull to fast-forward clean checkouts
+bash operations/aws/agent-host/setup.sh --pull   # --pull fast-forwards clean checkouts
 ```
+
+Pass `--pull` on every rerun. Without it, a checkout behind origin keeps stale skill projections, and `ki repo --estate repair` can then fail; `converge.sh` reports that failure with a reminder to rerun with `--pull`.
 
 It needs `chezmoi` on the Mac and uses SSH to the binding's Tailscale name only, `ki-techne-agent-host` unless `AGENT_HOST_TAILSCALE_NAME` is set. It renders Kris's Claude instructions with `chezmoi cat`, copies them with the host scripts over one connection and runs `host/converge.sh` there. That script converges:
 

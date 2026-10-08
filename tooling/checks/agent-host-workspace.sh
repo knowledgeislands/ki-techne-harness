@@ -68,6 +68,7 @@ case \$1 in
   registry) if [[ \$2 == list ]]; then cat '${state}/registry' 2>/dev/null; else echo \"\$4\" >>'${state}/registry'; fi ;;
   repo) if [[ \$3 == diag ]]; then
       if [[ -f '${state}/repaired' ]]; then echo 'summary: REPAIRABLE=0 UNREPAIRABLE=0'; else echo 'summary: REPAIRABLE=1 UNREPAIRABLE=0'; fi
+    elif [[ -f '${state}/repair-fails' ]]; then echo 'ki: error: projection is stale' >&2; exit 1
     else touch '${state}/repaired'; fi ;;
 esac"
 stub "${host_home}/.local/bin/bun" 'if [[ -d node_modules ]]; then echo "Checked 1 install across 1 package (no changes)"; else mkdir node_modules; echo "1 package installed"; fi'
@@ -206,6 +207,15 @@ check '[[ $(verdict codex exact 0.161.0) == unknown && $(verdict rig exact 0.4.0
 check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/direct-host/rig-pins.sh" rig-provider-v1 apply direct-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
 check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
+
+# A failed repair suggests --pull, since a checkout behind origin is the usual cause.
+rm "${state}/repaired"
+touch "${state}/repair-fails"
+failed_repair=$(HOME=${host_home} bash "${scripts}/host/converge.sh" --repositories "${repositories}" 2>&1) || true
+check '[[ ${failed_repair} == *"failed   ki repo --estate repair"*"rerun setup with --pull"* ]]' "a failed repair must suggest --pull, got:
+${failed_repair}"
+rm "${state}/repair-fails"
+touch "${state}/repaired"
 
 git -C "${workspace}/alpha" -c user.name=t -c user.email=t@example.invalid commit --quiet --allow-empty -m local
 code=0

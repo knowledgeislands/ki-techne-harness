@@ -420,7 +420,11 @@ estate_healthy() {
   [[ ${summary} == 'REPAIRABLE=0 UNREPAIRABLE=0' ]]
 }
 if ! estate_healthy; then
-  ki_run repo --estate repair && changed 'repository skill projections'
+  if ki_run repo --estate repair; then
+    changed 'repository skill projections'
+  else
+    echo '         a checkout may be behind origin; rerun setup with --pull' >&2
+  fi
   estate_healthy || warn 'ki repo --estate diag still reports problems'
 fi
 
