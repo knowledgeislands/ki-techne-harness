@@ -49,11 +49,11 @@ platforms = ["linux", "macos"]
 variant.linux.platforms = ["linux"]
 variant.linux.install.provider = "direct-host-pins"
 variant.linux.install.kind = "exact"
-variant.linux.install.locator = "0.9.0"
+variant.linux.install.locator = "0.10.0"
 variant.macos.platforms = ["macos"]
 variant.macos.install.provider = "direct-host-pins"
 variant.macos.install.kind = "exact"
-variant.macos.install.locator = "0.9.0"
+variant.macos.install.locator = "0.10.0"
 
 [tool.mise]
 name = "mise"

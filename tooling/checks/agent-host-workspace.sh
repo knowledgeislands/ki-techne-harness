@@ -58,7 +58,7 @@ render() { mkdir -p \"\$(dirname \"\$config\")\"; cat '${state}/ki-agents' '${st
 # Like ki, bootstrap detects agents only on its first run or with --refresh.
 detect() { { echo '\"claude-code\",'; [[ -d \$HOME/.agents ]] && echo '\"chatgpt-codex\",'; } >'${state}/ki-agents'; }
 case \$1 in
-  --version) echo 0.9.0 ;;
+  --version) echo 0.10.0 ;;
   bootstrap) [[ \$2 == --refresh || ! -f '${state}/ki-agents' ]] && detect; render; mkdir -p \"\$HOME/.claude/skills\"; ln -sfn /stub/ki-next \"\$HOME/.claude/skills/ki-next\" ;;
   dev) case \$3 in
       set) [[ -f '${state}/ki-active' ]] && { echo 'ki: error: local development is active' >&2; exit 1; }
