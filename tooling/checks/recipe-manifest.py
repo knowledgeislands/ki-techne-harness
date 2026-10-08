@@ -7,7 +7,10 @@ Each binding field of techne/host-binding/v1 must be declared exactly once:
 provider-neutral fields under [parameters], provider fields under
 [providers.<provider>.parameters]. No provider-neutral entry may name an AWS
 concept; harness paths are locations, not concepts, and are exempt. Every
-script a parameter names must read its environment variable. With --binding,
+script a parameter names must read its environment variable. The [status]
+table declares the host-workspace report schema and an exit status for each
+outcome; each [operations.<name>] entry names an operation of a declared
+script. With --binding,
 each script's default for that variable must equal the binding's resolved
 value, so running a script with no binding behaves as that binding would.
 """
@@ -28,7 +31,10 @@ PROVIDER_FIELDS = {
         'parameter_prefix', 'operator_role', 'instance_type', 'volume_size',
     },
 }
-TOP_KEYS = {'schema', 'name', 'summary', 'runtime', 'paths', 'parameters', 'footprint', 'providers'}
+STATUS_SCHEMA = 'techne/host-workspace/v1'
+STATUS_EXITS = {'clean', 'failed', 'at-risk', 'unknown', 'unreachable'}
+OPERATIONS = {'rebuild', 'withdraw'}
+TOP_KEYS = {'schema', 'name', 'summary', 'runtime', 'paths', 'status', 'operations', 'parameters', 'footprint', 'providers'}
 PROVIDER_KEYS = {'summary', 'paths', 'parameters', 'selectors', 'tags', 'footprint'}
 PARAMETER_KEYS = {'summary', 'required', 'default', 'env', 'scripts'}
 AWS_CONCEPT = re.compile(
@@ -143,6 +149,35 @@ def check_manifest(path):
     for key, (_, relative) in scripts.items():
         if not (ROOT / relative).is_file():
             fail(f'script {key} does not exist: {relative}')
+
+    status = manifest.get('status')
+    if not isinstance(status, dict):
+        fail('[status] is required')
+    else:
+        for key in sorted(status.keys() - {'schema', 'exit'}):
+            fail(f'unknown key status.{key}')
+        if status.get('schema') != STATUS_SCHEMA:
+            fail(f'status.schema must be {STATUS_SCHEMA}')
+        exits = status.get('exit')
+        if not isinstance(exits, dict) or exits.keys() != STATUS_EXITS:
+            fail(f'status.exit must give exactly {", ".join(sorted(STATUS_EXITS))}')
+        elif not all(isinstance(code, int) and 0 <= code <= 255 for code in exits.values()) or len(set(exits.values())) != len(exits):
+            fail('status.exit must give each outcome its own exit status from 0 to 255')
+
+    operations = manifest.get('operations')
+    if not isinstance(operations, dict) or operations.keys() != OPERATIONS:
+        fail(f'[operations] must declare exactly {", ".join(sorted(OPERATIONS))}')
+        operations = operations if isinstance(operations, dict) else {}
+    for name, operation in operations.items():
+        if not isinstance(operation, dict):
+            fail(f'operations.{name} must be a table')
+            continue
+        for key in sorted(operation.keys() - {'summary', 'script'}):
+            fail(f'unknown key operations.{name}.{key}')
+        if not isinstance(operation.get('summary'), str) or not operation['summary']:
+            fail(f'operations.{name}.summary is required')
+        if operation.get('script') not in scripts:
+            fail(f'operations.{name} names unknown script {operation.get("script")}')
 
     readers = {}
     for provider, section, parameters in sections:

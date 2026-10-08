@@ -4,7 +4,8 @@ set -euo pipefail
 # Offline checks for the recipe manifests (TECHNE-TOOLS-OPS-012): each passes
 # against the first binding, and the check refuses copies of the direct-host
 # manifest that declare a field twice, omit one or name an AWS concept outside
-# [providers.aws], and a binding whose values the script defaults do not match.
+# [providers.aws], and a binding whose values the script defaults do not match,
+# and copies whose status contract or teardown operations are malformed.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 check=${repo_root}/tooling/checks/recipe-manifest.py
@@ -55,6 +56,22 @@ refuse 'a provider-neutral script reading a provider field' 'is not a aws script
 
 mutate list 's = "providers = [\"aws\"]\n" + s'
 refuse 'a providers list beside the provider tables' 'not valid TOML' "${work}/list.toml"
+
+# The status contract and teardown operations (TECHNE-TOOLS-OPS-013).
+mutate status-schema 's = s.replace("techne/host-workspace/v1", "techne/host-workspace/v0")'
+refuse 'another status schema' 'status.schema must be techne/host-workspace/v1' "${work}/status-schema.toml"
+
+mutate status-exit 's = s.replace("unknown = 4", "unknown = 3")'
+refuse 'two outcomes sharing an exit status' 'its own exit status' "${work}/status-exit.toml"
+
+mutate operation-script 's = s.replace("script = \"destroy\"", "script = \"teardown\"", 1)'
+refuse 'an operation of an undeclared script' 'operations.rebuild names unknown script teardown' "${work}/operation-script.toml"
+
+mutate operation-missing 'import re; s = re.sub(r"\[operations\.withdraw\][^\[]*", "", s)'
+refuse 'a missing teardown operation' '[operations] must declare exactly rebuild, withdraw' "${work}/operation-missing.toml"
+
+mutate stop-reader 's = s.replace("env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\"]", "env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\", \"template\"]")'
+refuse 'a parameter naming a script that does not read it' 'does not read AGENT_HOST_TAILSCALE_NAME' "${work}/stop-reader.toml"
 
 sed 's/eu-west-1/eu-central-1/' "${binding}" >"${work}/other-region.toml"
 refuse 'a binding the script defaults do not match' 'the default of AWS_REGION must be the binding value' "${manifest}" "${work}/other-region.toml"

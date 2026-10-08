@@ -27,6 +27,30 @@ footprint = [
 setup = "operations/aws/agent-host/setup.sh"
 status = "operations/aws/agent-host/status.sh"
 
+# The status report (ODR-KI-ARCADIA-001): `status --json` prints one document
+# of this schema, and the exit status carries its outcome. `--fetch` updates
+# remote-tracking refs first; `--connect-timeout <seconds>` bounds the read.
+[status]
+schema = "techne/host-workspace/v1"
+
+[status.exit]
+clean = 0
+failed = 1
+at-risk = 3
+unknown = 4
+unreachable = 255
+
+# Teardown operations, each run as `<script> <operation>`. Each refuses unless
+# the status is clean, short of `--discard <repository>...` naming exactly the
+# repositories at risk or `--discard-unreadable-host` with typed confirmation.
+[operations.rebuild]
+summary = "Replace the host, keeping the credentials the next build reuses"
+script = "destroy"
+
+[operations.withdraw]
+summary = "Remove the host and every stored credential, then list what remains by hand"
+script = "destroy"
+
 [parameters.host_name]
 summary = "Operating-system host name and resource name"
 default = "ki-techne-{name}"
@@ -37,7 +61,7 @@ scripts = ["setup", "provision", "stop"]
 summary = "Tailnet device name, used as the SSH target"
 default = "ki-techne-{name}"
 env = "AGENT_HOST_TAILSCALE_NAME"
-scripts = ["setup", "status", "provision"]
+scripts = ["setup", "status", "provision", "stop", "destroy"]
 
 [parameters.tailscale_tag]
 summary = "Tailnet tag the host advertises"
@@ -49,13 +73,13 @@ scripts = ["provision"]
 summary = "Repository list file, one `<owner>/<repo> <clone URL>` per line"
 default = "operations/aws/agent-host/host/repositories.txt"
 env = "AGENT_HOST_REPOSITORIES"
-scripts = ["setup"]
+scripts = ["setup", "status", "stop", "destroy"]
 
 [parameters.workspace]
 summary = "Workspace root on the host; a leading ~/ is the operator's home there"
 default = "~/workspaces/kit"
 env = "KI_AGENT_HOST_WORKSPACE"
-scripts = ["setup", "status"]
+scripts = ["setup", "status", "stop", "destroy"]
 
 [providers.aws]
 summary = "One EC2 instance in its own VPC, built by a CloudFormation stack"
