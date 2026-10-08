@@ -10,9 +10,9 @@ The host runs under the one standing exemption that the [Techne Programme Hold](
 
 On the Mac, the chezmoi helper `techne-agent-host` checks the host and opens Zed's `ssh://` remote; Zed reaches the host through the Tailscale client over WireGuard, and the tailnet policy admits only `techne` over Tailscale SSH. The host sits in its own security group with no inbound rule and talks out only over HTTPS, to GitHub with a fine-grained token and to the model provider through Kris's Claude account login. Its instance role reads only the parameters under `/ki/techne/agent-host/`.
 
-Granted turns Kris's SSO admin session into the account-local operator role, which may only start and stop the host. The controller `ki-techne-ops-007-primary` is drawn for contrast: it is held, has its own stack and is untouched.
+Granted turns Kris's SSO admin session into the account-local operator role, which may start, stop, reboot and terminate the tagged host but cannot delete its stack. The controller `ki-techne-ops-007-primary` is drawn for contrast: it is held, has its own stack and is untouched.
 
-Two AWS profiles are in play. The build and teardown use the admin profile `knowledge-islands-techne`; stop, start and the kill switch use `knowledge-islands-techne-agent-host`. The diagram's source is [`agent-host-architecture.archify.json`](agent-host-architecture.archify.json).
+Two AWS profiles are in play. The build, rebuild and withdrawal use the admin profile `knowledge-islands-techne`; stop, start and the kill switch use `knowledge-islands-techne-agent-host`. The diagram's source is [`agent-host-architecture.archify.json`](agent-host-architecture.archify.json).
 
 ## What the host is
 
@@ -36,10 +36,10 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | Binding field | Recipe default | Variable | Read by |
 | --- | --- | --- | --- |
 | `host_name` | `ki-techne-{name}` | `AGENT_HOST_NAME` | `setup.sh`, `provision.sh`, `stop.sh` |
-| `tailscale_name` | `ki-techne-{name}` | `AGENT_HOST_TAILSCALE_NAME` | `setup.sh`, `status.sh`, `provision.sh` |
+| `tailscale_name` | `ki-techne-{name}` | `AGENT_HOST_TAILSCALE_NAME` | `setup.sh`, `status.sh`, `provision.sh`, `stop.sh`, `destroy.sh` |
 | `tailscale_tag` | `tag:ki-techne-{name}` | `AGENT_HOST_TAILSCALE_TAG` | `provision.sh` |
-| `repositories` | `operations/aws/agent-host/host/repositories.txt` | `AGENT_HOST_REPOSITORIES` | `setup.sh` |
-| `workspace` | `~/workspaces/kit` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh` |
+| `repositories` | `operations/aws/agent-host/host/repositories.txt` | `AGENT_HOST_REPOSITORIES` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
+| `workspace` | `~/workspaces/kit` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
 | `aws.account` | required | `EXPECTED_AWS_ACCOUNT` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.region` | required | `AWS_REGION` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.admin_profile` | required | `AWS_PROFILE` | `provision.sh`, `destroy.sh` |
@@ -51,9 +51,9 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | `aws.instance_type` | `t3.medium` | `AGENT_HOST_INSTANCE_TYPE` | `provision.sh` |
 | `aws.volume_size` | `40` | `AGENT_HOST_VOLUME_SIZE` | `provision.sh` |
 
-`setup.sh` and `status.sh` read no AWS variable: they reach the host by its Tailscale name over SSH, and pass the workspace to the host scripts, which expand a leading `~/` to the operator's home there. `provision.sh` passes the host name, Tailscale name and tag, tag value and parameter prefix to the stack's `HostName`, `TailscaleHostname`, `TailscaleTag`, `AgentHostId` and `ParameterPrefix` parameters, and tags the stack with the tag value. `AGENT_HOST_INSTRUCTIONS` is not a binding field: it is the person's own list of Claude instruction files that `setup.sh` renders, space-separated names under `~/.claude`, defaulting to `CLAUDE.md communication.md delegation.md memory-scope.md markdown.md`.
+`setup.sh` and `status.sh` read no AWS variable: they reach the host by its Tailscale name over SSH, and pass the workspace to the host scripts, which expand a leading `~/` to the operator's home there. `stop.sh` and `destroy.sh` read the Tailscale name, repository list and workspace only to pass them to `status.sh`, which reads the host's status before they act. `provision.sh` passes the host name, Tailscale name and tag, tag value and parameter prefix to the stack's `HostName`, `TailscaleHostname`, `TailscaleTag`, `AgentHostId` and `ParameterPrefix` parameters, and tags the stack with the tag value. `AGENT_HOST_INSTRUCTIONS` is not a binding field: it is the person's own list of Claude instruction files that `setup.sh` renders, space-separated names under `~/.claude`, defaulting to `CLAUDE.md communication.md delegation.md memory-scope.md markdown.md`.
 
-`bun run test` checks the manifest offline: every binding field declared once, in its provider-neutral or provider section, no AWS concept outside `[providers.aws]`, each listed script reading its variable, and each script default equal to the `agent-host` binding's value.
+`bun run test` checks the manifest offline: every binding field declared once, in its provider-neutral or provider section, no AWS concept outside `[providers.aws]`, each listed script reading its variable, and each script default equal to the `agent-host` binding's value. It also checks the `[status]` table, which declares the status report's schema and exit statuses, and the `[operations]` table, which names the `rebuild` and `withdraw` operations of the `destroy` script.
 
 ## Egress and what a security group cannot enforce
 
@@ -207,7 +207,7 @@ Claude Code signs in interactively as Kris, so no model API key is stored and `/
 GitHub uses a fine-grained personal access token that Kris creates in GitHub under **Settings → Developer settings → Personal access tokens → Fine-grained tokens**:
 
 - **Resource owner:** `knowledgeislands`. If the organisation requires approval for fine-grained tokens, an owner must approve the request before the token works.
-- **Expiration:** 30 days.
+- **Expiration:** 90 days.
 - **Repository access:** only the Knowledge Islands repositories Kris selects.
 - **Permissions:** Contents read and write; Metadata read-only, which GitHub adds automatically. Nothing else.
 
@@ -221,7 +221,7 @@ pbcopy </dev/null
 
 The boot script installs `/usr/local/bin/git-credential-ki-agent-host` and sets it as `techne`'s Git credential helper for `https://github.com`. When Git needs GitHub credentials, the helper reads the parameter through the instance role and answers with it; it ignores other hosts and other credential actions and writes nothing to disk. Clone over HTTPS, for example `git clone https://github.com/knowledgeislands/<repository>.git`; SSH remotes do not use the helper. To check the token from the host, run `git ls-remote https://github.com/knowledgeislands/<repository>.git`.
 
-To rotate the token, create a new one, overwrite the parameter by adding `--overwrite` to the command above, and revoke the old one in GitHub. The token expires after 30 days whether or not the host is still running.
+To rotate the token, create a new one, overwrite the parameter by adding `--overwrite` to the command above, and revoke the old one in GitHub. The token expires after 90 days whether or not the host is still running.
 
 ## Workspace setup
 
@@ -246,13 +246,17 @@ Two steps remain Kris's. Sign Claude Code in as [Claude Code](#claude-code) desc
 
 ### Status
 
-Before you stop or tear down the host, and whenever you want to know what is at risk, run the read-only report from the Mac:
+Before you stop, rebuild or withdraw the host, and whenever you want to know what is at risk, run the read-only report from the Mac:
 
 ```sh
-bash operations/aws/agent-host/status.sh
+bash operations/aws/agent-host/status.sh             # add --fetch to refresh the remote-tracking branches first
 ```
 
-For each repository it lists the branch, uncommitted files, commits that no remote branch contains, stashes and the ahead and behind counts as of the last fetch, and flags any with work at risk. It also lists the GitHub token's expiry, the Tailscale node key's expiry and the date of the exemption's scheduled review, which is not a lapse. It changes and fetches nothing.
+Work on the host is safe only once it is in Git on a remote, on any branch (`ODR-KI-ARCADIA-001`). The report covers the repositories the binding declares, `host/repositories.txt` by default. A repository is **at risk** when it has uncommitted or untracked files, commits on any local branch that no remote branch contains, or stashes; files Git ignores do not count, and a linked worktree's uncommitted files count towards its repository. Everything else on the host is disposable by rule: Claude Code and Codex sign-ins and transcripts, caches, hand-made backups and any checkout outside the declared set. Land anything you want to keep from those by hand.
+
+For each repository the report lists the branch, uncommitted files, unpushed commits, stashes and the ahead and behind counts as of the last fetch, and flags it `AT RISK` or `UNKNOWN`. The inventory fails closed: a missing workspace, a declared repository that is absent, a repository outside the declared set or a Git read that fails makes the outcome **unknown** rather than clean, and the report lists why. It then lists the GitHub token's expiry, the Tailscale node key's expiry and the exemption review line, and ends with a summary line such as `summary: REPOSITORIES=3 AT_RISK=1 UNKNOWN=0 OUTCOME=at-risk`. It changes nothing; `--fetch` runs `git fetch --all --prune` in each repository, which updates only remote-tracking branches, and a failed fetch makes that repository unknown.
+
+The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the report itself fails, and SSH's own 255 when the host cannot be reached. `--json` prints one `techne/host-workspace/v1` document instead of the table, naming the host and its instance ID, and `--connect-timeout <seconds>` bounds the wait for an unreachable host. `stop.sh` and `destroy.sh` read this document; the `techne` CLI reads it through the `[status]` table of the recipe manifest.
 
 ## A working session
 
@@ -266,13 +270,13 @@ In that session Claude Code runs as `techne` and commits explicit paths. It push
 
 Do both steps; either one alone stops access.
 
-1. Stop the host, which ends every session on it. If time allows, run [Status](#status) first so nothing unlanded is lost. With `assume knowledge-islands-techne-agent-host`:
+1. Stop the host, which ends every session on it. With `assume knowledge-islands-techne-agent-host`:
 
    ```sh
-   bash operations/aws/agent-host/stop.sh
+   bash operations/aws/agent-host/stop.sh             # --now skips the status read
    ```
 
-   It stops only a running instance tagged `ki-agent-host-id = agent-host`, `ki-lifecycle = prototype` and `Name = ki-techne-agent-host`.
+   It stops only a running instance tagged `ki-agent-host-id = agent-host`, `ki-lifecycle = prototype` and `Name = ki-techne-agent-host`. First it reads [Status](#status) with a 5-second connect timeout and prints a warning naming each repository at risk or unknown, or saying the status could not be read. It never refuses: a stop keeps the disk, so the work is still there when the host starts again. In an emergency, `--now` stops without waiting for the read.
 
 2. In the Tailscale admin console, remove the `ki-techne-agent-host` device and revoke any unused auth key for its tag.
 
@@ -292,16 +296,48 @@ aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 
 
 Expect `No changes to deploy`. If a change set is created instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect to fix before the rebuild.
 
-## Teardown
+## Rebuild and withdraw
 
-With `assume knowledge-islands-techne`:
+The recipe's destroy path has two operations, both run with `assume knowledge-islands-techne` and both requiring `CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host`:
 
 ```sh
-CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/destroy.sh
+CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/destroy.sh rebuild
+CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/destroy.sh withdraw
 ```
 
-It refuses a stack that is not tagged `ki-agent-host-id = agent-host`, deletes the `ki-techne-agent-host` stack and waits for every resource to go, then deletes the three parameters under `/ki/techne/agent-host/`. Then, outside this repository:
+- **Rebuild** deletes the `ki-techne-agent-host` stack only, keeping the `github-token` and `model-api-key` parameters for the next build, then prints the rebuild sequence: remove the old `ki-techne-agent-host` device in the Tailscale admin console so the new host takes its name, store a fresh Tailscale auth key as [Before the build](#before-the-build) describes, overwriting any spent one, then run `provision.sh` and `setup.sh`. Run [Before a rebuild](#before-a-rebuild) first when the template has changed.
+- **Withdraw** deletes the stack and the three parameters under `/ki/techne/agent-host/`, then lists what remains to remove by hand: the tailnet device, its tag, tag owner, grant and `ssh` rule and any unused auth key; the GitHub token and any model API key issued for the host; the `ki-techne-agent-host-operator` role, its inline policy and the `knowledge-islands-techne-agent-host` profile; and the SSH and Zed entries in the chezmoi source, applied only after reviewing `chezmoi diff`.
 
-1. Remove the device, its tag owner, grant and `ssh` rule from the tailnet policy, and revoke any remaining auth key.
-2. Revoke any GitHub token or model API key issued for the host.
-3. With `assume knowledge-islands-techne`, delete the inline policy and then the `ki-techne-agent-host-operator` role in account `655383751458`, and remove the `knowledge-islands-techne-agent-host` profile and SSH and Zed entries from the chezmoi source, applying only after reviewing `chezmoi diff`.
+A bare `destroy.sh` is refused. Both operations refuse a stack that is not tagged `ki-agent-host-id = agent-host`, and both may be rerun after a partial clean-up: a stack that is already gone is skipped, and missing parameters do not block withdrawal.
+
+### The guard
+
+Before deleting anything, both operations read [Status](#status) as JSON with a 10-second connect timeout, and proceed only as follows:
+
+| Outcome | What happens |
+| --- | --- |
+| Clean | Proceeds. Either override is refused. |
+| At risk | Refuses, listing the repositories at risk and the recovery routes, unless `--discard <repository>...` names exactly those repositories. |
+| Unknown, or the status cannot be read | Refuses, listing the reasons and the recovery routes, unless `--discard-unreadable-host` is given; then it asks you to type `discard ki-techne-agent-host`. |
+
+A report counts as read only when it parses, carries the `techne/host-workspace/v1` schema and its outcome matches its exit status. The instance ID in the report must also match the stack's `AgentHostInstanceId` output, so a status read from another host cannot clear this one; only `--discard-unreadable-host`, which has no report to check, skips that check and says so.
+
+The recovery routes, in order:
+
+1. **Push.** On the host, push each repository's unlanded branches.
+2. **Bundle.** On the host, run `git bundle create ~/<repository>.bundle --all` and `git bundle verify ~/<repository>.bundle` in each repository, copy the bundles to the Mac with `scp` over Tailscale SSH, and verify them again there.
+
+There is no EBS snapshot route.
+
+### When the work matters
+
+1. Start the host if it is stopped, with `techne-agent-host connect --aws` or the operator profile.
+2. Run `status.sh --fetch` and read what is at risk or unknown.
+3. Land the work: push it, or bundle it to the Mac and verify the bundle.
+4. Run `status.sh` again until it reports clean, then rebuild or withdraw without an override.
+
+### In an emergency
+
+1. Stop the host with `stop.sh --now`, as the [Kill switch](#kill-switch) describes.
+2. Remove the `ki-techne-agent-host` device in the Tailscale admin console.
+3. Rebuild or withdraw with `--discard-unreadable-host`, typing the confirmation. The host cannot be reached once its device is gone, so whatever was on it is lost.
