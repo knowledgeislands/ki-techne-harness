@@ -12,7 +12,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T15:50:00Z
+updated_at: 2026-10-09T16:04:33Z
 ---
 
 # Agent Host OS Patching
@@ -44,7 +44,7 @@ One model for every provider and OS, in three layers, none of which needs a rebu
 
 1. **Security updates install unattended.** The host's own scheduler applies security updates daily as root, set up by the image or boot script. Non-security updates stay out of the unattended set; they arrive at the next build or through the owner's own action.
 2. **Kernel fixes go live through Livepatch where available.** Where the binding opts in and the provider supports it (Ubuntu with Ubuntu Pro), critical kernel fixes apply without a restart. Livepatch narrows, but never removes, the need for a reboot.
-3. **Reboots happen only when needed, at a window the binding chooses.** With no window in the binding, the default, the host never restarts itself: status and the login banner say a reboot is required and since when, and the binding owner restarts through the provider's stop and start, the normal restart route. A window is a weekday and a time, such as `Sun 04:00`, in the host's time zone. With one, the host may restart itself in that window only when a reboot is required and no user is logged in, so it never cuts a live session.
+3. **Reboots happen only when needed, at a window the binding chooses.** With no window in the binding, the default, the host never restarts itself: status and the login banner say a reboot is required and since when, and the binding owner restarts through the provider's stop and start, the normal restart route. A window is a daily local time, `HH:MM` in the host's time zone, such as `04:00`. With one, the host may restart itself at that time on any day only when a reboot is required and no user is logged in, so it never cuts a live session.
 
 The operator user stays without `sudo`. Everything needing root is set by the image or the boot script; reporting reads only world-readable state.
 
@@ -52,9 +52,9 @@ The operator user stays without `sudo`. Everything needing root is set by the im
 
 `recipe.toml` declares the intent once: unattended security updates, optional Livepatch, a reboot window that defaults to none, and the reporting fields. Each provider table declares its mechanism under `[providers.<provider>.patching]`, which `tooling/checks/recipe-manifest.py` requires for every supported provider:
 
-- **AWS (Ubuntu):** the boot script writes `/etc/apt/apt.conf.d/20auto-upgrades` and a `52ki-agent-host-unattended-upgrades` file (security origins only; `Automatic-Reboot "false"` always, because unattended-upgrades' own reboot time cannot name a weekday). With a window, it also installs a `ki-agent-host-reboot` systemd timer at the window's weekday and time (`OnCalendar=Sun *-*-* 04:00:00`, host time zone) whose service restarts the host only when `/var/run/reboot-required` exists and `who` lists no session. When the binding opts in to Livepatch, it attaches Ubuntu Pro from a SecureString in the stack's parameter prefix, read like the Tailscale key and never written to disk, and enables Livepatch. No SSM agent, Patch Manager or instance-role change.
-- **Owned Linux (TECHNE-TOOLS-OPS-021):** the same contract through systemd: the distribution's unattended-update service and timers, enabled at enrolment by the binding owner as root, and a reboot timer only when a window is set.
-- **macOS:** `softwareupdate`'s automatic security responses and system files set by the binding owner at enrolment; no automatic restart by default, because FileVault holds a restarted Mac at the unlock screen unless an authenticated restart (`fdesetup authrestart`) is used, which needs the owner's credentials. Reporting uses `softwareupdate --list` from the local catalogue, without forcing a network scan at login.
+- **AWS (Ubuntu):** the boot script writes `/etc/apt/apt.conf.d/20auto-upgrades` and a `52ki-agent-host-unattended-upgrades` file (security origins only; `Automatic-Reboot "false"` always, because unattended-upgrades' own reboot decision checks for logged-in users when its daily run ends, not when the reboot happens; see Alternatives considered). With a window, it also installs a `ki-agent-host-reboot` systemd timer that fires daily at the window's time (`OnCalendar=*-*-* 04:00:00`, host time zone) and whose service restarts the host only when `/var/run/reboot-required` exists and `who` lists no session at that moment. When the binding opts in to Livepatch, it attaches Ubuntu Pro from a SecureString in the stack's parameter prefix, read like the Tailscale key and never written to disk, and enables Livepatch. No SSM agent, Patch Manager or instance-role change.
+- **Owned Linux (TECHNE-TOOLS-OPS-021):** the same contract through systemd: the distribution's unattended-update service and timers, enabled at enrolment by the binding owner as root, and, only when a window is set, the same daily reboot timer and guard.
+- **macOS:** `softwareupdate`'s automatic security responses and system files set by the binding owner at enrolment; no automatic restart by default, because FileVault holds a restarted Mac at the unlock screen unless an authenticated restart (`fdesetup authrestart`) is used, which needs the owner's credentials. If a binding sets a window, it takes the same daily `HH:MM` form in the host's time zone and any restart in it stays subject to the FileVault caveat. Reporting uses `softwareupdate --list` from the local catalogue, without forcing a network scan at login.
 
 ### Reporting
 
@@ -76,8 +76,8 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 
 ## Steps
 
-- [ ] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a three-letter weekday and a 24-hour `HH:MM`).
-- [ ] Add the AWS patching configuration and the conditional reboot timer to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
+- [ ] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a 24-hour `HH:MM`, with no weekday).
+- [ ] Add the AWS patching configuration and the conditional daily reboot timer to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
 - [ ] Add the `updates` block and text section to `operations/aws/agent-host/host/status.sh`, for Ubuntu and macOS, and write the counts to the banner cache; keep the outcome and exit status unchanged.
 - [ ] Extend the banner in `operations/aws/agent-host/host/converge.sh` with the reboot-required and pending-security lines.
 - [ ] Add offline fixtures and stubs to `tooling/checks/agent-host-workspace.sh` (and siblings) for: no updates, pending security updates, reboot required with age and packages, Livepatch absent and active, `apt-check` failing, and a macOS `softwareupdate` listing.
@@ -98,7 +98,7 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 ## Verify
 
 - `bun run test` passes, including the recipe-manifest, stack and workspace checks.
-- The stack check asserts that the boot script writes security-only origins and `Automatic-Reboot "false"`, installs the reboot timer only when a window is set and with the window's `OnCalendar`, guards the reboot on `reboot-required` and an empty `who`, and reads the Pro token only when Livepatch is on, never writing it to disk.
+- The stack check asserts that the boot script writes security-only origins and `Automatic-Reboot "false"`, installs the reboot timer only when a window is set and with a daily `OnCalendar=*-*-* HH:MM:00` built from the window, rejects a window carrying a weekday, guards the reboot on `reboot-required` and an empty `who`, and reads the Pro token only when Livepatch is on, never writing it to disk.
 - The workspace check asserts each fixture's `updates` block and banner line, and that every fixture's `outcome` and exit status match the same fixture without updates.
 - `ki repo audit` passes.
 - Live: only under the separate grant above.
@@ -129,14 +129,14 @@ The paired `tools-techne` record [TECHNE-TOOL-CLI-008](https://github.com/knowle
 
 ### Decisions for the binding owner
 
-Kris answered all six on 2026-10-09, each as recommended (Decision 26(b)). The plan above follows them.
+Kris answered all six on 2026-10-09, each as recommended (Decision 26(b)), and amended the sixth the same day (Decision 27). The plan above follows them.
 
 1. **Automatic reboot default.** Resolved: none. A binding may set a window, and the host restarts in it only when a reboot is required and nobody is logged in.
 2. **Livepatch.** Resolved: an opt-in binding field, off by default. Kris does not attach Ubuntu Pro to his binding; he restarts by hand when a reboot is required.
 3. **Unattended scope.** Resolved: security updates only, as today; non-security updates arrive at the next build.
 4. **Outcome.** Resolved: pending updates and reboot-required never change the status outcome or exit status; they show as report lines and a banner line.
 5. **Current host.** Resolved: no rebuild for this record. Reporting arrives at the next `setup`, the boot-script settings at TECHNE-TOOLS-OPS-017's rebuild, and Kris restarts through the provider when a kernel asks for it, starting with the 1014 kernel due on 2026-10-10 (Decision 26(c)).
-6. **Reboot window form.** Resolved: a weekday and a local time in the binding, for example `Sun 04:00`, interpreted in the host's time zone. Because unattended-upgrades' own reboot time cannot name a weekday, the AWS provider uses a systemd timer for the window.
+6. **Reboot window form.** Resolved, as amended by Decision 27: a daily local time in the binding, `HH:MM` in the host's time zone; Kris's binding uses `04:00`. Decision 27 preferred the native unattended-upgrades reboot over a custom timer if it reboots only when required and with nobody logged in. It does not hold for the logged-in check (see Alternatives considered), so the AWS provider keeps the `ki-agent-host-reboot` timer, now daily.
 
 The record stays `draft` until Kris approves this plan as Ready.
 
@@ -145,6 +145,7 @@ The record stays `draft` until Kris approves this plan as Ready.
 - **SSM Patch Manager.** Rejected: it needs the SSM agent the boot script disables and a management-plane authority outside the hold boundary, and it is AWS-only.
 - **A narrow `sudo` rule for a `techne host patch` command.** Rejected: the operator gains root reach, and unattended updates already cover the routine path.
 - **Rebuild to patch.** Rejected by the owner: rebuilds are for changing the host, not for keeping it current.
+- **Native unattended-upgrades reboot** (`Automatic-Reboot "true"` only with a window, `Automatic-Reboot-Time` set to it, `Automatic-Reboot-WithUsers "false"`). Preferred by Decision 27, but rejected because it does not meet the rule. It does reboot only when `/var/run/reboot-required` exists. But the upstream documentation describes `Automatic-Reboot-Time` as rebooting at that time instead of immediately, which the tool does by scheduling `shutdown -r` when its run ends, and `Automatic-Reboot-WithUsers` is evaluated then too. `apt-daily-upgrade.timer` runs around 06:00 to 07:00, so with a `04:00` window the logged-in check happens about 21 hours before the reboot, and a session started in between is cut. Moving `apt-daily-upgrade.timer` to the window with an immediate reboot would narrow that gap to the run's length, but it also moves the upgrade schedule and relies on unattended-upgrades evaluating the reboot on a run with nothing to install, which this record does not establish. The custom timer checks `reboot-required` and `who` at the moment it restarts.
 
 ### Related records
 
