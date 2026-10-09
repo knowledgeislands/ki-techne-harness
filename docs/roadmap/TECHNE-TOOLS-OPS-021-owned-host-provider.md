@@ -17,7 +17,7 @@ updated_at: 2026-10-08T13:03:25Z
 
 ## Goal
 
-The `direct-host` recipe can bind to a machine the owner already runs and reaches over the tailnet, such as an owned Mac Studio, with no provision step: rebuild resets the operator user's workspace and home over SSH, and withdraw removes the workspace and lists the tailnet device and account footprint for the owner to remove by hand.
+The `agent-host` recipe can bind to a machine the owner already runs and reaches over the tailnet, such as an owned Mac Studio, with no provision step: rebuild resets the operator user's workspace and home over SSH, and withdraw removes the workspace and lists the tailnet device and account footprint for the owner to remove by hand.
 
 ## Context
 
@@ -27,7 +27,7 @@ Running an owned host needs a governance decision on the [Techne Programme Hold]
 
 ## Boundary
 
-- In scope: a `[providers.tailnet]` (or `owned`) section in `recipes/direct-host/recipe.toml` with no provision step; owned-host rebuild and withdraw scripts honouring the status contract and guard; moving the neutral scripts from `operations/aws/agent-host/` to `operations/direct-host/` (P12); making instance-sized settings such as `KNIP_DISABLE_RAW_TRANSFER` in `host/converge.sh` conditional or provider-supplied; the manifest check and stubbed cases for the new provider.
+- In scope: a `[providers.tailnet]` (or `owned`) section in `recipes/agent-host/recipe.toml` with no provision step; owned-host rebuild and withdraw scripts honouring the status contract and guard; moving the neutral scripts from `operations/aws/agent-host/` to `operations/agent-host/` (P12); making instance-sized settings such as `KNIP_DISABLE_RAW_TRANSFER` in `host/converge.sh` conditional or provider-supplied; the manifest check and stubbed cases for the new provider.
 - Out of scope: the CLI adapter ([TECHNE-TOOL-CLI-007](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-007-owned-host-adapter.md) in `tools-techne`); the Techne Programme Hold decision; splitting the operator guide (TECHNE-TOOLS-OPS-020); and any remote action.
 
 ## Discussion

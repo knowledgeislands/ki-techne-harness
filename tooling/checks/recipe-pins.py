@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Offline check of the direct-host recipe's pin file (TECHNE-TOOLS-OPS-014).
+"""Offline check of the agent-host recipe's pin file (TECHNE-TOOLS-OPS-014).
 
 usage: recipe-pins.py <rig.toml>
 
-The pin file is Rig's direct-host profile. Every tool needs Rig's required
+The pin file is Rig's agent-host profile. Every tool needs Rig's required
 fields and a variant for each target OS, Linux and macOS, observed through the
-observe-only direct-host-pins provider with an exact or minimum version
+observe-only agent-host-pins provider with an exact or minimum version
 locator. Rig itself stays out of the check, which needs no network.
 """
 
@@ -14,7 +14,7 @@ import sys
 import tomllib
 
 OSES = ('linux', 'macos')
-PROVIDER = 'direct-host-pins'
+PROVIDER = 'agent-host-pins'
 TOOLS = {'rig', 'ki', 'mise', 'bun', 'node', 'codex', 'claude'}
 VERSION = re.compile(r'^[0-9]+(\.[0-9]+)+$')
 
@@ -32,10 +32,10 @@ def main():
     with open(sys.argv[1], 'rb') as handle:
         pins = tomllib.load(handle)
 
-    if pins.get('rig', {}).get('default-profile') != 'direct-host':
-        fail('rig.default-profile must be direct-host')
-    if 'direct-host' not in pins.get('profile', {}):
-        fail('[profile.direct-host] is required')
+    if pins.get('rig', {}).get('default-profile') != 'agent-host':
+        fail('rig.default-profile must be agent-host')
+    if 'agent-host' not in pins.get('profile', {}):
+        fail('[profile.agent-host] is required')
     provider = pins.get('provider', {}).get(PROVIDER, {})
     if provider.get('adapter') != 'custom' or provider.get('capabilities') != ['observe']:
         fail(f'[provider.{PROVIDER}] must be a custom adapter that only observes')

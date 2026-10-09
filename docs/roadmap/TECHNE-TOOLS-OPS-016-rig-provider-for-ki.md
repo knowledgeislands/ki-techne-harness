@@ -17,7 +17,7 @@ updated_at: 2026-10-09T18:25:06Z
 
 ## Goal
 
-Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`'s own signature check, so the recipe's `direct-host` profile can install every shared tool it declares.
+Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`'s own signature check, so the recipe's `agent-host` profile can install every shared tool it declares.
 
 ## Context
 

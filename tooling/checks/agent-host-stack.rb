@@ -55,7 +55,7 @@ statements.each do |statement|
     check.call(statement['Resource'].to_s.end_with?(':parameter${ParameterPrefix}/*'), 'parameter access must be limited to the prefix')
   end
 end
-# Binding values (recipes/direct-host/recipe.toml) arrive as parameters whose
+# Binding values (recipes/agent-host/recipe.toml) arrive as parameters whose
 # defaults are the agent-host binding's, so the first binding changes nothing.
 {
   'AgentHostId' => 'agent-host',

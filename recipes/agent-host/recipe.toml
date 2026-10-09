@@ -1,4 +1,4 @@
-# The direct-host recipe (KI-ARCADIA-GOV-025, TECHNE-TOOLS-OPS-012): an agent
+# The agent-host recipe (KI-ARCADIA-GOV-025, TECHNE-TOOLS-OPS-012): an agent
 # host whose agents run on the host itself. A binding names one supported
 # provider by its provider table; every binding value reaches the scripts only
 # through the environment variable declared for it, and each script defaults
@@ -11,7 +11,7 @@
 # [providers.<provider>] table names a provider the recipe supports.
 
 schema = "techne/recipe/v1"
-name = "direct-host"
+name = "agent-host"
 summary = "Agents run directly on one host reached only over Tailscale SSH"
 runtime = "direct"
 
@@ -26,8 +26,8 @@ footprint = [
 [paths]
 setup = "operations/aws/agent-host/setup.sh"
 status = "operations/aws/agent-host/status.sh"
-# The pins (TECHNE-TOOLS-OPS-014): Rig's direct-host profile, one variant per target OS.
-pins = "recipes/direct-host/rig.toml"
+# The pins (TECHNE-TOOLS-OPS-014): Rig's agent-host profile, one variant per target OS.
+pins = "recipes/agent-host/rig.toml"
 
 # The status report (ODR-KI-ARCADIA-001): `status --json` prints one document
 # of this schema, and the exit status carries its outcome. `--fetch` updates

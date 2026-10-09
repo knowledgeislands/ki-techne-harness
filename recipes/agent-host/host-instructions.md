@@ -1,6 +1,6 @@
 # Working on this agent host
 
-This machine is an agent host of the Knowledge Islands `direct-host` recipe. These rules come from the recipe itself (ODR-KI-ARCADIA-001), so they apply whoever's instructions sit beside them.
+This machine is an agent host of the Knowledge Islands `agent-host` recipe. These rules come from the recipe itself (ODR-KI-ARCADIA-001), so they apply whoever's instructions sit beside them.
 
 ## Two checkouts
 

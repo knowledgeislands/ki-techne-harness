@@ -3,7 +3,7 @@
 # resolved values, so a script run with no binding acts on this host.
 schema = "techne/host-binding/v1"
 name = "agent-host"
-recipe = "direct-host"
+recipe = "agent-host"
 
 [aws]
 account = "655383751458"

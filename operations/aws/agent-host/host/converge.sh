@@ -15,7 +15,7 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # The recipe's files: staged beside this script by setup.sh, or in the harness
 # checkout this script runs from.
 recipe_dir=${script_dir}
-[[ -f ${recipe_dir}/rig.toml ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/direct-host
+[[ -f ${recipe_dir}/rig.toml ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/agent-host
 
 # Pins (TECHNE-TOOLS-OPS-014): the recipe's Rig profile declares them; each
 # tool's locator for this OS is its version.
@@ -370,11 +370,16 @@ fi
 if write_file "${HOME}/.config/rig/rig.toml" "$(cat "${pins}")"; then
   changed "${HOME}/.config/rig/rig.toml pins"
 fi
-provider=${HOME}/.local/share/rig/providers/direct-host-pins
+provider=${HOME}/.local/share/rig/providers/agent-host-pins
 if write_file "${provider}" "$(cat "${recipe_dir}/rig-pins.sh")"; then
   changed "${provider}"
 fi
 [[ -x ${provider} ]] || chmod 755 "${provider}"
+# The provider's name before the recipe was renamed agent-host.
+if [[ -e ${HOME}/.local/share/rig/providers/direct-host-pins ]]; then
+  rm -f "${HOME}/.local/share/rig/providers/direct-host-pins"
+  changed "${HOME}/.local/share/rig/providers/direct-host-pins removed"
+fi
 
 # repositories ---------------------------------------------------------------------
 
@@ -519,7 +524,7 @@ fi
 # Codex reads one global file, so ~/.codex/AGENTS.md is composed: the recipe's
 # rules first, then the owner's file from the payload under its own heading.
 instructions=$(cat "${recipe_dir}/host-instructions.md")
-header='<!-- Rendered by ki-techne-harness operations/aws/agent-host from recipes/direct-host/host-instructions.md; rerun setup rather than editing. -->'
+header='<!-- Rendered by ki-techne-harness operations/aws/agent-host from recipes/agent-host/host-instructions.md; rerun setup rather than editing. -->'
 if write_file "${HOME}/.claude/rules/ki-agent-host.md" "${header}
 
 ${instructions}"; then
@@ -562,9 +567,9 @@ fi
 # ODR-KI-ARCADIA-001: the operator's workstation checkout is the roadmap
 # writing checkout; KI-TOOL-CLI-115 has ki refuse roadmap writes where this is.
 marker="# ki agent-host marker, managed by ki-techne-harness operations/aws/agent-host.
-# This machine is a direct-host recipe agent host, not a roadmap writing
+# This machine is an agent host of the agent-host recipe, not a roadmap writing
 # checkout: roadmap writes belong to the operator's workstation checkout.
-recipe = \"direct-host\""
+recipe = \"agent-host\""
 if write_file "${HOME}/.config/ki/host-marker" "${marker}"; then
   changed "${HOME}/.config/ki/host-marker"
 fi

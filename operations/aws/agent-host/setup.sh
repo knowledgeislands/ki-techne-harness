@@ -9,7 +9,7 @@ set -euo pipefail
 # clean checkouts.
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-# Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
+# Binding values (recipes/agent-host/recipe.toml); each default is the agent-host binding's.
 host=${AGENT_HOST_TAILSCALE_NAME:-ki-techne-agent-host}
 repositories=${AGENT_HOST_REPOSITORIES:-${here}/host/repositories.txt}
 # Empty means the host default; a leading ~/ is expanded on the host.
@@ -35,7 +35,7 @@ if [[ -n ${profile} ]]; then
   [[ -d ${profile} ]] || { echo "AGENT_HOST_PROFILE: ${profile} is not a directory" >&2; exit 2; }
   # shellcheck disable=SC2088 # the recipe default keeps its literal ~/ for the host.
   python3 "${here}/host/profile-check.py" --shell "${shell_choice}" --workspace "${workspace:-~/workspaces/kit}" \
-    --recipe-rig "${here}/../../../recipes/direct-host/rig.toml" "${profile}" ||
+    --recipe-rig "${here}/../../../recipes/agent-host/rig.toml" "${profile}" ||
     { echo "AGENT_HOST_PROFILE: ${profile} is not a valid profile payload; nothing was sent" >&2; exit 1; }
 fi
 converge_args+=(--shell "${shell_choice}")
@@ -45,8 +45,8 @@ stage=$(mktemp -d)
 trap 'rm -rf "${stage}"' EXIT
 cp "${here}/host/converge.sh" "${here}/host/status.sh" "${here}/host/profile-check.py" "${stage}/"
 # The recipe's pins, their Rig provider and its own host instructions (TECHNE-TOOLS-OPS-014).
-cp "${here}/../../../recipes/direct-host/rig.toml" "${here}/../../../recipes/direct-host/rig-pins.sh" \
-  "${here}/../../../recipes/direct-host/host-instructions.md" "${stage}/"
+cp "${here}/../../../recipes/agent-host/rig.toml" "${here}/../../../recipes/agent-host/rig-pins.sh" \
+  "${here}/../../../recipes/agent-host/host-instructions.md" "${stage}/"
 cp "${repositories}" "${stage}/repositories.txt"
 if [[ -n ${profile} ]]; then
   mkdir "${stage}/profile"

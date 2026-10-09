@@ -95,7 +95,7 @@ stub "${host_home}/.local/bin/rig" "case \$1 in
       echo \"{\\\"tools\\\":[{\\\"id\\\":\\\"ripgrep\\\",\\\"state\\\":\\\"\${tool}\\\"}]}\"
       [[ \${tool} == present ]]; exit
     fi
-    [[ \$* == 'status --profile direct-host --format json' ]] || exit 2
+    [[ \$* == 'status --profile agent-host --format json' ]] || exit 2
     if [[ -f '${state}/rig-drift' ]]; then
       echo '{\"tools\":[{\"id\":\"bun\",\"state\":\"present\"},{\"id\":\"codex\",\"state\":\"drifted\"}],\"healthy\":false}'; exit 1
     fi
@@ -211,7 +211,7 @@ check 'grep -q "npm:@openai/codex" "${host_home}/.config/mise/config.toml"' 'the
 # The pins (TECHNE-TOOLS-OPS-014): converge applies the pin file's Linux and
 # macOS locators alike, installs it and the provider for Rig, and renders the
 # recipe's instructions and the host marker.
-pins=${repo_root}/recipes/direct-host/rig.toml
+pins=${repo_root}/recipes/agent-host/rig.toml
 check 'python3 "${repo_root}/tooling/checks/recipe-pins.py" "${pins}"' 'the pin file must declare every tool for both OSes through the observe-only provider'
 for tool in bun node; do
   pin=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["tool"][sys.argv[2]]["variant"]["macos"]["install"]["locator"])' "${pins}" "${tool}")
@@ -219,11 +219,11 @@ for tool in bun node; do
 done
 check 'grep -qx "\"npm:@openai/codex\" = \"0.161.0\"" "${host_home}/.config/mise/config.toml"' 'the mise configuration must pin Codex from the pin file'
 check 'cmp -s "${pins}" "${host_home}/.config/rig/rig.toml"' 'the pin file must be Rig'"'"'s configuration'
-check '[[ -x ${host_home}/.local/share/rig/providers/direct-host-pins ]] && cmp -s "${repo_root}/recipes/direct-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/direct-host-pins"' 'the provider must be installed for Rig'
+check '[[ -x ${host_home}/.local/share/rig/providers/agent-host-pins ]] && cmp -s "${repo_root}/recipes/agent-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/agent-host-pins"' 'the provider must be installed for Rig'
 for file in .claude/rules/ki-agent-host.md .codex/AGENTS.md; do
   check 'grep -qF "Push where you worked" "${host_home}/${file}" && grep -qF "roadmap writing checkout" "${host_home}/${file}"' "${file} must carry the two-checkout and writing-checkout rules"
 done
-check 'grep -qx "recipe = \"direct-host\"" "${host_home}/.config/ki/host-marker"' 'converge must write the host marker'
+check 'grep -qx "recipe = \"agent-host\"" "${host_home}/.config/ki/host-marker"' 'converge must write the host marker'
 
 # The provider's verdicts against stub tools.
 tools=${work}/tools
@@ -232,11 +232,11 @@ stub "${tools}/bun" 'echo 1.4.2'
 stub "${tools}/node" 'echo v24.20.1'
 stub "${tools}/claude" 'echo "2.1.300 (Claude Code)"'
 stub "${tools}/codex" 'echo "codex-cli (no version)"'
-verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/direct-host/rig-pins.sh" rig-provider-v1 observe direct-host-pins "$@"; }
+verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 observe agent-host-pins "$@"; }
 check '[[ $(verdict bun exact 1.4.2) == present && $(verdict node exact 24.21.0) == drifted ]]' 'the provider must compare exact pins'
 check '[[ $(verdict claude minimum 2.1.285) == present && $(verdict claude minimum 2.2.0) == drifted ]]' 'the provider must compare minimum pins numerically'
 check '[[ $(verdict codex exact 0.161.0) == unknown && $(verdict rig exact 0.4.0) == missing ]]' 'the provider must report unknown and missing tools'
-check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/direct-host/rig-pins.sh" rig-provider-v1 apply direct-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
+check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 apply agent-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
 check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
 
@@ -467,7 +467,7 @@ profiled() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} AGENT_HOST
 # A content check for the other OS runs without --os, as setup's does.
 os_flags=(--os "${target_os}")
 validate() { python3 "${scripts}/host/profile-check.py" ${os_flags[@]+"${os_flags[@]}"} --hostname "$(hostname)" --shell zsh \
-  --workspace '~/workspaces/kit' --recipe-rig "${repo_root}/recipes/direct-host/rig.toml" "$1" 2>&1; }
+  --workspace '~/workspaces/kit' --recipe-rig "${repo_root}/recipes/agent-host/rig.toml" "$1" 2>&1; }
 
 owner=${work}/payload
 payload "${owner}" r1 .claude/CLAUDE.md:0644 .claude/delegation.md:0644 .codex/AGENTS.md:0600 .zshrc:0644 \

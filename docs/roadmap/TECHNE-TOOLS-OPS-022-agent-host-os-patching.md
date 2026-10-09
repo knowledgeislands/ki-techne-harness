@@ -19,7 +19,7 @@ updated_at: 2026-10-09T16:40:56Z
 
 ## Goal
 
-The `direct-host` recipe keeps any bound agent host's operating system patched, kernel and security updates included, through a path that the recipe defines and the binding owner controls, and it reports pending updates and a required reboot in status and at login.
+The `agent-host` recipe keeps any bound agent host's operating system patched, kernel and security updates included, through a path that the recipe defines and the binding owner controls, and it reports pending updates and a required reboot in status and at login.
 
 ## Context
 
@@ -27,7 +27,7 @@ On 2026-10-09 an attempt to apply Ubuntu updates on the current AWS agent host s
 
 Read-only readings on 2026-10-09, taken by the host-restart run in the Techne agent state before a planned stop/start through AWS, corrected part of that picture. Ubuntu's own unattended upgrades were already on and working: `20auto-upgrades` enables the daily list update and upgrade, the allowed origins are the release, `-security` and the ESM apps and infra security pockets, `unattended-upgrades.service` and both `apt-daily` timers are active, and `/var/log/apt/history.log` shows unattended installs on 8 and 9 October, the 7.0.0-1013 kernel among them. Automatic reboot was off by default, which is why `/var/run/reboot-required` (kernel, `linux-base`, `libc6`) had been set since 8 October 06:21 UTC. Thirty packages were upgradable, six from `noble-security`, including the 7.0.0-1014 kernel, which the next unattended run installs and which then needs another reboot. Livepatch was not installed and the machine was not attached to Ubuntu Pro. The unattended-upgrades log is root-only, so `techne` cannot read it. The repositories were all clean (`OUTCOME=clean`). That first restart attempt stopped because the binding owner's AWS session had expired; a second, after Kris logged in, restarted the host through the operator stop/start the same day (Decision 25), moving it to the 7.0.0-1013 kernel and clearing the reboot flag. Kris, approving restarts through the provider, asked on 2026-10-09 to progress this record "so we have capability going forwards" (Decision 24(d)), and answered its six decisions the same day, all as recommended (Decision 26(b)). He does not attach Ubuntu Pro to his binding and restarts by hand.
 
-The recipe must stay general (Decisions 10 and 11): it must work for any binding owner and for any target, cloud or owned, Linux or macOS, with provider-specific parts in the provider layer. The AWS provider lives in `infra/aws/agent-host-stack.yaml`, whose boot script installs packages at build, and in `operations/aws/agent-host/`. The recipe lives in `recipes/direct-host/`.
+The recipe must stay general (Decisions 10 and 11): it must work for any binding owner and for any target, cloud or owned, Linux or macOS, with provider-specific parts in the provider layer. The AWS provider lives in `infra/aws/agent-host-stack.yaml`, whose boot script installs packages at build, and in `operations/aws/agent-host/`. The recipe lives in `recipes/agent-host/`.
 
 Patching must keep the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) boundary. It must not need remote agent execution or any new remote-environment authority beyond the exempt host.
 
@@ -76,7 +76,7 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 
 ## Steps
 
-- [x] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a 24-hour `HH:MM`, with no weekday).
+- [x] Declare the patching intent in `recipes/agent-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a 24-hour `HH:MM`, with no weekday).
 - [x] Add the AWS patching configuration and the conditional daily reboot timer to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
 - [x] Add the `updates` block and text section to `operations/aws/agent-host/host/status.sh`, for Ubuntu and macOS, and write the counts to the banner cache; keep the outcome and exit status unchanged.
 - [x] Extend the banner in `operations/aws/agent-host/host/converge.sh` with the reboot-required and pending-security lines.
@@ -87,7 +87,7 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 
 ## Files touched
 
-- `recipes/direct-host/recipe.toml`
+- `recipes/agent-host/recipe.toml`
 - `infra/aws/agent-host-stack.yaml`
 - `operations/aws/agent-host/provision.sh`
 - `operations/aws/agent-host/host/status.sh`
@@ -141,7 +141,7 @@ The paired `tools-techne` record [TECHNE-TOOL-CLI-008](https://github.com/knowle
 The plan is followed as written, with three choices made within it:
 
 - `destroy.sh withdraw` also deletes `ubuntu-pro-token` and lists detaching Ubuntu Pro by hand, so withdrawal leaves no credential behind; `rebuild` keeps it. The plan did not name `destroy.sh`.
-- The provider patching contract is written into the operator guide and the recipe's own `[patching]` comments rather than a separate recipe document, which `recipes/direct-host/` does not have.
+- The provider patching contract is written into the operator guide and the recipe's own `[patching]` comments rather than a separate recipe document, which `recipes/agent-host/` does not have.
 - `tooling/checks/fixtures/agent-host.binding.toml` is unchanged: it mirrors the real binding, and the fields join it when TECHNE-TOOL-CLI-008 adds them to the binding schema. Script defaults stay unset (no window, no Livepatch), which is the recipe's default.
 
 A test-only `KI_AGENT_HOST_SYSROOT` prefix lets the offline checks give `status.sh` and the banner fixture OS state.
@@ -165,7 +165,7 @@ A test-only `KI_AGENT_HOST_SYSROOT` prefix lets the offline checks give `status.
 
 ### Post-change review
 
-The full diff was reread against the plan and the boundary. It adds no SSM or Patch Manager, no automatic reboot by default, no secret on a command line or in Git, and no `direct-host` or `agent-host` rename; `techne/host-workspace/v1` gains only an optional member. The token is written to a `/run` file and never to the bootstrap log, which has no `set -x`.
+The full diff was reread against the plan and the boundary. It adds no SSM or Patch Manager, no automatic reboot by default, no secret on a command line or in Git, and no recipe or binding rename; `techne/host-workspace/v1` gains only an optional member. The token is written to a `/run` file and never to the bootstrap log, which has no `set -x`.
 
 ### Mini recap
 

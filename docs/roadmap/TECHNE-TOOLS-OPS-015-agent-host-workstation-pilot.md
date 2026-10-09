@@ -38,7 +38,7 @@ This is the harness half of the agent-host workstation pilot, paired for the cur
 
 ## Current state
 
-Planned on 2026-10-08 under Decision 20 of the Techne run; Kris approved the plan on 2026-10-09 (Decision 28). TECHNE-TOOLS-OPS-013 and TECHNE-TOOLS-OPS-014 are done: the host runs Rig 0.4.0, which observes the recipe's `direct-host` profile through the `direct-host-pins` provider, and the recipe writes its own rules to `~/.claude/rules/ki-agent-host.md` and `~/.codex/AGENTS.md` and the marker to `~/.config/ki/host-marker`.
+Planned on 2026-10-08 under Decision 20 of the Techne run; Kris approved the plan on 2026-10-09 (Decision 28). TECHNE-TOOLS-OPS-013 and TECHNE-TOOLS-OPS-014 are done: the host runs Rig 0.4.0, which observes the recipe's `agent-host` profile through the `agent-host-pins` provider, and the recipe writes its own rules to `~/.claude/rules/ki-agent-host.md` and `~/.codex/AGENTS.md` and the marker to `~/.config/ki/host-marker`.
 
 `setup.sh` still requires `chezmoi` and renders the `AGENT_HOST_INSTRUCTIONS` files (`CLAUDE.md`, `communication.md`, `delegation.md`, `memory-scope.md`, `markdown.md`) into the payload's `claude/` directory with `chezmoi cat`; `converge.sh` copies them to `~/.claude/` and never removes one. The delivered `delegation.md` points at detached agents, which the exemption does not allow on the host. No other personal file and no personal tool reaches the host.
 
@@ -88,7 +88,7 @@ After the payload is written, `converge.sh` runs `rig apply --profile <rig.profi
 ## Files touched
 
 - `operations/aws/agent-host/setup.sh`, `operations/aws/agent-host/host/converge.sh`, `operations/aws/agent-host/host/status.sh` and a new payload validator beside them
-- `recipes/direct-host/recipe.toml`
+- `recipes/agent-host/recipe.toml`
 - `tooling/checks/recipe-manifest.py`, `tooling/checks/agent-host-workspace.sh` or a new check script, and fixtures under `tooling/checks/fixtures/`
 - `docs/guides/operator/agent-host.md`
 - This record
@@ -157,7 +157,7 @@ The plan is followed as written. One correction came from the live run: `rig app
 
 ### Post-change review
 
-The full diff from `977abc9` was reread against the plan and the boundary. It touches only the listed files and the two roadmap records the Roadmap impact names, installs neither `techne` nor a personal-configuration tool, puts no secret on a command line or in Git, uses `sudo` nowhere, and renames neither `direct-host` nor `agent-host`. The payload is validated on the workstation before anything is sent and again on the host before anything is written.
+The full diff from `977abc9` was reread against the plan and the boundary. It touches only the listed files and the two roadmap records the Roadmap impact names, installs neither `techne` nor a personal-configuration tool, puts no secret on a command line or in Git, uses `sudo` nowhere, and renames neither the recipe nor the binding. The payload is validated on the workstation before anything is sent and again on the host before anything is written.
 
 ### Mini recap
 

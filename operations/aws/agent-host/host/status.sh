@@ -293,14 +293,14 @@ soon() {
   fi
 }
 
-# Drift from the recipe's pins, through Rig's direct-host profile (unknown when
+# Drift from the recipe's pins, through Rig's agent-host profile (unknown when
 # Rig is absent or cannot read it).
 echo
 echo 'Pins'
 drift=''
 if ! command -v rig >/dev/null; then
   printf '  %s\n' 'unknown (Rig is not installed; rerun setup)'
-elif ! pins=$(RIG_PROGRESS=never RIG_OUTCOME=never rig status --profile direct-host --format json 2>/dev/null </dev/null ||
+elif ! pins=$(RIG_PROGRESS=never RIG_OUTCOME=never rig status --profile agent-host --format json 2>/dev/null </dev/null ||
   [[ $? == 1 ]]) || ! jq -e '.tools | type == "array"' >/dev/null 2>&1 <<<"${pins}"; then
   printf '  %s\n' 'unknown (rig status failed)'
 else

@@ -17,7 +17,7 @@ updated_at: 2026-10-08T13:03:25Z
 
 ## Goal
 
-The agent-host operator guide reads as a guide to the general `direct-host` recipe, with each provider's steps in its own guide and no one binding owner's deployment values in the shared repository.
+The agent-host operator guide reads as a guide to the general `agent-host` recipe, with each provider's steps in its own guide and no one binding owner's deployment values in the shared repository.
 
 ## Context
 
@@ -25,7 +25,7 @@ The agent-host operator guide reads as a guide to the general `direct-host` reci
 
 ## Boundary
 
-- In scope: a generic `direct-host` recipe guide; an AWS provider guide, with placeholders for an owned-host provider guide; moving one binding owner's deployment values out of the shared repository, to that owner's personal configuration source or to Arcadia; updating the operator guide index and the diagrams' references.
+- In scope: a generic `agent-host` recipe guide; an AWS provider guide, with placeholders for an owned-host provider guide; moving one binding owner's deployment values out of the shared repository, to that owner's personal configuration source or to Arcadia; updating the operator guide index and the diagrams' references.
 - Out of scope: changing the recipe or scripts (TECHNE-TOOLS-OPS-019 removes their person-specific defaults); the owned-host provider itself ([TECHNE-TOOLS-OPS-021](https://github.com/knowledgeislands/ki-techne-harness/blob/main/docs/roadmap/TECHNE-TOOLS-OPS-021-owned-host-provider.md)); and any remote action.
 
 ## Discussion

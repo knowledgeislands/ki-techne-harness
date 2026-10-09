@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Offline checks for the recipe manifests (TECHNE-TOOLS-OPS-012): each passes
-# against the first binding, and the check refuses copies of the direct-host
+# against the first binding, and the check refuses copies of the agent-host
 # manifest that declare a field twice, omit one or name an AWS concept outside
 # [providers.aws], and a binding whose values the script defaults do not match,
 # copies whose status contract or teardown operations are malformed, and copies
@@ -10,7 +10,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 check=${repo_root}/tooling/checks/recipe-manifest.py
-manifest=${repo_root}/recipes/direct-host/recipe.toml
+manifest=${repo_root}/recipes/agent-host/recipe.toml
 binding=${repo_root}/tooling/checks/fixtures/agent-host.binding.toml
 work=$(mktemp -d)
 trap 'rm -rf "${work}"' EXIT

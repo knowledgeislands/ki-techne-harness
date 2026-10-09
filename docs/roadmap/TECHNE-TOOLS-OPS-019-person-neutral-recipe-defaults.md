@@ -17,7 +17,7 @@ updated_at: 2026-10-09T15:19:58Z
 
 ## Goal
 
-The `direct-host` recipe and its scripts carry no one person's values: every person-specific value comes from the binding through the CLI, or from an explicit test fixture, so a second binding owner can run setup with their own repositories, payload and shell without editing the recipe. The recipe states how a binding personalises it: the binding names a profile payload source and a shell, and the recipe applies them without naming any person.
+The `agent-host` recipe and its scripts carry no one person's values: every person-specific value comes from the binding through the CLI, or from an explicit test fixture, so a second binding owner can run setup with their own repositories, payload and shell without editing the recipe. The recipe states how a binding personalises it: the binding names a profile payload source and a shell, and the recipe applies them without naming any person.
 
 ## Context
 

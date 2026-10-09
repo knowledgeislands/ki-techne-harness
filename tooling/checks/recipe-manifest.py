@@ -31,7 +31,7 @@ NEUTRAL_FIELDS = {
     'host_name', 'tailscale_name', 'tailscale_tag', 'repositories', 'workspace', 'reboot_window', 'livepatch',
     'profile', 'shell',
 }
-# The interactive shells the direct-host recipe supports (TECHNE-TOOLS-OPS-015).
+# The interactive shells the agent-host recipe supports (TECHNE-TOOLS-OPS-015).
 SHELLS = {'bash', 'zsh'}
 PROVIDER_FIELDS = {
     'aws': {

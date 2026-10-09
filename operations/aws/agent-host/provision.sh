@@ -6,7 +6,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 export AWS_PROFILE=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
 expected_account=${EXPECTED_AWS_ACCOUNT:-655383751458}
-# Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
+# Binding values (recipes/agent-host/recipe.toml); each default is the agent-host binding's.
 host_id=${AGENT_HOST_ID:-agent-host}
 host_name=${AGENT_HOST_NAME:-ki-techne-agent-host}
 tailscale_name=${AGENT_HOST_TAILSCALE_NAME:-ki-techne-agent-host}

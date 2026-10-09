@@ -17,11 +17,11 @@ updated_at: 2026-10-09T18:25:06Z
 
 ## Goal
 
-The agent host's shared tools - Bun, Node, Codex and `ki` - are installed by `rig apply --profile direct-host` from the recipe's one declaration, rather than by `converge.sh`'s own install steps.
+The agent host's shared tools - Bun, Node, Codex and `ki` - are installed by `rig apply --profile agent-host` from the recipe's one declaration, rather than by `converge.sh`'s own install steps.
 
 ## Context
 
-[ADR-KI-ARCADIA-003](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-003-the-agent-host-workstation-model.md) in `ki-arcadia-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 2 stages Rig: stage 1 (TECHNE-TOOLS-OPS-014) declares the `direct-host` profile and observes drift through `rig status`; the pilot installs personal tools through Rig; this record is stage 3.
+[ADR-KI-ARCADIA-003](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-003-the-agent-host-workstation-model.md) in `ki-arcadia-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 2 stages Rig: stage 1 (TECHNE-TOOLS-OPS-014) declares the `agent-host` profile and observes drift through `rig status`; the pilot installs personal tools through Rig; this record is stage 3.
 
 This record is gated. It starts only when both conditions hold:
 
@@ -32,7 +32,7 @@ This record is gated. It starts only when both conditions hold:
 
 ## Boundary
 
-- In scope: replacing `converge.sh`'s Bun, Node, Codex and `ki` installs with `rig apply --profile direct-host`; generating or checking the global mise manifest from the same declaration so one file stays authoritative; offline tests; the operator guide.
+- In scope: replacing `converge.sh`'s Bun, Node, Codex and `ki` installs with `rig apply --profile agent-host`; generating or checking the global mise manifest from the same declaration so one file stays authoritative; offline tests; the operator guide.
 - Out of scope: Rig and mise bootstrap; Claude Code's install; Git settings, startup files, the repository set, `ki bootstrap`, the registry and projections, and Claude settings, which are not tool installs and stay in `converge.sh`; any live remote action.
 
 ## Discussion

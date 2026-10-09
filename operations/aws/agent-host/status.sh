@@ -13,7 +13,7 @@ set -euo pipefail
 # when the host cannot be reached.
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-# Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
+# Binding values (recipes/agent-host/recipe.toml); each default is the agent-host binding's.
 host=${AGENT_HOST_TAILSCALE_NAME:-ki-techne-agent-host}
 repositories=${AGENT_HOST_REPOSITORIES:-${here}/host/repositories.txt}
 # Empty means the host default; a leading ~/ is expanded on the host.
@@ -56,7 +56,7 @@ status=0
 ssh ${ssh_options[@]+"${ssh_options[@]}"} "${host}" "${remote}" <"${here}/host/status.sh" || status=$?
 
 # The workstation against the same pins, through the recipe's own provider.
-recipe=${here}/../../../recipes/direct-host
+recipe=${here}/../../../recipes/agent-host
 case $(uname -s) in Darwin) os=macos ;; *) os=linux ;; esac
 echo
 echo 'This workstation against the pins (signal only)'
@@ -65,7 +65,7 @@ awk -v os="${os}" '
   $1 == "variant." os ".install.kind" { gsub(/"/, "", $3); kind[tool] = $3 }
   $1 == "variant." os ".install.locator" { gsub(/"/, "", $3); print tool, kind[tool], $3 }
 ' "${recipe}/rig.toml" | while read -r tool kind pin; do
-  state=$("${recipe}/rig-pins.sh" rig-provider-v1 observe direct-host-pins "${tool}" "${kind}" "${pin}" 2>/dev/null </dev/null || echo unknown)
+  state=$("${recipe}/rig-pins.sh" rig-provider-v1 observe agent-host-pins "${tool}" "${kind}" "${pin}" 2>/dev/null </dev/null || echo unknown)
   printf '  %-24s %s (%s %s)\n' "${tool}" "${state}" "${kind}" "${pin}"
 done
 exit "${status}"
