@@ -10,7 +10,7 @@ blocks: [TECHNE-TOOLS-OPS-018]
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T07:32:00Z
+updated_at: 2026-10-09T18:25:06Z
 ---
 
 # Rig Provider for ki
@@ -33,3 +33,5 @@ Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`
 ## Discussion
 
 Whether the provider ships beside the recipe or in a shared provider location in this repository is settled when it is planned. It is independent of the workstation pilot and may be planned once Kris adopts it.
+
+Lessons from the workstation pilot, TECHNE-TOOLS-OPS-015, on 2026-10-09: Rig's built-in `direct-download` `executable` kind installed the owner's `mgit` into `~/.local/bin` on the Linux host without root or Homebrew, which confirms it covers a single checked binary but not `ki`'s signed archives. The payload validator refuses a custom provider in an owner's fragment, so this provider belongs with the recipe's own `rig.toml`, never in a payload.

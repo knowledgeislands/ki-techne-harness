@@ -6,13 +6,13 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: operations
-horizon: next
-status: ready
+horizon: now
+status: awaiting-review
 blocks: [TECHNE-TOOLS-OPS-017]
 blocked_by: []
-baseline_ref: null
+baseline_ref: 977abc90f86814c39d57e2b5489be8bd8494d67c
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-09T16:10:08Z
+updated_at: 2026-10-09T18:25:06Z
 ---
 
 # Agent-Host Workstation Pilot
@@ -74,16 +74,16 @@ After the payload is written, `converge.sh` runs `rig apply --profile <rig.profi
 
 ## Steps
 
-- [ ] Add the `profile` and `shell` parameters to `recipe.toml` and teach `tooling/checks/recipe-manifest.py` an optional parameter with no default, so `check_binding_defaults` stays green for the live binding.
-- [ ] Add the payload validator as one script beside `setup.sh`, run by `setup.sh` on the operator's workstation and by `converge.sh` on the host, implementing the contract above.
-- [ ] Change `setup.sh`: drop `AGENT_HOST_INSTRUCTIONS`, `chezmoi cat` and the `chezmoi` requirement; stage a validated payload when `AGENT_HOST_PROFILE` is set; pass the shell choice to `converge.sh`.
-- [ ] Change `converge.sh`: apply the payload's files with their modes, remove only previously installed paths the source dropped, migrate the old `chezmoi cat` files, compose `~/.codex/AGENTS.md`, record the applied manifest, and run `rig apply` for the payload's profile.
-- [ ] Add the shell: the `~/.zshenv` block, mise activation for interactive zsh, the guarded `.bashrc` hand-off with its two escape hatches, and the missing-shell warning.
-- [ ] Change `status.sh`: report the applied payload revision and personal-tool drift.
-- [ ] Add offline checks with stubs and fixtures: a valid payload, each refusal (a `target_host` that does not match the host name, reserved destination, `..` path, symbolic link, unlisted file, secret, a macOS path in a Linux payload, a fragment with a custom provider or managed resource or a recipe identity), removal of a dropped file but not of an unrecorded one, the migration, Codex composition with and without a payload, a run with no payload, and the shell paths - login, interactive, non-interactive SSH command, Git hook through husky's `init.sh` and a mise environment - for zsh and for bash, plus both escape hatches.
-- [ ] Update the operator guide: rendering and passing a payload (`AGENT_HOST_PROFILE` and `target_host`, with Cheztoi's chezmoi-native render - one `chezmoi archive` call with `--override-data` from a per-host manifest - as the example), choosing the shell, the escape hatches, recovery of profile and runtime state by re-running setup, and removal of the retired `techne-agent-host` helper's references.
-- [ ] Render DOTFILES-UE-073's payload on the Mac and run this repository's validator against it offline; record the result here.
-- [ ] Live verification, only under a separate grant from Kris for SSH to the exempt host: the binding owner runs setup with the payload and `status`, and opens a new SSH session.
+- [x] Add the `profile` and `shell` parameters to `recipe.toml` and teach `tooling/checks/recipe-manifest.py` an optional parameter with no default, so `check_binding_defaults` stays green for the live binding.
+- [x] Add the payload validator as one script beside `setup.sh`, run by `setup.sh` on the operator's workstation and by `converge.sh` on the host, implementing the contract above.
+- [x] Change `setup.sh`: drop `AGENT_HOST_INSTRUCTIONS`, `chezmoi cat` and the `chezmoi` requirement; stage a validated payload when `AGENT_HOST_PROFILE` is set; pass the shell choice to `converge.sh`.
+- [x] Change `converge.sh`: apply the payload's files with their modes, remove only previously installed paths the source dropped, migrate the old `chezmoi cat` files, compose `~/.codex/AGENTS.md`, record the applied manifest, and run `rig apply` for the payload's profile.
+- [x] Add the shell: the `~/.zshenv` block, mise activation for interactive zsh, the guarded `.bashrc` hand-off with its two escape hatches, and the missing-shell warning.
+- [x] Change `status.sh`: report the applied payload revision and personal-tool drift.
+- [x] Add offline checks with stubs and fixtures: a valid payload, each refusal (a `target_host` that does not match the host name, reserved destination, `..` path, symbolic link, unlisted file, secret, a macOS path in a Linux payload, a fragment with a custom provider or managed resource or a recipe identity), removal of a dropped file but not of an unrecorded one, the migration, Codex composition with and without a payload, a run with no payload, and the shell paths - login, interactive, non-interactive SSH command, Git hook through husky's `init.sh` and a mise environment - for zsh and for bash, plus both escape hatches.
+- [x] Update the operator guide: rendering and passing a payload (`AGENT_HOST_PROFILE` and `target_host`, with Cheztoi's chezmoi-native render - one `chezmoi archive` call with `--override-data` from a per-host manifest - as the example), choosing the shell, the escape hatches, recovery of profile and runtime state by re-running setup, and removal of the retired `techne-agent-host` helper's references.
+- [x] Render DOTFILES-UE-073's payload on the Mac and run this repository's validator against it offline; record the result here.
+- [x] Live verification, only under a separate grant from Kris for SSH to the exempt host: the binding owner runs setup with the payload and `status`, and opens a new SSH session.
 
 ## Files touched
 
@@ -125,6 +125,38 @@ The payload contract is a new contract between the harness and the binding owner
 ### Roadmap
 
 The pilot's lessons are written into TECHNE-TOOLS-OPS-016 and TECHNE-TOOLS-OPS-018 before they start, and TECHNE-TOOLS-OPS-019's boundary loses the `chezmoi cat` removal this record takes over.
+
+## Review
+
+### Delivered
+
+- `setup.sh` takes a `techne/host-profile/v1` payload from `AGENT_HOST_PROFILE`, validates it with `host/profile-check.py` before anything is sent, and no longer needs `chezmoi` or `AGENT_HOST_INSTRUCTIONS`. `AGENT_HOST_SHELL` (default `zsh`) is passed to `converge.sh`.
+- `converge.sh` validates the payload again on the host, refuses one whose `target_host` names another host, writes the files with their modes, removes only files the last payload installed, migrates the old `chezmoi cat` files, composes `~/.codex/AGENTS.md` with the recipe's rules first, records the applied manifest and runs `rig apply` for the payload's profile.
+- The chosen shell gets a `~/.zshenv` block, mise activation for interactive zsh and a guarded `.bashrc` hand-off with its two escape hatches; a missing shell gives a warning and no hand-off.
+- `status.sh` reports the applied payload revision and the owner's personal-tool drift in an optional `profile` member.
+- The operator guide covers rendering and passing a payload, `target_host`, the shell choice, the escape hatches and recovery by re-running setup, and no longer names the retired `techne-agent-host` helper.
+- The pilot's Rig lessons are recorded in TECHNE-TOOLS-OPS-016 and TECHNE-TOOLS-OPS-018.
+
+### Change Summary
+
+The plan is followed as written. One correction came from the live run: `rig apply` counts a tool it only re-verifies as completed, so `converge.sh` reported the personal tools as changed on every run. It now reads `rig status --profile <profile> --format json` before the apply and reports a change only when a tool was not already present.
+
+### Verification
+
+- `bun run test` passes, including the recipe-manifest and agent-host workspace checks for every payload, refusal, removal, migration, Codex composition and shell case in Steps.
+- `ki repo audit --repo .` reports `FAIL=1 WARN=2`: the two warnings are the 2026-10-08 baseline, and the one failure is TECHNE-TOOLS-OPS-022's open live Step (ITEM-3), already present at `977abc9` and outside this record.
+- Offline on 2026-10-09: DOTFILES-UE-073's rendered payload at `~/.cache/cheztoi/vega/` (revision `b3fb600...+d35b258...`, Linux, fourteen files, Rig profile `cheztoi`) passes `profile-check.py --os linux --hostname ki-techne-agent-host --shell zsh` with the recipe's `rig.toml`. Copies with a planted `/opt/homebrew` path, an AWS access key, a `[providers]` table in the fragment, or `target_host` `vega` against the host name `ki-techne-agent-host` are each refused with the matching problem.
+- Live on 2026-10-09 under Decision 29(c), from the Mac checkout with the payload: `setup.sh` ended `CHANGES=0 FAILURES=0` on a host the earlier run had already converged; `status.sh --json` reports `outcome` `clean`, the payload revision, Rig profile `cheztoi` and no personal-tool drift. `mgit` is at `~/.local/bin/mgit`; an interactive SSH session lands in `/usr/bin/zsh` with the owner's prompt; `ssh ki-techne-agent-host 'echo $0; command -v mise ki mgit'` runs in bash and finds all three; `~/.claude/delegation.md` is the host variant; `~/.codex/AGENTS.md` starts with the recipe's rules and then the owner's under their heading; the `no-handoff` file kept an interactive session in bash and was removed afterwards.
+
+### Outstanding concerns
+
+- The payload carries no `target_host` until the host is renamed `vega`; the host check is proven offline only.
+- The provider still creates `techne` with `/bin/bash`; the login-shell change waits for TECHNE-TOOLS-OPS-017.
+- The environment-variable escape hatch did not travel over SSH as `SetEnv` in the live test; the guide's form, `ssh -t ki-techne-agent-host env KI_AGENT_HOST_NO_HANDOFF=1 bash -l`, is the route.
+
+### Mini recap
+
+Commits `9e1de9c` and `854e12f` deliver the hook, shell and status changes and the change-reporting fix; this record's commit records the result.
 
 ## Discussion
 

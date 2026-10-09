@@ -10,7 +10,7 @@ blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-016]
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T19:18:25Z
+updated_at: 2026-10-09T18:25:06Z
 ---
 
 # Converge Tools Through Rig
@@ -38,3 +38,5 @@ This record is gated. It starts only when both conditions hold:
 ## Discussion
 
 This record stays in triage until both gate conditions hold; the lessons of the pilot and of stage 1 are written into it before it is adopted.
+
+Lessons from the workstation pilot, TECHNE-TOOLS-OPS-015, on 2026-10-09: `rig apply` counts a tool it only re-verifies as completed, so its `completed=` summary cannot tell a change from none. `converge.sh` reads `rig status --profile <profile> --format json` before the apply and reports a change only when a tool was not already present; the shared tools should follow the same pattern. Run Rig with `RIG_PROGRESS=never` and stdin closed, as the pilot does, so its output stays parseable over SSH.
