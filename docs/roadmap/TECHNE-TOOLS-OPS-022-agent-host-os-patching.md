@@ -12,7 +12,7 @@ blocks: []
 blocked_by: []
 baseline_ref: 36599971322a2e7c432f52a4e2f9318c3f1dad1e
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T16:38:23Z
+updated_at: 2026-10-09T16:40:56Z
 ---
 
 # Agent Host OS Patching
@@ -156,6 +156,7 @@ A test-only `KI_AGENT_HOST_SYSROOT` prefix lets the offline checks give `status.
 
 ### Outstanding concerns
 
+- The live-verification Step stays open: setup writes to the host and needs the binding owner's grant, and the banner's reboot line can show only while a reboot is required. `ki repo audit` therefore fails ITEM-3, which requires every Step ticked at this status. The binding owner either runs setup and ticks the Step, or moves it to a follow-up record before acceptance.
 - `who` does not list detached `tmux` sessions, so a window restart can end an unattended agent session left running in `tmux`; the guide says so.
 - The live host has 12 standard security updates pending, including a kernel. The unattended-upgrades log is root-only, so whether these await phasing or the unattended run is failing is unknown. Once setup installs the new banner, its security line fires after a day if they persist.
 - A failed `pro attach` stops the boot script before its ready marker, so a bad Ubuntu Pro token fails the build visibly rather than silently skipping Livepatch.
