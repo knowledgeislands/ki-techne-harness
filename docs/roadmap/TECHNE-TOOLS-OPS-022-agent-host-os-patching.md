@@ -6,13 +6,13 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: recipes
-horizon: next
-status: ready
+horizon: now
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: 36599971322a2e7c432f52a4e2f9318c3f1dad1e
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T16:10:34Z
+updated_at: 2026-10-09T16:38:23Z
 ---
 
 # Agent Host OS Patching
@@ -76,14 +76,14 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 
 ## Steps
 
-- [ ] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a 24-hour `HH:MM`, with no weekday).
-- [ ] Add the AWS patching configuration and the conditional daily reboot timer to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
-- [ ] Add the `updates` block and text section to `operations/aws/agent-host/host/status.sh`, for Ubuntu and macOS, and write the counts to the banner cache; keep the outcome and exit status unchanged.
-- [ ] Extend the banner in `operations/aws/agent-host/host/converge.sh` with the reboot-required and pending-security lines.
-- [ ] Add offline fixtures and stubs to `tooling/checks/agent-host-workspace.sh` (and siblings) for: no updates, pending security updates, reboot required with age and packages, Livepatch absent and active, `apt-check` failing, and a macOS `softwareupdate` listing.
-- [ ] Write the provider patching contract into the recipe documentation and the operator guide, with the restart route, the FileVault caveat, Ubuntu Pro attachment as the binding owner's step, and the current-host note.
+- [x] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form (a 24-hour `HH:MM`, with no weekday).
+- [x] Add the AWS patching configuration and the conditional daily reboot timer to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
+- [x] Add the `updates` block and text section to `operations/aws/agent-host/host/status.sh`, for Ubuntu and macOS, and write the counts to the banner cache; keep the outcome and exit status unchanged.
+- [x] Extend the banner in `operations/aws/agent-host/host/converge.sh` with the reboot-required and pending-security lines.
+- [x] Add offline fixtures and stubs to `tooling/checks/agent-host-workspace.sh` (and siblings) for: no updates, pending security updates, reboot required with age and packages, Livepatch absent and active, `apt-check` failing, and a macOS `softwareupdate` listing.
+- [x] Write the provider patching contract into the recipe documentation and the operator guide, with the restart route, the FileVault caveat, Ubuntu Pro attachment as the binding owner's step, and the current-host note.
 - [x] Hand off a paired `tools-techne` record for the `reboot_window` and `livepatch` binding fields and the `updates` status member, and record its identifier here: [TECHNE-TOOL-CLI-008](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-008-host-patching-fields.md), captured in triage on 2026-10-09.
-- [ ] Live verification, only under a separate grant from the binding owner for the exempt host: setup, then status showing the `updates` block, and a new login showing the banner line while a reboot is required.
+- [ ] Live verification, only under a separate grant from the binding owner for the exempt host: setup, then status showing the `updates` block, and a new login showing the banner line while a reboot is required. Partly done on 2026-10-09: status from the Mac checkout showed the `updates` block (see Review); setup and the banner await the binding owner.
 
 ## Files touched
 
@@ -124,6 +124,51 @@ The operator guide gains a patching and restart section: what runs unattended, t
 ### Roadmap
 
 The paired `tools-techne` record [TECHNE-TOOL-CLI-008](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-008-host-patching-fields.md) for the binding fields and status member. TECHNE-TOOLS-OPS-021 inherits the owned-host patching contract; its record should cite this one when it is planned.
+
+## Review
+
+### Delivered
+
+- The recipe declares one patching model in `[patching]`, with optional `reboot_window` and `livepatch` binding fields and the AWS mechanism in `[providers.aws.patching]`. The manifest check requires a patching table for each provider and refuses a window outside 24-hour `HH:MM`.
+- The AWS boot script installs security-only unattended upgrades with `Automatic-Reboot "false"`. It adds a daily reboot timer and guard only when a window is set, and Ubuntu Pro with Livepatch only when the binding opts in, reading the token from the parameter prefix into a file on `/run`.
+- `provision.sh` passes `RebootWindow` and `Livepatch`, refuses a bad window or Livepatch value, and requires `ubuntu-pro-token` only with Livepatch.
+- `host/status.sh` reports an additive `updates` member and an Updates text section on Ubuntu and macOS, and caches the pending security count with when it was first seen; outcome and exit status are unchanged.
+- The login banner shows a required reboot with its age and packages, read straight from the flag, and security updates pending past a day.
+- The operator guide gains Patching and restart: the model, the AWS mechanism, Ubuntu Pro token storage, owned Linux and macOS with the FileVault caveat, reading updates, the restart route and the current-host note.
+
+### Change Summary
+
+The plan is followed as written, with three choices made within it:
+
+- `destroy.sh withdraw` also deletes `ubuntu-pro-token` and lists detaching Ubuntu Pro by hand, so withdrawal leaves no credential behind; `rebuild` keeps it. The plan did not name `destroy.sh`.
+- The provider patching contract is written into the operator guide and the recipe's own `[patching]` comments rather than a separate recipe document, which `recipes/direct-host/` does not have.
+- `tooling/checks/fixtures/agent-host.binding.toml` is unchanged: it mirrors the real binding, and the fields join it when TECHNE-TOOL-CLI-008 adds them to the binding schema. Script defaults stay unset (no window, no Livepatch), which is the recipe's default.
+
+A test-only `KI_AGENT_HOST_SYSROOT` prefix lets the offline checks give `status.sh` and the banner fixture OS state.
+
+### Verification
+
+- `bun run test` passes: recipe-manifest, stack, AWS-script and workspace checks, and shellcheck. The manifest check gains refusals for a missing or misplaced patching table, a window with both a default and an optional marker, a weekday window and a non-boolean Livepatch.
+- The stack check runs the extracted boot-script blocks in a temporary root. With no window it writes no files; with `04:00` it writes the timer's `OnCalendar=*-*-* 04:00:00`, the service and the enablement. The guard restarts only when the flag is set and `who` is empty. Livepatch off makes no call; on, it reads `/ki/techne/agent-host/ubuntu-pro-token`, attaches through `--attach-config` and removes the file. Origins are exactly the three security ones after `#clear`, and the only `Automatic-Reboot` is false.
+- The workspace check covers no updates, pending security updates, reboot required with age and packages, Livepatch absent, unattached and applied, `apt-check` failing, macOS `softwareupdate` and an unreadable OS (all null). It also covers the text section, the cache line and its first-seen time, and both banner lines, each with outcome and exit status unchanged.
+- The AWS-script check covers the window and Livepatch overrides, the Ubuntu Pro token lookup only with Livepatch, refusal of `4:00`, `Sun 04:00` and `yes`, and the withdraw deletion.
+- Live and read-only on 2026-10-09, `operations/aws/agent-host/status.sh --json` from this checkout reported outcome `clean`, exit 0, and `updates` `{os: ubuntu, pending: 34, security: 12, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: disabled}`; the text report showed the Updates section. Like every status run, it rewrote the host's banner cache. Setup and the banner were not run live, because setup writes to the host.
+
+### Outstanding concerns
+
+- `who` does not list detached `tmux` sessions, so a window restart can end an unattended agent session left running in `tmux`; the guide says so.
+- The live host has 12 standard security updates pending, including a kernel. The unattended-upgrades log is root-only, so whether these await phasing or the unattended run is failing is unknown. Once setup installs the new banner, its security line fires after a day if they persist.
+- A failed `pro attach` stops the boot script before its ready marker, so a bad Ubuntu Pro token fails the build visibly rather than silently skipping Livepatch.
+- On macOS, `reboot_required` is always null, and the security count is a label and title match on the last scan's catalogue.
+- The security-pending age counts from the first status run that saw a non-zero count, not from the updates' release.
+
+### Post-change review
+
+The full diff was reread against the plan and the boundary. It adds no SSM or Patch Manager, no automatic reboot by default, no secret on a command line or in Git, and no `direct-host` or `agent-host` rename; `techne/host-workspace/v1` gains only an optional member. The token is written to a `/run` file and never to the bootstrap log, which has no `set -x`.
+
+### Mini recap
+
+Patching is declared once in the recipe and implemented for AWS: security updates install themselves, restarts happen only at an optional daily window when nobody is logged in, and Livepatch is opt-in through Ubuntu Pro. Status, its JSON and the login banner now say what is pending and when a restart is needed. The current host gains the reporting at the binding owner's next setup, and the window or Livepatch only at its next build.
 
 ## Discussion
 
