@@ -10,14 +10,14 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T08:55:00Z
-updated_at: 2026-10-08T13:04:36Z
+updated_at: 2026-10-09T15:19:58Z
 ---
 
 # Person-Neutral Recipe Defaults
 
 ## Goal
 
-The `direct-host` recipe and its scripts carry no one person's values: every person-specific value comes from the binding through the CLI, or from an explicit test fixture, so a second binding owner can run setup with their own repositories, payload and shell without editing the recipe.
+The `direct-host` recipe and its scripts carry no one person's values: every person-specific value comes from the binding through the CLI, or from an explicit test fixture, so a second binding owner can run setup with their own repositories, payload and shell without editing the recipe. The recipe states how a binding personalises it: the binding names a profile payload source and a shell, and the recipe applies them without naming any person.
 
 ## Context
 
@@ -27,8 +27,8 @@ A generic review of the agent-host design on 2026-10-08 found that the scripts d
 
 ## Boundary
 
-- In scope: removing person-specific defaults from `setup.sh`, `provision.sh`, `stop.sh`, `status.sh`, `destroy.sh` and `recipe.toml`; changing `check_binding_defaults` to check a fixture binding rather than a live one; shipping `repositories.txt` as an example; declaring optional binding fields `repositories`, `profile` (the payload source) and `shell` (default zsh) in the recipe; and removing the `AGENT_HOST_INSTRUCTIONS` list, the `chezmoi cat` path and the `chezmoi` requirement from `setup.sh`, whose route TECHNE-TOOLS-OPS-015's payload hook replaces; the operator guide's matching lines.
-- Out of scope: the payload hook and its contract (TECHNE-TOOLS-OPS-015); the shell hand-off (TECHNE-TOOLS-OPS-015) and the provider's login shell (TECHNE-TOOLS-OPS-017); the binding schema and CLI in `tools-techne`, which needs a paired record for the new fields; splitting the operator guide or moving the neutral scripts out of `operations/aws/` (TECHNE-TOOLS-OPS-020 and TECHNE-TOOLS-OPS-021); and any remote action.
+- In scope: removing person-specific defaults from `setup.sh`, `provision.sh`, `stop.sh`, `status.sh`, `destroy.sh` and `recipe.toml`; changing `check_binding_defaults` to check a fixture binding rather than a live one; shipping `repositories.txt` as an example; declaring optional binding fields `repositories`, `profile` (the payload source) and `shell` (default zsh) in the recipe, with a short note in the recipe and the operator guide on how a binding uses them to personalise a host; and the operator guide's matching lines.
+- Out of scope: removing the `AGENT_HOST_INSTRUCTIONS` list, the `chezmoi cat` path and the `chezmoi` requirement from `setup.sh`, together with the payload hook and its contract (TECHNE-TOOLS-OPS-015); the shell hand-off (TECHNE-TOOLS-OPS-015) and the provider's login shell (TECHNE-TOOLS-OPS-017); the binding schema and CLI in `tools-techne`, which needs a paired record for the new fields; splitting the operator guide or moving the neutral scripts out of `operations/aws/` (TECHNE-TOOLS-OPS-020 and TECHNE-TOOLS-OPS-021); and any remote action.
 
 ## Discussion
 
@@ -38,4 +38,4 @@ It starts after TECHNE-TOOLS-OPS-013, which edits the same scripts, is accepted;
 
 ### Pairing
 
-The `chezmoi cat` removal and TECHNE-TOOLS-OPS-015's payload hook land together, so that personal instructions always have one route; neither record blocks the other, and planning settles which carries the change. The new binding fields need a paired `tools-techne` binding-schema record, to be handed off when this record is planned.
+TECHNE-TOOLS-OPS-015 owns the `chezmoi cat` removal, so that it lands with the payload hook and personal instructions always have one route; Kris confirmed this split on 2026-10-09 (Decision 24(c) in the Techne decisions log). This record keeps the binding fields and the other person-specific defaults, and its `profile` field names the payload source that TECHNE-TOOLS-OPS-015's hook applies. Neither record blocks the other: if this record lands first, `setup.sh` keeps its current personal-instruction route until TECHNE-TOOLS-OPS-015 replaces it. The new binding fields need a paired `tools-techne` binding-schema record, to be handed off when this record is planned.
