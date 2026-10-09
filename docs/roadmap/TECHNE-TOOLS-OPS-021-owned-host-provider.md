@@ -5,12 +5,13 @@ title: Owned-host provider
 purpose: capability
 project: agent-host
 component: recipes
-status: triage
+status: cancelled
+resolution: rejected
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T13:03:25Z
-updated_at: 2026-10-08T13:03:25Z
+updated_at: 2026-10-09T21:40:00Z
 ---
 
 # Owned-Host Provider
@@ -29,6 +30,10 @@ Running an owned host needs a governance decision on the [Techne Programme Hold]
 
 - In scope: a `[providers.tailnet]` (or `owned`) section in `recipes/agent-host/recipe.toml` with no provision step; owned-host rebuild and withdraw scripts honouring the status contract and guard; moving the neutral scripts from `operations/aws/agent-host/` to `operations/agent-host/` (P12); making instance-sized settings such as `KNIP_DISABLE_RAW_TRANSFER` in `host/converge.sh` conditional or provider-supplied; the manifest check and stubbed cases for the new provider.
 - Out of scope: the CLI adapter ([TECHNE-TOOL-CLI-007](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-007-owned-host-adapter.md) in `tools-techne`); the Techne Programme Hold decision; splitting the operator guide (TECHNE-TOOLS-OPS-020); and any remote action.
+
+## Cancelled
+
+Cancelled 2026-10-09 as rejected, approved by Kris Brown (state-of-play decisions log, Decision 31): no owned host is planned, so Kris chose not to keep this as a work record. It is kept, with its `tools-techne` pair TECHNE-TOOL-CLI-007 (`docs/roadmap/TECHNE-TOOL-CLI-007-owned-host-adapter.md`, cancelled with it), as one owned-host provider idea in Arcadia's agent-host Project note (`ki-arcadia-principal`, `Streams/Projects/agent-host/agent-host.md`). It leaves no outstanding change.
 
 ## Discussion
 

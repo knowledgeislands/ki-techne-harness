@@ -5,12 +5,13 @@ title: Split the operator guide
 purpose: debt
 project: agent-host
 component: operations
-status: triage
+status: cancelled
+resolution: rejected
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T13:03:25Z
-updated_at: 2026-10-08T13:03:25Z
+updated_at: 2026-10-09T21:40:00Z
 ---
 
 # Split the Operator Guide
@@ -27,6 +28,10 @@ The agent-host operator guide reads as a guide to the general `agent-host` recip
 
 - In scope: a generic `agent-host` recipe guide; an AWS provider guide, with placeholders for an owned-host provider guide; moving one binding owner's deployment values out of the shared repository, to that owner's personal configuration source or to Arcadia; updating the operator guide index and the diagrams' references.
 - Out of scope: changing the recipe or scripts (TECHNE-TOOLS-OPS-019 removes their person-specific defaults); the owned-host provider itself ([TECHNE-TOOLS-OPS-021](https://github.com/knowledgeislands/ki-techne-harness/blob/main/docs/roadmap/TECHNE-TOOLS-OPS-021-owned-host-provider.md)); and any remote action.
+
+## Cancelled
+
+Cancelled 2026-10-09 as rejected, approved by Kris Brown (state-of-play decisions log, Decision 31): Kris chose not to keep this small documentation tidy as a work record. It is kept as a one-line idea in Arcadia's agent-host Project note (`ki-arcadia-principal`, `Streams/Projects/agent-host/agent-host.md`). It leaves no outstanding change.
 
 ## Discussion
 

@@ -325,7 +325,7 @@ Type the token, then Ctrl-D. `provision.sh` refuses Livepatch when the parameter
 
 ### Owned hosts
 
-An owned Linux host (TECHNE-TOOLS-OPS-021) meets the same contract through its distribution's unattended-update service and systemd: security-only origins, and the same daily reboot timer and guard only when a window is set, enabled at enrolment by its owner as root. On macOS, the owner enables automatic security responses and system files at enrolment; there is no automatic restart by default. FileVault holds a restarted Mac at the unlock screen unless the restart is authenticated with `fdesetup authrestart`, which needs the owner's credentials, so a Mac restarts only when its owner is there or has prepared that.
+An owned Linux host (a future owned-host provider, kept as an idea in Arcadia's agent-host Project) meets the same contract through its distribution's unattended-update service and systemd: security-only origins, and the same daily reboot timer and guard only when a window is set, enabled at enrolment by its owner as root. On macOS, the owner enables automatic security responses and system files at enrolment; there is no automatic restart by default. FileVault holds a restarted Mac at the unlock screen unless the restart is authenticated with `fdesetup authrestart`, which needs the owner's credentials, so a Mac restarts only when its owner is there or has prepared that.
 
 ### Reading updates
 
