@@ -2,15 +2,17 @@
 id: TECHNE-TOOLS-OPS-022
 area: OPS
 title: Agent host OS patching
+kind: deliver
 purpose: capability
 project: agent-host
 component: recipes
-status: triage
+horizon: next
+status: draft
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T06:52:36Z
+updated_at: 2026-10-09T15:22:58Z
 ---
 
 # Agent Host OS Patching
@@ -23,26 +25,125 @@ The `direct-host` recipe keeps any bound agent host's operating system patched, 
 
 On 2026-10-09 an attempt to apply Ubuntu updates on the current AWS agent host stopped before any change. The `techne` operator has no `sudo` by design (the [operator guide](../guides/operator/agent-host.md)), and the host's SSM agent was inactive that day. The host had 26 upgradable packages, including the kernel and `libc6`, and `/var/run/reboot-required` had been set since 2026-10-08. The only way to update the host today is a rebuild, which only the binding owner can run. Decision 23 in the Techne decisions log approved capturing this record.
 
+Read-only readings on 2026-10-09, before the owner's stop/start restart through AWS (the host-restart run in the Techne agent state), corrected part of that picture. Ubuntu's own unattended upgrades were already on and working: `20auto-upgrades` enables the daily list update and upgrade, the allowed origins are the release, `-security` and the ESM apps and infra security pockets, `unattended-upgrades.service` and both `apt-daily` timers are active, and `/var/log/apt/history.log` shows unattended installs on 8 and 9 October, the 7.0.0-1013 kernel among them. Automatic reboot was off by default, which is why `/var/run/reboot-required` (kernel, `linux-base`, `libc6`) had been set since 8 October 06:21 UTC. Thirty packages were upgradable, six from `noble-security`, including the 7.0.0-1014 kernel, which the next unattended run installs and which then needs another reboot. Livepatch was not installed and the machine was not attached to Ubuntu Pro. The unattended-upgrades log is root-only, so `techne` cannot read it. The repositories were all clean (`OUTCOME=clean`). Kris confirmed on 2026-10-09 that the restart went as he wished, and asked to progress this record "so we have capability going forwards" (Decision 24(d)).
+
 The recipe must stay general (Decisions 10 and 11): it must work for any binding owner and for any target, cloud or owned, Linux or macOS, with provider-specific parts in the provider layer. The AWS provider lives in `infra/aws/agent-host-stack.yaml`, whose boot script installs packages at build, and in `operations/aws/agent-host/`. The recipe lives in `recipes/direct-host/`.
 
 Patching must keep the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) boundary. It must not need remote agent execution or any new remote-environment authority beyond the exempt host.
 
 ## Boundary
 
-- In scope: the recipe's patching model and the provider contract it needs; reporting pending updates and a required reboot through `host/status.sh` and the login banner; the AWS provider's patching path; and the hooks an owned-host provider must supply.
-- Out of scope: patching the current host, which needs the binding owner's action; the owned-host provider itself (TECHNE-TOOLS-OPS-021); granting the operator user `sudo`, unless the design concludes that a narrow rule is the right model and the owner approves it; and any remote action.
+- In scope: the recipe's patching model, declared once as intent with a per-provider mechanism; optional binding fields for the reboot window and Livepatch; the AWS boot script's patching configuration; reporting pending updates, security updates, reboot-required and its age, and Livepatch state through `host/status.sh`, its JSON document and the login banner, on Ubuntu and macOS; the provider patching hooks an owned-host provider must supply, written as a contract; the operator guide's patching and restart section; and offline checks.
+- Out of scope: patching or restarting the current host, which needs the binding owner's action; the owned-host provider itself (TECHNE-TOOLS-OPS-021), which implements the contract; the `tools-techne` binding schema and CLI for the new fields, handed off as a paired record; Ubuntu Pro attachment of any host, which the binding owner does; granting the operator user `sudo`; SSM, Patch Manager or any other remote management plane; rebuilding a host to apply this record; and any remote action.
+
+## Plan
+
+### Model
+
+One model for every provider and OS, in three layers, none of which needs a rebuild or the operator's root:
+
+1. **Security updates install unattended.** The host's own scheduler applies security updates daily as root, set up by the image or boot script. Non-security updates stay out of the unattended set; they arrive at the next build or through the owner's own action.
+2. **Kernel fixes go live through Livepatch where available.** Where the binding opts in and the provider supports it (Ubuntu with Ubuntu Pro), critical kernel fixes apply without a restart. Livepatch narrows, but never removes, the need for a reboot.
+3. **Reboots happen only when needed, at a window the binding chooses.** With no window in the binding, the default, the host never restarts itself: status and the login banner say a reboot is required and since when, and the binding owner restarts through the provider's stop and start, the normal restart route. With a window, the host may restart itself in that window only when a reboot is required and no user is logged in, so it never cuts a live session.
+
+The operator user stays without `sudo`. Everything needing root is set by the image or the boot script; reporting reads only world-readable state.
+
+### Provider contract
+
+`recipe.toml` declares the intent once: unattended security updates, optional Livepatch, a reboot window that defaults to none, and the reporting fields. Each provider table declares its mechanism under `[providers.<provider>.patching]`, which `tooling/checks/recipe-manifest.py` requires for every supported provider:
+
+- **AWS (Ubuntu):** the boot script writes `/etc/apt/apt.conf.d/20auto-upgrades` and a `52ki-agent-host-unattended-upgrades` file (security origins only; `Automatic-Reboot` set from the window, `Automatic-Reboot-WithUsers "false"`, `Automatic-Reboot-Time` from the window); when the binding opts in to Livepatch, it attaches Ubuntu Pro from a SecureString in the stack's parameter prefix, read like the Tailscale key and never written to disk, and enables Livepatch. A systemd timer override places the upgrade before the window. No SSM agent, Patch Manager or instance-role change.
+- **Owned Linux (TECHNE-TOOLS-OPS-021):** the same contract through systemd: the distribution's unattended-update service and timers, enabled at enrolment by the binding owner as root, and a reboot timer only when a window is set.
+- **macOS:** `softwareupdate`'s automatic security responses and system files set by the binding owner at enrolment; no automatic restart by default, because FileVault holds a restarted Mac at the unlock screen unless an authenticated restart (`fdesetup authrestart`) is used, which needs the owner's credentials. Reporting uses `softwareupdate --list` from the local catalogue, without forcing a network scan at login.
+
+### Reporting
+
+`host/status.sh` gains an `updates` block in the JSON document and a text section: OS family, pending updates, pending security updates, `reboot_required` with the time it was first required (the mtime of `/var/run/reboot-required`) and the packages from `reboot-required.pkgs`, and Livepatch state where present (`unsupported`, `disabled`, or the patch state). On Ubuntu, counts come from `/usr/lib/update-notifier/apt-check`, which `techne` can run; on macOS from `softwareupdate --list`. A failed reading is reported as unknown for that field and never changes the work-safety outcome: updates do not put work at risk (ODR-KI-ARCADIA-001), so `outcome` and the exit status are unchanged. The block is additive, so the schema stays `techne/host-workspace/v1` with an optional member.
+
+The text report writes the counts into the cache the banner reads. The banner also checks `/var/run/reboot-required` directly, a local file read with no network or credential call, so a reboot need shows at the next login without waiting for a status run. It prints one line when a reboot is required (with its age and the restart route), and one when security updates are pending past a day.
+
+### Restart route
+
+The guide names the provider's stop and start as the normal restart: run status first, then stop and start the host through the provider (on AWS, `stop.sh` and an instance start under the binding owner's profile), reconnect over Tailscale and run status again. EBS persists the workspace, so a restart loses only running sessions, which status before the stop reveals.
+
+### The current host
+
+It needs no rebuild to benefit. The reporting reaches it at the binding owner's next `setup`, which runs as `techne`. Its unattended security updates are already on. The boot-script settings (window, Livepatch) arrive with the next build that happens anyway, currently TECHNE-TOOLS-OPS-017's. Until then a required reboot is reported and the owner restarts through the provider.
+
+## Current state
+
+The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but sets no patching policy, so the host runs Ubuntu's image defaults: unattended security upgrades on, automatic reboot off, no Livepatch. The boot script runs only at first boot, so a change to it reaches a host only at its next build. `host/status.sh` reports repositories, expiries and tool drift, and writes the expiry cache; the banner in `converge.sh` reads only that cache and the clock. Neither reports updates or reboot-required. `recipe.toml` declares no patching intent and no reboot window, and the operator guide says nothing about patching or restarting. The operator has no `sudo` and the host's SSM agent is disabled by design, so no remote patch path exists, and none is wanted. The owner restarted the current host through AWS on 2026-10-09; the next unattended run installs the 1014 kernel, which will need another restart.
+
+## Steps
+
+- [ ] Declare the patching intent in `recipes/direct-host/recipe.toml`, the optional `reboot_window` and `livepatch` parameters (no default; absent means no automatic reboot and no Livepatch), and `[providers.aws.patching]`; teach `tooling/checks/recipe-manifest.py` to require a patching table for each provider and to validate the window's form.
+- [ ] Add the AWS patching configuration to the boot script in `infra/aws/agent-host-stack.yaml`, with `RebootWindow` and `Livepatch` stack parameters passed by `provision.sh`, and the Ubuntu Pro token read from the parameter prefix only when Livepatch is on; extend `tooling/checks/agent-host-stack.rb` for both.
+- [ ] Add the `updates` block and text section to `operations/aws/agent-host/host/status.sh`, for Ubuntu and macOS, and write the counts to the banner cache; keep the outcome and exit status unchanged.
+- [ ] Extend the banner in `operations/aws/agent-host/host/converge.sh` with the reboot-required and pending-security lines.
+- [ ] Add offline fixtures and stubs to `tooling/checks/agent-host-workspace.sh` (and siblings) for: no updates, pending security updates, reboot required with age and packages, Livepatch absent and active, `apt-check` failing, and a macOS `softwareupdate` listing.
+- [ ] Write the provider patching contract into the recipe documentation and the operator guide, with the restart route, the FileVault caveat, Ubuntu Pro attachment as the binding owner's step, and the current-host note.
+- [ ] Hand off a paired `tools-techne` record for the `reboot_window` and `livepatch` binding fields and the `updates` status member, and record its identifier here.
+- [ ] Live verification, only under a separate grant from the binding owner for the exempt host: setup, then status showing the `updates` block, and a new login showing the banner line while a reboot is required.
+
+## Files touched
+
+- `recipes/direct-host/recipe.toml`
+- `infra/aws/agent-host-stack.yaml`
+- `operations/aws/agent-host/provision.sh`
+- `operations/aws/agent-host/host/status.sh`
+- `operations/aws/agent-host/host/converge.sh`
+- `tooling/checks/recipe-manifest.py`, `tooling/checks/agent-host-stack.rb`, `tooling/checks/agent-host-workspace.sh` and `tooling/checks/fixtures/`
+- `docs/guides/operator/agent-host.md`
+
+## Verify
+
+- `bun run test` passes, including the recipe-manifest, stack and workspace checks.
+- The stack check asserts that the boot script writes security-only origins, `Automatic-Reboot "false"` without a window, `Automatic-Reboot-WithUsers "false"` with one, and reads the Pro token only when Livepatch is on, never writing it to disk.
+- The workspace check asserts each fixture's `updates` block and banner line, and that every fixture's `outcome` and exit status match the same fixture without updates.
+- `ki repo audit` passes.
+- Live: only under the separate grant above.
+
+## Dependencies / blocks
+
+No prerequisite. TECHNE-TOOLS-OPS-017 changes the same boot script and is the next planned rebuild, so whichever lands second rebases; this record's boot-script settings reach the current host at that rebuild. TECHNE-TOOLS-OPS-015 and TECHNE-TOOLS-OPS-019 touch `recipe.toml`, `setup.sh` and the recipe-manifest check; ordinary rebase, no ordering. TECHNE-TOOLS-OPS-021 implements this record's owned-host contract. The `tools-techne` binding fields are a paired record; without it the fields reach the scripts only through their environment variables.
+
+## Documentation impact
+
+### Decision Records
+
+None needed here: the patching model applies ODR-KI-ARCADIA-001 and ADR-KI-ARCADIA-003 without changing them, and the record holds the rationale. If Kris wants the no-unplanned-restart rule to bind every provider, Arcadia may record it in ODR-KI-ARCADIA-001, by handoff.
+
+### Specifications
+
+The `techne/host-workspace/v1` status document gains an optional `updates` member; the recipe gains a patching table. Both are documented in `recipe.toml` and the operator guide, which are this repository's contract for them.
+
+### Guides
+
+The operator guide gains a patching and restart section: what runs unattended, the reboot window, Livepatch and Ubuntu Pro attachment, reading the `updates` block and banner, the stop/start restart route, and the macOS FileVault caveat.
+
+### Roadmap
+
+A paired `tools-techne` record for the binding fields and status member. TECHNE-TOOLS-OPS-021 inherits the owned-host patching contract; its record should cite this one when it is planned.
 
 ## Discussion
 
-### Open questions
+### Decisions for the binding owner
 
-- **Model:** unattended security updates with a scheduled, announced reboot window, or an owner-run patch operation such as `techne host patch`, or both: unattended for security fixes and owner-run for the kernel and reboot.
-- **Reboot and durability:** how a reboot respects the durability guarantees in [ODR-KI-ARCADIA-001](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ODR-KI-ARCADIA-001-keeping-work-safe-on-the-agent-host.md). For example: run status first, refuse or defer while work is at risk, and announce the window to running sessions. On macOS hosts, FileVault may hold the machine at the unlock screen after a reboot unless authenticated restart is used.
-- **Reporting:** how `status.sh` and the login banner show the pending update count, security updates, reboot-required and how long it has been required, and whether a stale reboot-required should make the outcome non-clean.
-- **Provider split:** on AWS, unattended updates set up by the boot script, or an SSM-capable instance role with Patch Manager, which also needs the SSM agent active. On owned hosts, a `launchd` or `systemd` timer. On macOS, `softwareupdate`. The recipe should declare the intent, and each provider should supply the mechanism.
-- **Privilege:** which identity applies updates when `techne` has no `sudo`. Options include a root-owned timer installed at build, a narrow `NOPASSWD` rule for one patch command, or the provider's management plane.
-- **Current host:** whether it waits for the planned rebuild (TECHNE-TOOLS-OPS-017) to pick up the pending updates, or the binding owner rebuilds sooner. This is the owner's call and is tracked in the Arcadia `agent-host` checkpoint, not here.
+These must be settled before the record can be Ready. Each has a recommendation.
+
+1. **Automatic reboot default.** Recommended: none; a binding may set a window, and the host restarts in it only when a reboot is required and nobody is logged in. Alternative: a default window for every binding.
+2. **Livepatch.** Recommended: an opt-in binding field, off by default. For the current binding, whether to attach Ubuntu Pro (free for personal use on a few machines) and store its token as a SecureString beside the Tailscale key.
+3. **Unattended scope.** Recommended: security updates only, as today; non-security updates at the next build. Alternative: all of `noble-updates` too.
+4. **Outcome.** Recommended: pending updates and reboot-required never change the status outcome or exit status; they show as report lines and a banner line. Alternative: a stale reboot-required, say over seven days, makes the outcome non-clean.
+5. **Current host.** Recommended: no rebuild for this record; reporting arrives at the next `setup`, the boot-script settings at TECHNE-TOOLS-OPS-017's rebuild, and the owner restarts through the provider when the 1014 kernel asks for it.
+6. **Reboot window form.** Recommended: a weekday and local time in the binding (for example `Sun 04:00`), interpreted in the host's time zone.
+
+### Alternatives considered
+
+- **SSM Patch Manager.** Rejected: it needs the SSM agent the boot script disables and a management-plane authority outside the hold boundary, and it is AWS-only.
+- **A narrow `sudo` rule for a `techne host patch` command.** Rejected: the operator gains root reach, and unattended updates already cover the routine path.
+- **Rebuild to patch.** Rejected by the owner: rebuilds are for changing the host, not for keeping it current.
 
 ### Related records
 
-None of these is a prerequisite, so the dependency fields stay empty. TECHNE-TOOLS-OPS-017 changes the same AWS boot script and is the next planned rebuild, which would pick up today's pending updates. TECHNE-TOOLS-OPS-018 moves tool installation to Rig; OS patching stays outside Rig. TECHNE-TOOLS-OPS-021 adds the owned-host provider, which will need to supply this record's provider hooks. Planning settles the order.
+None of these is a prerequisite, so the dependency fields stay empty. TECHNE-TOOLS-OPS-017 changes the same AWS boot script and is the next planned rebuild. TECHNE-TOOLS-OPS-018 moves tool installation to Rig; OS patching stays outside Rig. TECHNE-TOOLS-OPS-021 adds the owned-host provider, which supplies this record's owned-host hooks.
