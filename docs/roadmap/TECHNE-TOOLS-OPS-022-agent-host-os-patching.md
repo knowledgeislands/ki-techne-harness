@@ -7,12 +7,12 @@ purpose: capability
 project: agent-host
 component: recipes
 horizon: next
-status: draft
+status: ready
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T16:04:33Z
+updated_at: 2026-10-09T16:10:34Z
 ---
 
 # Agent Host OS Patching
@@ -138,7 +138,7 @@ Kris answered all six on 2026-10-09, each as recommended (Decision 26(b)), and a
 5. **Current host.** Resolved: no rebuild for this record. Reporting arrives at the next `setup`, the boot-script settings at TECHNE-TOOLS-OPS-017's rebuild, and Kris restarts through the provider when a kernel asks for it, starting with the 1014 kernel due on 2026-10-10 (Decision 26(c)).
 6. **Reboot window form.** Resolved, as amended by Decision 27: a daily local time in the binding, `HH:MM` in the host's time zone; Kris's binding uses `04:00`. Decision 27 preferred the native unattended-upgrades reboot over a custom timer if it reboots only when required and with nobody logged in. It does not hold for the logged-in check (see Alternatives considered), so the AWS provider keeps the `ki-agent-host-reboot` timer, now daily.
 
-The record stays `draft` until Kris approves this plan as Ready.
+Kris approved this plan on 2026-10-09, including the daily `04:00` restart timer, and moved it to `ready` (Decision 28).
 
 ### Alternatives considered
 
