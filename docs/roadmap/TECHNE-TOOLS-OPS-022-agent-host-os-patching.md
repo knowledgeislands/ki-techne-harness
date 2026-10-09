@@ -6,13 +6,12 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: recipes
-horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 36599971322a2e7c432f52a4e2f9318c3f1dad1e
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T16:40:56Z
+updated_at: 2026-10-09T21:19:38Z
 ---
 
 # Agent Host OS Patching
@@ -83,7 +82,7 @@ The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but s
 - [x] Add offline fixtures and stubs to `tooling/checks/agent-host-workspace.sh` (and siblings) for: no updates, pending security updates, reboot required with age and packages, Livepatch absent and active, `apt-check` failing, and a macOS `softwareupdate` listing.
 - [x] Write the provider patching contract into the recipe documentation and the operator guide, with the restart route, the FileVault caveat, Ubuntu Pro attachment as the binding owner's step, and the current-host note.
 - [x] Hand off a paired `tools-techne` record for the `reboot_window` and `livepatch` binding fields and the `updates` status member, and record its identifier here: [TECHNE-TOOL-CLI-008](https://github.com/knowledgeislands/tools-techne/blob/main/docs/roadmap/TECHNE-TOOL-CLI-008-host-patching-fields.md), captured in triage on 2026-10-09.
-- [ ] Live verification, only under a separate grant from the binding owner for the exempt host: setup, then status showing the `updates` block, and a new login showing the banner line while a reboot is required. Partly done on 2026-10-09: status from the Mac checkout showed the `updates` block (see Review); setup and the banner await the binding owner.
+- [x] Live verification, only under a separate grant from the binding owner for the exempt host: setup, then status showing the `updates` block, and a new login showing the banner line while a reboot is required. Done on 2026-10-09 under Decision 31; no reboot was required, so the banner's lines were verified as Review records.
 
 ## Files touched
 
@@ -152,11 +151,13 @@ A test-only `KI_AGENT_HOST_SYSROOT` prefix lets the offline checks give `status.
 - The stack check runs the extracted boot-script blocks in a temporary root. With no window it writes no files; with `04:00` it writes the timer's `OnCalendar=*-*-* 04:00:00`, the service and the enablement. The guard restarts only when the flag is set and `who` is empty. Livepatch off makes no call; on, it reads `/ki/techne/agent-host/ubuntu-pro-token`, attaches through `--attach-config` and removes the file. Origins are exactly the three security ones after `#clear`, and the only `Automatic-Reboot` is false.
 - The workspace check covers no updates, pending security updates, reboot required with age and packages, Livepatch absent, unattached and applied, `apt-check` failing, macOS `softwareupdate` and an unreadable OS (all null). It also covers the text section, the cache line and its first-seen time, and both banner lines, each with outcome and exit status unchanged.
 - The AWS-script check covers the window and Livepatch overrides, the Ubuntu Pro token lookup only with Livepatch, refusal of `4:00`, `Sun 04:00` and `yes`, and the withdraw deletion.
-- Live and read-only on 2026-10-09, `operations/aws/agent-host/status.sh --json` from this checkout reported outcome `clean`, exit 0, and `updates` `{os: ubuntu, pending: 34, security: 12, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: disabled}`; the text report showed the Updates section. Like every status run, it rewrote the host's banner cache. Setup and the banner were not run live, because setup writes to the host.
+- Live and read-only on 2026-10-09, `operations/aws/agent-host/status.sh --json` from this checkout reported outcome `clean`, exit 0, and `updates` `{os: ubuntu, pending: 34, security: 12, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: disabled}`; the text report showed the Updates section. Like every status run, it rewrote the host's banner cache. Setup and the banner were not run live then, because setup writes to the host.
+- Live on 2026-10-09 under Decision 31, from the Mac checkout at `db399b8`: `setup.sh --pull` exited with `CHANGES=18 SKIPPED=1 WARNINGS=0 FAILURES=0`. It installed the new banner, rewrote the Rig pins file as `agent-host-pins` and removed the old `direct-host-pins` provider, fast-forwarded 11 clean checkouts, refreshed the host rules, the Codex `AGENTS.md` and the host marker, and kept the applied profile payload (none staged). `status.sh --json` then reported outcome `clean`, exit 0, and the same `updates` block (34 pending, 12 security, `reboot_required: false`, Livepatch `disabled`); the text report showed the Updates section.
+- No reboot was required: `/var/run/reboot-required` was absent and the host ran the 7.0.0-1013 kernel. A new interactive SSH login sourced the banner (`KI_AGENT_HOST_BANNER=1`) and printed no ki-agent-host line, which is correct: no flag, expiries checked that day, the GitHub token beyond 14 days, no drift, and the 12 security updates first seen under a day earlier. Running the installed `banner.sh` on the host against a temporary sysroot with a two-day-old flag and `linux-image-7.0.0-1014-aws` and `libc6` in its package list printed the reboot line with its age, packages and restart route; against a temporary cache with 12 security updates first seen two days earlier it printed `12 security updates pending for 2 days; unattended upgrades may be failing`.
 
 ### Outstanding concerns
 
-- The live-verification Step stays open: setup writes to the host and needs the binding owner's grant, and the banner's reboot line can show only while a reboot is required. `ki repo audit` therefore fails ITEM-3, which requires every Step ticked at this status. The binding owner either runs setup and ticks the Step, or moves it to a follow-up record before acceptance.
+- The banner's reboot line was verified on the live host against a temporary flag, not a real one, because no reboot was required on 2026-10-09; the 1014 kernel due on 2026-10-10 should set the real flag.
 - `who` does not list detached `tmux` sessions, so a window restart can end an unattended agent session left running in `tmux`; the guide says so.
 - The live host has 12 standard security updates pending, including a kernel. The unattended-upgrades log is root-only, so whether these await phasing or the unattended run is failing is unknown. Once setup installs the new banner, its security line fires after a day if they persist.
 - A failed `pro attach` stops the boot script before its ready marker, so a bad Ubuntu Pro token fails the build visibly rather than silently skipping Livepatch.
@@ -170,6 +171,10 @@ The full diff was reread against the plan and the boundary. It adds no SSM or Pa
 ### Mini recap
 
 Patching is declared once in the recipe and implemented for AWS: security updates install themselves, restarts happen only at an optional daily window when nobody is logged in, and Livepatch is opt-in through Ubuntu Pro. Status, its JSON and the login banner now say what is pending and when a restart is needed. The current host gains the reporting at the binding owner's next setup, and the window or Livepatch only at its next build.
+
+## Done
+
+Accepted 2026-10-09 under Kris's decision in the Techne decisions log, Decision 31 (2026-10-09): "Push your unpushed ki-techne-harness commits so TECHNE-TOOLS-OPS-022 can be accepted - Kris has approved its acceptance. Then accept it and prune it." The live-verification Step was completed first under the same decision: setup ran clean on the agent host, status showed the `updates` block, and a new login sourced the banner, whose reboot and security lines were exercised against temporary state because no reboot was required. The paired TECHNE-TOOL-CLI-008 remains open in `tools-techne`, and the boot-script settings reach the current host at TECHNE-TOOLS-OPS-017's rebuild.
 
 ## Discussion
 
