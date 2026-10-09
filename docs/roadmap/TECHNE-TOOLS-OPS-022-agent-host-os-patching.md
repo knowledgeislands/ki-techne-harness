@@ -12,7 +12,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-09T06:52:36Z
-updated_at: 2026-10-09T15:22:58Z
+updated_at: 2026-10-09T15:24:56Z
 ---
 
 # Agent Host OS Patching
@@ -25,7 +25,7 @@ The `direct-host` recipe keeps any bound agent host's operating system patched, 
 
 On 2026-10-09 an attempt to apply Ubuntu updates on the current AWS agent host stopped before any change. The `techne` operator has no `sudo` by design (the [operator guide](../guides/operator/agent-host.md)), and the host's SSM agent was inactive that day. The host had 26 upgradable packages, including the kernel and `libc6`, and `/var/run/reboot-required` had been set since 2026-10-08. The only way to update the host today is a rebuild, which only the binding owner can run. Decision 23 in the Techne decisions log approved capturing this record.
 
-Read-only readings on 2026-10-09, before the owner's stop/start restart through AWS (the host-restart run in the Techne agent state), corrected part of that picture. Ubuntu's own unattended upgrades were already on and working: `20auto-upgrades` enables the daily list update and upgrade, the allowed origins are the release, `-security` and the ESM apps and infra security pockets, `unattended-upgrades.service` and both `apt-daily` timers are active, and `/var/log/apt/history.log` shows unattended installs on 8 and 9 October, the 7.0.0-1013 kernel among them. Automatic reboot was off by default, which is why `/var/run/reboot-required` (kernel, `linux-base`, `libc6`) had been set since 8 October 06:21 UTC. Thirty packages were upgradable, six from `noble-security`, including the 7.0.0-1014 kernel, which the next unattended run installs and which then needs another reboot. Livepatch was not installed and the machine was not attached to Ubuntu Pro. The unattended-upgrades log is root-only, so `techne` cannot read it. The repositories were all clean (`OUTCOME=clean`). Kris confirmed on 2026-10-09 that the restart went as he wished, and asked to progress this record "so we have capability going forwards" (Decision 24(d)).
+Read-only readings on 2026-10-09, taken by the host-restart run in the Techne agent state before a planned stop/start through AWS, corrected part of that picture. Ubuntu's own unattended upgrades were already on and working: `20auto-upgrades` enables the daily list update and upgrade, the allowed origins are the release, `-security` and the ESM apps and infra security pockets, `unattended-upgrades.service` and both `apt-daily` timers are active, and `/var/log/apt/history.log` shows unattended installs on 8 and 9 October, the 7.0.0-1013 kernel among them. Automatic reboot was off by default, which is why `/var/run/reboot-required` (kernel, `linux-base`, `libc6`) had been set since 8 October 06:21 UTC. Thirty packages were upgradable, six from `noble-security`, including the 7.0.0-1014 kernel, which the next unattended run installs and which then needs another reboot. Livepatch was not installed and the machine was not attached to Ubuntu Pro. The unattended-upgrades log is root-only, so `techne` cannot read it. The repositories were all clean (`OUTCOME=clean`). The restart itself did not happen: the binding owner's AWS session had expired, so nothing was stopped or started. Kris, approving restarts through the provider, asked on 2026-10-09 to progress this record "so we have capability going forwards" (Decision 24(d)).
 
 The recipe must stay general (Decisions 10 and 11): it must work for any binding owner and for any target, cloud or owned, Linux or macOS, with provider-specific parts in the provider layer. The AWS provider lives in `infra/aws/agent-host-stack.yaml`, whose boot script installs packages at build, and in `operations/aws/agent-host/`. The recipe lives in `recipes/direct-host/`.
 
@@ -64,7 +64,7 @@ The text report writes the counts into the cache the banner reads. The banner al
 
 ### Restart route
 
-The guide names the provider's stop and start as the normal restart: run status first, then stop and start the host through the provider (on AWS, `stop.sh` and an instance start under the binding owner's profile), reconnect over Tailscale and run status again. EBS persists the workspace, so a restart loses only running sessions, which status before the stop reveals.
+The guide names the provider's stop and start as the normal restart: run status first, then stop and start the host through the provider (on AWS, `stop.sh` then `techne host start`, under the binding owner's live session), reconnect over Tailscale and run status again. EBS persists the workspace, so a restart loses only running sessions, which status before the stop reveals.
 
 ### The current host
 
@@ -72,7 +72,7 @@ It needs no rebuild to benefit. The reporting reaches it at the binding owner's 
 
 ## Current state
 
-The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but sets no patching policy, so the host runs Ubuntu's image defaults: unattended security upgrades on, automatic reboot off, no Livepatch. The boot script runs only at first boot, so a change to it reaches a host only at its next build. `host/status.sh` reports repositories, expiries and tool drift, and writes the expiry cache; the banner in `converge.sh` reads only that cache and the clock. Neither reports updates or reboot-required. `recipe.toml` declares no patching intent and no reboot window, and the operator guide says nothing about patching or restarting. The operator has no `sudo` and the host's SSM agent is disabled by design, so no remote patch path exists, and none is wanted. The owner restarted the current host through AWS on 2026-10-09; the next unattended run installs the 1014 kernel, which will need another restart.
+The AWS boot script in `infra/aws/agent-host-stack.yaml` installs packages but sets no patching policy, so the host runs Ubuntu's image defaults: unattended security upgrades on, automatic reboot off, no Livepatch. The boot script runs only at first boot, so a change to it reaches a host only at its next build. `host/status.sh` reports repositories, expiries and tool drift, and writes the expiry cache; the banner in `converge.sh` reads only that cache and the clock. Neither reports updates or reboot-required. `recipe.toml` declares no patching intent and no reboot window, and the operator guide says nothing about patching or restarting. The operator has no `sudo` and the host's SSM agent is disabled by design, so no remote patch path exists, and none is wanted. The current host has needed a restart since 2026-10-08; the 2026-10-09 restart attempt stopped before any change because the owner's AWS session had expired. The next unattended run, about 06:50 UTC on 2026-10-10, should install the 1014 kernel, so one restart after it picks up both kernels.
 
 ## Steps
 
