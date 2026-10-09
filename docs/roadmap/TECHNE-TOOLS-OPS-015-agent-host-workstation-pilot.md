@@ -12,7 +12,7 @@ blocks: [TECHNE-TOOLS-OPS-017]
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T19:59:07Z
+updated_at: 2026-10-09T15:58:00Z
 ---
 
 # Agent-Host Workstation Pilot
@@ -50,13 +50,14 @@ The stack creates `techne` with `/bin/bash` and installs `zsh` through its boot 
 
 The payload is a directory the binding owner's source renders on the operator's workstation. `setup.sh` takes its path from `AGENT_HOST_PROFILE`, declared as a recipe parameter with no default; unset means no payload, and the host gets the recipe layer alone. The binding field `profile` that later replaces the environment variable belongs to TECHNE-TOOLS-OPS-019 and its paired `tools-techne` record.
 
-- `manifest.json` with `schema` `techne/host-profile/v1`, `revision` (an opaque string the source chooses, such as its commit and a content hash), `target_os` (`linux` or `macos`), `files`, `removed` and an optional `rig` object.
+- `manifest.json` with `schema` `techne/host-profile/v1`, `revision` (an opaque string the source chooses, such as its commit and a content hash), `target_os` (`linux` or `macos`), an optional `target_host`, `files`, `removed` and an optional `rig` object.
 - `files` lists each delivered file by `path`, relative to the operator's home with no `..`, absolute or empty component, and `mode` (`0600`, `0644`, `0700` or `0755`). Each file sits under `home/` in the payload at that path. The harness owns ownership: every file is written as the operator user.
 - `removed` lists paths the source dropped from its allowlist. The harness removes a path only when its own record of the previous payload shows it installed that path.
 - `rig.fragment` names one file under `home/.config/rig/conf.d/` and `rig.profile` the profile it declares. The fragment may declare tools, categories and its profile only, through built-in providers; it may not declare a provider table, a custom adapter, a managed resource, a `[rig]` table, or any identity the recipe's `rig.toml` declares.
 - Reserved destinations, refused in any payload: `~/.config/rig/rig.toml`, `~/.config/mise/`, `~/.config/ki-agent-host/`, `~/.config/ki/host-marker`, `~/.claude/rules/ki-agent-host.md`, `~/.claude/settings.json`, `~/.claude/skills/`, `~/.agents/`, `~/.local/share/rig/providers/`, `~/.ssh/`, `~/.gitconfig`, `~/.profile`, `~/.bashrc`, the chosen shell's recipe-managed startup file and the workspace root.
 - `~/.codex/AGENTS.md` is a composed destination: Codex reads one global instructions file, so the harness writes the recipe's rules first and the payload's file after them under a heading, rather than letting either replace the other.
 - Validation refuses a symbolic link, a file the manifest does not list, a listed file that is absent, a path or content invalid on `target_os` (for Linux, `/Users/`, `/opt/homebrew`, `/usr/local/Cellar`, `brew shellenv`, `pbcopy` or `pbpaste` outside a guard; for macOS, `/home/`), and content matching the secret patterns the repository's checks already use. `setup.sh` validates on the operator's workstation before anything is sent; `converge.sh` repeats the structural checks on the host before writing.
+- `target_host`, when present, names the host the payload was rendered for. `converge.sh` compares it with the host's `host.id`, the provider-defined identity `status.sh` reports, before writing anything, and refuses the payload on a mismatch, so a bundle rendered for one host is never applied to another. When it is absent, no host check is made. Kris accepted this field on 2026-10-09 (Decision 26(a) of the Techne run).
 - `converge.sh` keeps the applied manifest at `~/.local/state/ki-agent-host/profile-manifest.json`; `status.sh` reports its revision.
 
 ### Migration from the `chezmoi cat` path
@@ -79,8 +80,8 @@ After the payload is written, `converge.sh` runs `rig apply --profile <rig.profi
 - [ ] Change `converge.sh`: apply the payload's files with their modes, remove only previously installed paths the source dropped, migrate the old `chezmoi cat` files, compose `~/.codex/AGENTS.md`, record the applied manifest, and run `rig apply` for the payload's profile.
 - [ ] Add the shell: the `~/.zshenv` block, mise activation for interactive zsh, the guarded `.bashrc` hand-off with its two escape hatches, and the missing-shell warning.
 - [ ] Change `status.sh`: report the applied payload revision and personal-tool drift.
-- [ ] Add offline checks with stubs and fixtures: a valid payload, each refusal (reserved destination, `..` path, symbolic link, unlisted file, secret, a macOS path in a Linux payload, a fragment with a custom provider or managed resource or a recipe identity), removal of a dropped file but not of an unrecorded one, the migration, Codex composition with and without a payload, a run with no payload, and the shell paths - login, interactive, non-interactive SSH command, Git hook through husky's `init.sh` and a mise environment - for zsh and for bash, plus both escape hatches.
-- [ ] Update the operator guide: rendering and passing a payload (`AGENT_HOST_PROFILE`, with Cheztoi as the example), choosing the shell, the escape hatches, recovery of profile and runtime state by re-running setup, and removal of the retired `techne-agent-host` helper's references.
+- [ ] Add offline checks with stubs and fixtures: a valid payload, each refusal (a `target_host` that does not match `host.id`, reserved destination, `..` path, symbolic link, unlisted file, secret, a macOS path in a Linux payload, a fragment with a custom provider or managed resource or a recipe identity), removal of a dropped file but not of an unrecorded one, the migration, Codex composition with and without a payload, a run with no payload, and the shell paths - login, interactive, non-interactive SSH command, Git hook through husky's `init.sh` and a mise environment - for zsh and for bash, plus both escape hatches.
+- [ ] Update the operator guide: rendering and passing a payload (`AGENT_HOST_PROFILE` and `target_host`, with Cheztoi's chezmoi-native render - one `chezmoi archive` call with `--override-data` from a per-host manifest - as the example), choosing the shell, the escape hatches, recovery of profile and runtime state by re-running setup, and removal of the retired `techne-agent-host` helper's references.
 - [ ] Render DOTFILES-UE-073's payload on the Mac and run this repository's validator against it offline; record the result here.
 - [ ] Live verification, only under a separate grant from Kris for SSH to the exempt host: the binding owner runs setup with the payload and `status`, and opens a new SSH session.
 
@@ -96,7 +97,7 @@ After the payload is written, `converge.sh` runs `rig apply --profile <rig.profi
 
 - `bun run test` and the repository's checks pass, including every new payload and shell case above.
 - `ki repo audit --repo .` reports no new failure or warning against the 2026-10-08 baseline (`FAIL=0 WARN=2`).
-- Offline: DOTFILES-UE-073's rendered payload passes this repository's validator, and a copy with a planted macOS path, secret or custom provider is refused.
+- Offline: DOTFILES-UE-073's rendered payload passes this repository's validator, and a copy with a planted macOS path, secret or custom provider, or with a `target_host` that does not match the stubbed `host.id`, is refused.
 - On the host, after the binding owner runs setup with the payload: `mgit` is installed through Rig at `~/.local/bin/mgit`, a new SSH session lands in zsh with the host environment and the owner's prompt, `ssh <host> 'echo $0; command -v mise ki mgit'` runs non-interactively in bash with the pinned tools, `~/.claude/delegation.md` is the host variant, `~/.codex/AGENTS.md` starts with the recipe's rules, and `status` reports the payload revision and no personal-tool drift.
 
 ## Dependencies / blocks
@@ -129,7 +130,7 @@ The pilot's lessons are written into TECHNE-TOOLS-OPS-016 and TECHNE-TOOLS-OPS-0
 
 ### Sequencing
 
-Selected as the workstation pilot on 2026-10-08 under Kris's grant. It starts after the durability pilot, TECHNE-TOOLS-OPS-013, and stage 1 in TECHNE-TOOLS-OPS-014, both done. It is planned and delivered together with DOTFILES-UE-073; the wider allowlist waits for its lessons.
+Selected as the workstation pilot on 2026-10-08 under Kris's grant. It starts after the durability pilot, TECHNE-TOOLS-OPS-013, and stage 1 in TECHNE-TOOLS-OPS-014, both done. It is planned and delivered together with DOTFILES-UE-073; the wider allowlist waits for its lessons. On 2026-10-09 Kris accepted the [workstation bundle walkthrough](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Streams/Projects/agent-host/design/workstation-bundle-walkthrough.md)'s recommendation (Decision 26(a)): the payload contract stays renderer-neutral, gains the optional `target_host`, and DOTFILES-UE-073 renders it chezmoi-natively. The record stays `draft` until Kris approves this plan.
 
 ### Profile argument
 
@@ -140,4 +141,5 @@ Settled at planning: `techne host setup` needs no profile argument for the pilot
 - The payload path and shell travel as `AGENT_HOST_PROFILE` and `AGENT_HOST_SHELL` until the binding fields exist.
 - `~/.codex/AGENTS.md` is composed, recipe rules first, because Codex reads one global file.
 - Removal acts only on files the harness recorded installing, plus the one-time migration of the old `chezmoi cat` files.
+- The payload may name its `target_host`, which `converge.sh` checks against `host.id` and refuses on a mismatch; absent, no check is made (accepted on 2026-10-09, Decision 26(a)). On AWS `host.id` is the instance ID, which changes at every rebuild, so a payload naming it must be re-rendered after a rebuild; the owner's renderer can take the value from `techne host status --json`.
 - The hand-off has two escape hatches, an environment variable and a file, so a broken personal zsh file cannot shut the operator out of an interactive session.
