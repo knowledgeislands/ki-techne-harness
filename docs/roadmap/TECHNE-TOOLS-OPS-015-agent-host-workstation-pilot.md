@@ -153,6 +153,11 @@ The plan is followed as written. One correction came from the live run: `rig app
 - The payload carries no `target_host` until the host is renamed `vega`; the host check is proven offline only.
 - The provider still creates `techne` with `/bin/bash`; the login-shell change waits for TECHNE-TOOLS-OPS-017.
 - The environment-variable escape hatch did not travel over SSH as `SetEnv` in the live test; the guide's form, `ssh -t ki-techne-agent-host env KI_AGENT_HOST_NO_HANDOFF=1 bash -l`, is the route.
+- The validator allows any Rig built-in provider in the owner's fragment, `chezmoi` among them, and does not refuse a fragment that declares a personal-configuration tool such as `chezmoi` itself; decision 6 is kept by the owner's allowlist, not yet enforced by the harness.
+
+### Post-change review
+
+The full diff from `977abc9` was reread against the plan and the boundary. It touches only the listed files and the two roadmap records the Roadmap impact names, installs neither `techne` nor a personal-configuration tool, puts no secret on a command line or in Git, uses `sudo` nowhere, and renames neither `direct-host` nor `agent-host`. The payload is validated on the workstation before anything is sent and again on the host before anything is written.
 
 ### Mini recap
 
