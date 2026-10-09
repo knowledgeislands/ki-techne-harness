@@ -10,14 +10,14 @@ blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-015]
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-08T08:55:00Z
+updated_at: 2026-10-09T19:00:00Z
 ---
 
 # Binding Shell at Rebuild
 
 ## Goal
 
-The agent host's `techne` user has the binding's chosen shell (zsh by default) as its login shell from the provider itself, so the guarded `.bashrc` hand-off can be retired.
+The agent host's `techne` user has the binding's chosen shell (zsh by default) as its login shell from the provider itself, so the guarded `.bashrc` hand-off can be retired. The same rebuild renames the host to `vega`.
 
 ## Context
 
@@ -25,9 +25,12 @@ The agent host's `techne` user has the binding's chosen shell (zsh by default) a
 
 On the AWS provider the stack creates `techne` with `/bin/bash`, hard-coded, and the user cannot `chsh`. A rebuild costs a fresh Tailscale key and removal of the old device, so no rebuild is made for this change alone.
 
+On 2026-10-09 Kris named the AWS agent host `vega` under his machine-naming convention: physical machines take solar-system names, peripherals are moons, and a non-physical host takes its own star system (Decision 29(a) in the Techne thread's decisions log). Setting the OS hostname needs root, which the `techne` user lacks, and a new Tailscale name means a new device, so the rename lands at the same rebuild. Until then the bundle carries no `target_host` (TECHNE-TOOLS-OPS-015).
+
 ## Boundary
 
 - In scope: the AWS stack's boot script creating the `techne` user with the binding's shell (default zsh) rather than a hard-coded one, passed through the provider's parameters; retiring the hand-off guard once a rebuilt host runs the binding's shell as its login shell; and the shell-path tests carried over from the pilot.
+- In scope: renaming the host to `vega` everywhere the name lives — the OS hostname, the Tailscale device name, the operator's SSH alias and its known_hosts file, the AWS `Name` tag, the binding's host name, and the personal bundle's manifest with its `target_host`. Parts owned by another repository, such as the binding and SSH configuration in chezmoi, go there as handoffs.
 - Out of scope: triggering a rebuild, which the binding owner runs; the binding field itself (TECHNE-TOOLS-OPS-019); a login-shell change for any other provider.
 
 ## Discussion
