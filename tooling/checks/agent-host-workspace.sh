@@ -82,15 +82,16 @@ stub "${host_home}/.local/bin/bun" 'if [[ -d node_modules ]]; then echo "Checked
 stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.161.0"'
 stub "${host_home}/.local/bin/claude" 'echo "2.2.0 (Claude Code)"'
 # rig status reports Codex drifted once a check asks it to, and the owner's
-# profile's ripgrep likewise; rig apply installs ripgrep once.
+# profile's ripgrep likewise; ripgrep is missing until rig apply installs it,
+# and like Rig the stub counts every applied tool as completed.
 stub "${host_home}/.local/bin/rig" "case \$1 in
   --version) echo 'rig 0.4.0' ;;
   apply) echo \"\$*\" >>'${state}/rig-apply.log'
     [[ \$* == 'apply --profile owner --scope tools' ]] || exit 2
-    completed=1; [[ -f '${state}/rig-applied' ]] && completed=0; touch '${state}/rig-applied'
-    echo \"Summary: planned=1 completed=\${completed} failed=0 skipped=0\" ;;
+    touch '${state}/rig-applied'
+    echo 'Summary: planned=1 completed=1 failed=0 skipped=0' ;;
   status) if [[ \$* == 'status --profile owner --format json' ]]; then
-      tool=present; [[ -f '${state}/owner-drift' ]] && tool=drifted
+      tool=missing; [[ -f '${state}/rig-applied' ]] && tool=present; [[ -f '${state}/owner-drift' ]] && tool=drifted
       echo \"{\\\"tools\\\":[{\\\"id\\\":\\\"ripgrep\\\",\\\"state\\\":\\\"\${tool}\\\"}]}\"
       [[ \${tool} == present ]]; exit
     fi

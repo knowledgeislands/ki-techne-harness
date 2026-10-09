@@ -619,12 +619,14 @@ if ${profile}; then
     changed "profile payload revision ${revision}"
   fi
 
-  # The owner's personal tools, through Rig's built-in providers only.
+  # The owner's personal tools, through Rig's built-in providers only. Rig
+  # counts a tool it re-verifies as completed, so the tools' state before the
+  # apply tells a change from none.
   rig_profile=$(jq -r '.rig.profile // empty' "${profile_dir}/manifest.json")
   if [[ -n ${rig_profile} ]]; then
+    before=$(RIG_PROGRESS=never RIG_OUTCOME=never "${rig}" status --profile "${rig_profile}" --format json 2>/dev/null </dev/null || true)
     if output=$(RIG_PROGRESS=never "${rig}" apply --profile "${rig_profile}" --scope tools 2>&1 </dev/null); then
-      completed=$(grep -o 'completed=[0-9]*' <<<"${output}" | tail -n 1 | cut -d= -f2)
-      if [[ ${completed:-0} != 0 ]]; then
+      if ! jq -e '(.tools | length > 0) and all(.tools[]; .state == "present")' >/dev/null 2>&1 <<<"${before}"; then
         changed "personal tools of Rig profile ${rig_profile}"
       fi
     else
