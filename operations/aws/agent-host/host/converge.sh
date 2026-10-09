@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Converge techne's workspace on the agent host to the declared state
-# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022). Runs on the host as techne, without sudo; setup.sh
-# stages and runs it from the Mac, and it also runs from the host's harness
-# clone. It prints each change and ends with "no changes" when there were none.
+# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022,
+# TECHNE-TOOLS-OPS-015). Runs on the host as techne, without sudo; setup.sh
+# stages and runs it from the operator's workstation, with the binding owner's
+# profile payload when one is supplied, and it also runs from the host's
+# harness clone, where it keeps the last applied payload's files. It prints
+# each change and ends with "no changes" when there were none.
 set -euo pipefail
 
 harness_id=knowledgeislands/ki-agentic-harness
@@ -42,13 +45,18 @@ workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
 # shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 repositories=${script_dir}/repositories.txt
-claude_source=${script_dir}/claude
+# The owner's techne/host-profile/v1 payload, staged here by setup.sh.
+profile_dir=${script_dir}/profile
+state_dir=${HOME}/.local/state/ki-agent-host
+applied_manifest=${state_dir}/profile-manifest.json
+# The interactive shell; a run without --shell keeps the last run's choice.
+shell_choice=$(cat "${state_dir}/shell" 2>/dev/null || echo zsh)
 pull=false
 git_name=''
 git_email=''
 
 usage() {
-  echo 'usage: converge.sh [--pull] [--git-name <name> --git-email <email>] [--repositories <file>]' >&2
+  echo 'usage: converge.sh [--pull] [--git-name <name> --git-email <email>] [--repositories <file>] [--shell bash|zsh]' >&2
   exit 2
 }
 
@@ -58,15 +66,34 @@ while (($#)); do
     --git-name) git_name=${2:?}; shift ;;
     --git-email) git_email=${2:?}; shift ;;
     --repositories) repositories=${2:?}; shift ;;
+    --shell) shell_choice=${2:?}; shift ;;
     *) usage ;;
   esac
   shift
 done
+case ${shell_choice} in bash | zsh) ;; *) usage ;; esac
+
+# The payload is checked again here before anything is written; a refused
+# payload, including one rendered for another host, stops the run unchanged.
+profile=false
+if [[ -d ${profile_dir} ]]; then
+  checked_workspace=${workspace}
+  # shellcheck disable=SC2088 # the validator reserves the workspace by its ~/ form.
+  [[ ${checked_workspace} == "${HOME}/"* ]] && checked_workspace="~/${checked_workspace#"${HOME}/"}"
+  if ! python3 "${script_dir}/profile-check.py" --os "${os}" --hostname "$(hostname)" --shell "${shell_choice}" \
+    --workspace "${checked_workspace}" --recipe-rig "${pins}" "${profile_dir}"; then
+    echo 'failed   profile payload refused; nothing was changed' >&2
+    exit 1
+  fi
+  profile=true
+fi
 
 env_file=${HOME}/.config/ki-agent-host/env.sh
 backup_dir=${HOME}/.local/state/ki-agent-host/backups/$(date -u +%Y%m%dT%H%M%SZ)
 block_start='# >>> ki-agent-host (TECHNE-TOOLS-OPS-011) >>>'
 block_end='# <<< ki-agent-host <<<'
+handoff_start='# >>> ki-agent-host hand-off (TECHNE-TOOLS-OPS-015) >>>'
+handoff_end='# <<< ki-agent-host hand-off <<<'
 
 changes=0
 skips=0
@@ -98,9 +125,9 @@ write_file() {
 # Remove this script's block and the blocks the hand set-up of 2026-10-07 left,
 # then squeeze blank lines.
 strip_managed() {
-  awk -v start="${block_start}" -v end="${block_end}" '
-    $0 == start { managed = 1; next }
-    $0 == end { managed = 0; next }
+  awk -v start="${block_start}" -v end="${block_end}" -v hstart="${handoff_start}" -v hend="${handoff_end}" '
+    $0 == start || $0 == hstart { managed = 1; next }
+    $0 == end || $0 == hend { managed = 0; next }
     $0 == "# ki-agent-host: mise shims (TECHNE-TOOLS-OPS-011)" { legacy = 1; next }
     $0 == "# end ki-agent-host: mise shims" { legacy = 0; next }
     managed || legacy { next }
@@ -111,14 +138,17 @@ strip_managed() {
 }
 
 # Put one block that sources the environment file at the top of a start-up file,
-# above Ubuntu's interactive-only return in .bashrc.
+# above Ubuntu's interactive-only return in .bashrc, followed by any extra
+# managed block given.
 source_block() {
-  local file=$1 rest content
+  local file=$1 extra=${2:-} rest content
   rest=''
   [[ -f ${file} ]] && rest=$(strip_managed "${file}")
   content="${block_start}
 [ -f \"\$HOME/.config/ki-agent-host/env.sh\" ] && . \"\$HOME/.config/ki-agent-host/env.sh\"
 ${block_end}"
+  [[ -n ${extra} ]] && content="${content}
+${extra}"
   [[ -n ${rest} ]] && content="${content}
 
 ${rest}"
@@ -132,9 +162,10 @@ ${rest}"
 # The quoted variables expand in the shells that source the file, not here.
 # shellcheck disable=SC2016
 env_content='# Agent-host shell environment, managed by ki-techne-harness
-# operations/aws/agent-host (TECHNE-TOOLS-OPS-011); rerun setup rather than
-# editing. ~/.profile, ~/.bashrc and husky'"'"'s init.sh source it, so login,
-# non-interactive and Git hook shells all find the pinned tools.
+# operations/aws/agent-host (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-015); rerun
+# setup rather than editing. ~/.profile, ~/.bashrc, husky'"'"'s init.sh and, for
+# zsh, ~/.zshenv source it, so login, non-interactive and Git hook shells all
+# find the pinned tools. It stays sourceable from any POSIX shell.
 case ":$PATH:" in *":$HOME/.local/share/mise/shims:"*) ;; *) PATH="$HOME/.local/share/mise/shims:$PATH" ;; esac
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
 export PATH
@@ -143,9 +174,15 @@ export PATH
 # kernel refuses on a 4 GB host without swap, so knip fails without this.
 export KNIP_DISABLE_RAW_TRANSFER=1
 
-# Interactive bash also gets mise'"'"'s hook, which applies repository [env].
-if [ -n "${BASH_VERSION:-}" ] && [ -z "${ki_agent_host_mise_active:-}" ] && [ -x "$HOME/.local/bin/mise" ]; then
-  case $- in *i*) ki_agent_host_mise_active=1; eval "$("$HOME/.local/bin/mise" activate bash)" ;; esac
+# Interactive bash and zsh also get mise'"'"'s hook, which applies repository [env].
+if [ -z "${ki_agent_host_mise_active:-}" ] && [ -x "$HOME/.local/bin/mise" ]; then
+  case $- in *i*)
+    if [ -n "${BASH_VERSION:-}" ]; then
+      ki_agent_host_mise_active=1; eval "$("$HOME/.local/bin/mise" activate bash)"
+    elif [ -n "${ZSH_VERSION:-}" ]; then
+      ki_agent_host_mise_active=1; eval "$("$HOME/.local/bin/mise" activate zsh)"
+    fi ;;
+  esac
 fi
 
 # An interactive session prints the expiry banner once, from the status cache.
@@ -194,6 +231,8 @@ ki_agent_host_banner() {
         [ "$days" -le 14 ] && echo "ki-agent-host: $label expires $value ($days days)" ;;
       drift)
         [ -n "$value" ] && echo "ki-agent-host: tools differ from the recipe pins: $value; rerun setup" ;;
+      personal)
+        [ -n "$value" ] && echo "ki-agent-host: personal tools differ from your profile: $value; rerun setup with your payload" ;;
       security)
         case $value$since in *[!0-9]*|"") continue ;; esac
         [ "$value" -gt 0 ] && [ $(( now - since )) -ge 86400 ] &&
@@ -212,9 +251,38 @@ banner_file=${HOME}/.config/ki-agent-host/banner.sh
 if write_file "${banner_file}" "${banner_content}"; then
   changed "${banner_file}"
 fi
+# The chosen shell (TECHNE-TOOLS-OPS-015): an interactive bash session hands
+# off to it as a login shell. A command (bash -c, or an SSH command) never
+# hands off, and KI_AGENT_HOST_NO_HANDOFF or the no-handoff file keeps bash, so
+# a broken personal start-up file cannot shut the operator out.
+handoff=''
+if [[ ${shell_choice} != bash ]]; then
+  if shell_path=$(command -v "${shell_choice}"); then
+    handoff="${handoff_start}
+case \$- in *i*)
+  if [ -z \"\${BASH_EXECUTION_STRING:-}\" ] && [ -z \"\${SSH_ORIGINAL_COMMAND:-}\" ] && [ -z \"\${KI_AGENT_HOST_NO_HANDOFF:-}\" ] && [ -z \"\${KI_AGENT_HOST_HANDED_OFF:-}\" ] &&
+    [ ! -e \"\$HOME/.config/ki-agent-host/no-handoff\" ] && [ -x '${shell_path}' ]; then
+    KI_AGENT_HOST_HANDED_OFF=1; export KI_AGENT_HOST_HANDED_OFF; exec '${shell_path}' -l
+  fi ;;
+esac
+${handoff_end}"
+  else
+    warn "${shell_choice} is not installed, so interactive sessions stay in bash; the provider installs it (TECHNE-TOOLS-OPS-017)"
+  fi
+fi
 source_block "${HOME}/.profile"
-source_block "${HOME}/.bashrc"
+source_block "${HOME}/.bashrc" "${handoff}"
 source_block "${HOME}/.config/husky/init.sh"
+if [[ ${shell_choice} == zsh ]]; then
+  source_block "${HOME}/.zshenv"
+elif [[ -f ${HOME}/.zshenv ]] && grep -qxF "${block_start}" "${HOME}/.zshenv"; then
+  # Back to bash: zsh no longer needs the block, and the rest is the owner's.
+  if write_file "${HOME}/.zshenv" "$(strip_managed "${HOME}/.zshenv")"; then
+    changed "${HOME}/.zshenv no longer sources the agent-host environment"
+  fi
+fi
+mkdir -p "${state_dir}"
+printf '%s\n' "${shell_choice}" >"${state_dir}/shell"
 if [[ -e ${HOME}/.ki-host-env ]]; then
   backup "${HOME}/.ki-host-env"
   rm -f "${HOME}/.ki-host-env"
@@ -448,15 +516,48 @@ fi
 # Host instructions and marker -------------------------------------------------------
 
 # The recipe's own rules reach both runtimes, with or without the owner's files.
+# Codex reads one global file, so ~/.codex/AGENTS.md is composed: the recipe's
+# rules first, then the owner's file from the payload under its own heading.
 instructions=$(cat "${recipe_dir}/host-instructions.md")
 header='<!-- Rendered by ki-techne-harness operations/aws/agent-host from recipes/direct-host/host-instructions.md; rerun setup rather than editing. -->'
-for target in "${HOME}/.claude/rules/ki-agent-host.md" "${HOME}/.codex/AGENTS.md"; do
-  if write_file "${target}" "${header}
+if write_file "${HOME}/.claude/rules/ki-agent-host.md" "${header}
 
 ${instructions}"; then
-    changed "${target}"
+  changed "${HOME}/.claude/rules/ki-agent-host.md"
+fi
+codex_owner=${state_dir}/profile-codex-AGENTS.md
+if ${profile}; then
+  if jq -e '.files[] | select(.path == ".codex/AGENTS.md")' "${profile_dir}/manifest.json" >/dev/null; then
+    mkdir -p "${state_dir}"
+    cp "${profile_dir}/home/.codex/AGENTS.md" "${codex_owner}.tmp.$$"
+    chmod "$(jq -r '.files[] | select(.path == ".codex/AGENTS.md") | .mode' "${profile_dir}/manifest.json")" "${codex_owner}.tmp.$$"
+    mv "${codex_owner}.tmp.$$" "${codex_owner}"
+  else
+    rm -f "${codex_owner}"
   fi
-done
+fi
+codex_content="${header}
+
+${instructions}"
+if [[ -f ${codex_owner} ]]; then
+  codex_content="${codex_content}
+
+# The binding owner's instructions
+
+<!-- From the binding owner's profile payload; edit its source on the operator's workstation and rerun setup. -->
+
+$(cat "${codex_owner}")"
+fi
+if write_file "${HOME}/.codex/AGENTS.md" "${codex_content}"; then
+  changed "${HOME}/.codex/AGENTS.md"
+fi
+# The composed file takes the owner's mode, such as 0600 for a private file.
+codex_mode=644
+[[ -f ${codex_owner} ]] && codex_mode=$(stat -c %a "${codex_owner}" 2>/dev/null || stat -f %Lp "${codex_owner}")
+if [[ $(stat -c %a "${HOME}/.codex/AGENTS.md" 2>/dev/null || stat -f %Lp "${HOME}/.codex/AGENTS.md") != "${codex_mode}" ]]; then
+  chmod "${codex_mode}" "${HOME}/.codex/AGENTS.md"
+  changed "${HOME}/.codex/AGENTS.md mode ${codex_mode}"
+fi
 
 # ODR-KI-ARCADIA-001: the operator's workstation checkout is the roadmap
 # writing checkout; KI-TOOL-CLI-115 has ki refuse roadmap writes where this is.
@@ -468,17 +569,71 @@ if write_file "${HOME}/.config/ki/host-marker" "${marker}"; then
   changed "${HOME}/.config/ki/host-marker"
 fi
 
-# Claude Code ------------------------------------------------------------------------
+# The binding owner's profile payload (TECHNE-TOOLS-OPS-015) ----------------------
 
-if [[ -d ${claude_source} ]]; then
-  for source in "${claude_source}"/*.md; do
-    target=${HOME}/.claude/$(basename "${source}")
-    if write_file "${target}" "$(cat "${source}")"; then
+# The payload's files, each written as this user with its mode. The composed
+# ~/.codex/AGENTS.md is written above.
+if ${profile}; then
+  while IFS=$'\t' read -r path mode; do
+    [[ ${path} == .codex/AGENTS.md ]] && continue
+    target=${HOME}/${path}
+    if write_file "${target}" "$(cat "${profile_dir}/home/${path}")"; then
       changed "${target}"
     fi
-  done
-else
-  skipped 'Claude instructions: not staged here; run setup.sh from the Mac'
+    if [[ $(stat -c %a "${target}" 2>/dev/null || stat -f %Lp "${target}") != "${mode#0}" ]]; then
+      chmod "${mode}" "${target}"
+      changed "${target} mode ${mode}"
+    fi
+  done < <(jq -r '.files[] | [.path, .mode] | @tsv' "${profile_dir}/manifest.json")
+
+  # Remove a path the source dropped only when the last applied payload
+  # installed it; anything else at that path is not this script's.
+  while IFS= read -r path; do
+    [[ -z ${path} || ${path} == .codex/AGENTS.md ]] && continue
+    target=${HOME}/${path}
+    if [[ -f ${target} ]] && jq -e --arg path "${path}" '.files[] | select(.path == $path)' "${applied_manifest}" >/dev/null 2>&1; then
+      backup "${target}"
+      rm -f "${target}"
+      changed "${target} removed, dropped from the profile"
+    fi
+  done < <(jq -r '.removed[]' "${profile_dir}/manifest.json")
+fi
+
+# The chezmoi cat path of TECHNE-TOOLS-OPS-011 rendered personal files into
+# ~/.claude with this header; one the payload does not deliver is removed, so a
+# run without a payload leaves the recipe layer alone.
+for target in "${HOME}"/.claude/*.md; do
+  [[ -f ${target} ]] || continue
+  head -n 1 "${target}" | grep -q "^<!-- Rendered for .* from the Mac's chezmoi source" || continue
+  backup "${target}"
+  rm -f "${target}"
+  changed "${target} removed, rendered by the retired chezmoi cat path"
+done
+
+if ${profile}; then
+  revision=$(jq -r '.revision' "${profile_dir}/manifest.json")
+  if ! cmp -s "${profile_dir}/manifest.json" "${applied_manifest}"; then
+    mkdir -p "${state_dir}"
+    cp "${profile_dir}/manifest.json" "${applied_manifest}.tmp.$$"
+    mv "${applied_manifest}.tmp.$$" "${applied_manifest}"
+    changed "profile payload revision ${revision}"
+  fi
+
+  # The owner's personal tools, through Rig's built-in providers only.
+  rig_profile=$(jq -r '.rig.profile // empty' "${profile_dir}/manifest.json")
+  if [[ -n ${rig_profile} ]]; then
+    if output=$(RIG_PROGRESS=never "${rig}" apply --profile "${rig_profile}" --scope tools 2>&1 </dev/null); then
+      completed=$(grep -o 'completed=[0-9]*' <<<"${output}" | tail -n 1 | cut -d= -f2)
+      if [[ ${completed:-0} != 0 ]]; then
+        changed "personal tools of Rig profile ${rig_profile}"
+      fi
+    else
+      printf '%s\n' "${output}" | tail -n 10 >&2
+      fail "rig apply --profile ${rig_profile}"
+    fi
+  fi
+elif [[ -f ${applied_manifest} ]]; then
+  skipped "profile payload: none staged; revision $(jq -r '.revision' "${applied_manifest}") stays applied"
 fi
 
 # KI keeps auto-memory off unless a repository opts in (ki-housekeeping-claude).

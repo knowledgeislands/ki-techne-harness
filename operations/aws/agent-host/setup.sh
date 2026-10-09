@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Converge techne's workspace on the agent host from the Mac (TECHNE-TOOLS-OPS-011).
-# Renders Kris's Claude instructions from chezmoi, stages them with the host
-# scripts over one SSH connection and runs host/converge.sh there. SSH only:
-# no AWS or Tailscale API call. Pass --pull to fast-forward clean checkouts.
+# Converge techne's workspace on the agent host from the operator's workstation
+# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-015). Stages the host scripts, the
+# recipe's files and, when AGENT_HOST_PROFILE names one, the binding owner's
+# validated profile payload over one SSH connection and runs host/converge.sh
+# there. SSH only: no AWS or Tailscale API call. Pass --pull to fast-forward
+# clean checkouts.
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # Binding values (recipes/direct-host/recipe.toml); each default is the agent-host binding's.
-host_name=${AGENT_HOST_NAME:-ki-techne-agent-host}
 host=${AGENT_HOST_TAILSCALE_NAME:-ki-techne-agent-host}
 repositories=${AGENT_HOST_REPOSITORIES:-${here}/host/repositories.txt}
 # Empty means the host default; a leading ~/ is expanded on the host.
 workspace=${KI_AGENT_HOST_WORKSPACE:-}
-# Person-specific, not a binding field: the ~/.claude files rendered for the host.
-read -r -a instructions <<<"${AGENT_HOST_INSTRUCTIONS:-CLAUDE.md communication.md delegation.md memory-scope.md markdown.md}"
-for name in "${instructions[@]}"; do
-  [[ ${name} =~ ^[A-Za-z0-9._-]+\.md$ ]] || { echo "AGENT_HOST_INSTRUCTIONS: ${name} is not a Markdown file name in ~/.claude" >&2; exit 2; }
-done
+# The owner's techne/host-profile/v1 payload directory; unset means none, and
+# the host gets the recipe layer alone.
+profile=${AGENT_HOST_PROFILE:-}
+shell_choice=${AGENT_HOST_SHELL:-zsh}
+case ${shell_choice} in
+  bash | zsh) ;;
+  *) echo "AGENT_HOST_SHELL: ${shell_choice} is not a supported shell (bash or zsh)" >&2; exit 2 ;;
+esac
 converge_args=()
 for argument in "$@"; do
   case ${argument} in
@@ -26,23 +30,29 @@ for argument in "$@"; do
   esac
 done
 
-command -v chezmoi >/dev/null || { echo 'chezmoi is required to render the Claude instructions' >&2; exit 1; }
+# The payload is validated here, before anything is sent, and again on the host.
+if [[ -n ${profile} ]]; then
+  [[ -d ${profile} ]] || { echo "AGENT_HOST_PROFILE: ${profile} is not a directory" >&2; exit 2; }
+  # shellcheck disable=SC2088 # the recipe default keeps its literal ~/ for the host.
+  python3 "${here}/host/profile-check.py" --shell "${shell_choice}" --workspace "${workspace:-~/workspaces/kit}" \
+    --recipe-rig "${here}/../../../recipes/direct-host/rig.toml" "${profile}" ||
+    { echo "AGENT_HOST_PROFILE: ${profile} is not a valid profile payload; nothing was sent" >&2; exit 1; }
+fi
+converge_args+=(--shell "${shell_choice}")
 converge_args+=(--git-name "$(git config --global user.name)" --git-email "$(git config --global user.email)")
 
 stage=$(mktemp -d)
 trap 'rm -rf "${stage}"' EXIT
-cp "${here}/host/converge.sh" "${here}/host/status.sh" "${stage}/"
+cp "${here}/host/converge.sh" "${here}/host/status.sh" "${here}/host/profile-check.py" "${stage}/"
 # The recipe's pins, their Rig provider and its own host instructions (TECHNE-TOOLS-OPS-014).
 cp "${here}/../../../recipes/direct-host/rig.toml" "${here}/../../../recipes/direct-host/rig-pins.sh" \
   "${here}/../../../recipes/direct-host/host-instructions.md" "${stage}/"
 cp "${repositories}" "${stage}/repositories.txt"
-mkdir "${stage}/claude"
-for name in "${instructions[@]}"; do
-  {
-    printf '<!-- Rendered for %s from the Mac'"'"'s chezmoi source by ki-techne-harness operations/aws/agent-host/setup.sh; edit the source on the Mac, not this copy. -->\n\n' "${host_name}"
-    chezmoi cat "${HOME}/.claude/${name}"
-  } >"${stage}/claude/${name}"
-done
+if [[ -n ${profile} ]]; then
+  mkdir "${stage}/profile"
+  cp -R "${profile}/manifest.json" "${stage}/profile/"
+  [[ -d ${profile}/home ]] && cp -R "${profile}/home" "${stage}/profile/"
+fi
 
 tar_flags=()
 tar --version 2>/dev/null | grep -q bsdtar && tar_flags=(--no-mac-metadata --no-xattrs)

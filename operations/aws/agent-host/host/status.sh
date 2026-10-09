@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Read-only report of work on the agent host that exists nowhere else, of what
 # expires and has drifted from the pins, and of OS updates (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022). Changes
+# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-015,
+# TECHNE-TOOLS-OPS-022). Changes
 # nothing but the cache the login banner reads; with --fetch it also updates
 # remote-tracking refs.
 #
@@ -13,7 +14,8 @@
 # declared repository, an undeclared one or a failed Git read is unknown.
 # --json prints one techne/host-workspace/v1 document instead of the table.
 # Pending updates and a required reboot are reported in its optional updates
-# member and never change the outcome or exit status.
+# member, and the applied profile payload and its personal-tool drift in its
+# optional profile member; neither changes the outcome or exit status.
 set -euo pipefail
 # An unexpected failure is a script failure, never a clean or at-risk outcome.
 trap 'exit 1' ERR
@@ -24,6 +26,7 @@ workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 # Text mode records what it finds here for the login banner.
 expiry_cache=${HOME}/.cache/ki-agent-host/expiry
+applied_manifest=${HOME}/.local/state/ki-agent-host/profile-manifest.json
 PATH="${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}"
 export GIT_TERMINAL_PROMPT=0
 
@@ -216,6 +219,24 @@ elif [[ -r ${sysroot}/System/Library/CoreServices/SystemVersion.plist ]]; then
   fi
 fi
 
+# The binding owner's profile payload (TECHNE-TOOLS-OPS-015): its revision
+# and, when it delivered a Rig fragment, the drift of that profile's tools.
+# profile_drift stays unset when Rig cannot read the profile.
+revision='' rig_profile='' profile_drift='' personal=()
+if [[ -f ${applied_manifest} ]]; then
+  revision=$(jq -r '.revision // empty' "${applied_manifest}" 2>/dev/null || true)
+  rig_profile=$(jq -r '.rig.profile // empty' "${applied_manifest}" 2>/dev/null || true)
+fi
+if [[ -n ${rig_profile} ]] && command -v rig >/dev/null &&
+  tools=$(RIG_PROGRESS=never RIG_OUTCOME=never rig status --profile "${rig_profile}" --format json 2>/dev/null </dev/null ||
+    [[ $? == 1 ]]) && jq -e '.tools | type == "array"' >/dev/null 2>&1 <<<"${tools}"; then
+  while IFS=$'\t' read -r tool state; do
+    personal+=("${tool}"$'\t'"${state}")
+    [[ ${state} == present ]] || profile_drift+="${profile_drift:+,}${tool}"
+  done < <(jq -r '.tools[] | [.id, .state] | @tsv' <<<"${tools}")
+  profile_drift=${profile_drift:-none}
+fi
+
 if [[ ${json} == true ]]; then
   # host.id is the provider-defined identity of the machine. On AWS it is the
   # instance ID, which cloud-init records readably for every user.
@@ -227,6 +248,7 @@ if [[ ${json} == true ]]; then
       --argjson fetched "${fetch}" --arg outcome "${outcome}" \
       --arg os "${os}" --arg pending "${pending}" --arg security "${security}" --arg reboot_required "${reboot_required}" \
       --arg reboot_since "${reboot_since}" --arg reboot_packages "${reboot_packages}" --arg livepatch "${livepatch}" \
+      --arg revision "${revision}" --arg rig_profile "${rig_profile}" --arg profile_drift "${profile_drift}" \
       'def known: if . == "" then null else . end;
        {schema: $schema, generated_at: $generated_at,
         host: {hostname: $hostname, id: ($host_id | known)},
@@ -237,7 +259,10 @@ if [[ ${json} == true ]]; then
           reboot_required: ($reboot_required | known | if . then . == "true" else . end),
           reboot_required_since: ($reboot_since | known),
           reboot_packages: (if $reboot_required == "true" then $reboot_packages | split("\n") | map(select(. != "")) else null end),
-          livepatch: ($livepatch | known)}}'
+          livepatch: ($livepatch | known)},
+        profile: (if $revision == "" then null else
+          {revision: $revision, rig_profile: ($rig_profile | known),
+           drift: (if $profile_drift == "" then null elif $profile_drift == "none" then [] else $profile_drift | split(",") end)} end)}'
   exit "${status}"
 fi
 
@@ -289,6 +314,27 @@ else
   done < <(jq -r '.tools[] | [.id, .state] | @tsv' <<<"${pins}")
 fi
 
+# The applied profile payload and its personal tools, reported apart from the
+# recipe's pins and never in the outcome.
+echo
+echo 'Profile'
+if [[ -z ${revision} ]]; then
+  printf '  %s\n' 'none applied (the host has the recipe layer alone)'
+else
+  printf '  %-24s %s\n' 'Revision' "${revision}"
+  if [[ -z ${rig_profile} ]]; then
+    printf '  %-24s %s\n' 'Personal tools' 'none delivered'
+  elif [[ -z ${profile_drift} ]]; then
+    printf '  %-24s %s\n' 'Personal tools' "unknown (rig status --profile ${rig_profile} failed)"
+  else
+    for row in ${personal[@]+"${personal[@]}"}; do
+      flag=''
+      [[ ${row#*$'\t'} == present ]] || flag='  DRIFT'
+      printf '  %-24s %s%s\n' "${row%%$'\t'*}" "${row#*$'\t'}" "${flag}"
+    done
+  fi
+fi
+
 echo
 echo 'Expiry'
 
@@ -337,8 +383,8 @@ esac
 printf '  %-24s %s\n' 'Reboot required' "${reboot}"
 printf '  %-24s %s\n' 'Livepatch' "${livepatch:-unknown}"
 
-# The banner's inputs: the dates, drift, security updates and when they were
-# checked. Pending security updates keep the time they were first seen, so the
+# The banner's inputs: the dates, drift, personal-tool drift, security updates
+# and when they were checked. Pending security updates keep the time they were first seen, so the
 # banner can say when they have waited past a day for the unattended run.
 security_since=''
 if [[ -n ${security} && ${security} != 0 ]]; then
@@ -346,8 +392,10 @@ if [[ -n ${security} && ${security} != 0 ]]; then
   [[ ${security_since} =~ ^[0-9]+$ ]] || security_since=$(date -u +%s)
 fi
 mkdir -p "$(dirname "${expiry_cache}")"
-printf 'checked %s\ngithub %s\ntailscale %s\ndrift %s\nsecurity %s %s\n' "$(date -u +%s)" "${github_date:--}" "${tailscale_date:--}" \
-  "${drift}" "${security:--}" "${security_since:--}" >"${expiry_cache}.tmp.$$"
+personal_drift=''
+[[ ${profile_drift} == none ]] || personal_drift=${profile_drift}
+printf 'checked %s\ngithub %s\ntailscale %s\ndrift %s\npersonal %s\nsecurity %s %s\n' "$(date -u +%s)" "${github_date:--}" \
+  "${tailscale_date:--}" "${drift}" "${personal_drift}" "${security:--}" "${security_since:--}" >"${expiry_cache}.tmp.$$"
 mv "${expiry_cache}.tmp.$$" "${expiry_cache}"
 
 echo

@@ -29,7 +29,10 @@ BINDING_SCHEMA = 'techne/host-binding/v1'
 RUNTIMES = {'direct'}
 NEUTRAL_FIELDS = {
     'host_name', 'tailscale_name', 'tailscale_tag', 'repositories', 'workspace', 'reboot_window', 'livepatch',
+    'profile', 'shell',
 }
+# The interactive shells the direct-host recipe supports (TECHNE-TOOLS-OPS-015).
+SHELLS = {'bash', 'zsh'}
 PROVIDER_FIELDS = {
     'aws': {
         'account', 'region', 'admin_profile', 'operator_profile', 'tag', 'stack_name',
@@ -63,6 +66,8 @@ def field_form_problem(field, value):
         return f'reboot_window must be a daily 24-hour HH:MM with no weekday, not {value!r}'
     if field == 'livepatch' and not isinstance(value, bool):
         return f'livepatch must be true or false, not {value!r}'
+    if field == 'shell' and value not in SHELLS:
+        return f'shell must be one of {", ".join(sorted(SHELLS))}, not {value!r}'
     return None
 
 
@@ -71,11 +76,16 @@ def is_harness_path(value):
 
 
 def neutral_strings(manifest):
-    """Yield (location, text) for every key and string value outside [providers]."""
+    """Yield (location, text) for every key and string value outside [providers].
+
+    A binding field's own name is the binding schema's, not a concept: the
+    neutral field `profile` is the owner's payload, not an AWS profile.
+    """
     def walk(location, value):
         if isinstance(value, dict):
             for key, item in value.items():
-                yield f'{location}.{key}', key
+                if not (location == 'parameters' and key in NEUTRAL_FIELDS):
+                    yield f'{location}.{key}', key
                 yield from walk(f'{location}.{key}', item)
         elif isinstance(value, list):
             for index, item in enumerate(value):

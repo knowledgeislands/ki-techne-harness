@@ -80,7 +80,7 @@ report = [
 summary = "Operating-system host name and resource name"
 default = "ki-techne-{name}"
 env = "AGENT_HOST_NAME"
-scripts = ["setup", "provision", "stop"]
+scripts = ["provision", "stop"]
 
 [parameters.tailscale_name]
 summary = "Tailnet device name, used as the SSH target"
@@ -118,6 +118,21 @@ summary = "Whether critical kernel fixes go live without a restart, through the 
 optional = true
 env = "AGENT_HOST_LIVEPATCH"
 scripts = ["provision"]
+
+# The binding owner's workstation layer (TECHNE-TOOLS-OPS-015). Optional:
+# absent means the host gets the recipe layer alone. The payload is a
+# techne/host-profile/v1 directory rendered on the operator's workstation.
+[parameters.profile]
+summary = "Directory of the binding owner's rendered host payload on the operator's workstation"
+optional = true
+env = "AGENT_HOST_PROFILE"
+scripts = ["setup"]
+
+[parameters.shell]
+summary = "Interactive shell sessions hand off to: bash or zsh"
+default = "zsh"
+env = "AGENT_HOST_SHELL"
+scripts = ["setup"]
 
 [providers.aws]
 summary = "One EC2 instance in its own VPC, built by a CloudFormation stack"
