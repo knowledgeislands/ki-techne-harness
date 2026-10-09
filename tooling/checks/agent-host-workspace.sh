@@ -4,9 +4,10 @@
 set -euo pipefail
 
 # Offline checks for the agent-host workspace scripts (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014). A temporary Mac home and host
-# home, local Git origins and stub ssh, chezmoi, curl, tailscale, mise, ki, rig,
-# bun, codex and claude stand in for the network and the host.
+# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022). A temporary
+# Mac home and host home, local Git origins and stub ssh, chezmoi, curl,
+# tailscale, mise, ki, rig, bun, codex and claude stand in for the network and
+# the host; an empty system root, or a fixture one, stands in for its OS.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 scripts=${repo_root}/operations/aws/agent-host
@@ -134,6 +135,9 @@ echo '{"theme":"dark"}' >"${host_home}/.claude/settings.json"
 echo '"claude-code",' >"${state}/ki-agents"
 
 export PATH="${stubs}:${PATH}"
+# The host's OS state is read under this root: empty unless a fixture fills it.
+export KI_AGENT_HOST_SYSROOT=${work}/sysroot
+mkdir -p "${KI_AGENT_HOST_SYSROOT}"
 setup() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/setup.sh" --pull 2>&1; }
 
 first=$(setup) || { echo "${first}" >&2; echo 'agent-host-workspace: first setup run failed' >&2; exit 1; }
@@ -239,7 +243,7 @@ ${report}"
 cache=${host_home}/.cache/ki-agent-host/expiry
 check 'grep -qx "tailscale ${soon}" "${cache}" && grep -qx "drift codex" "${cache}" && grep -qx "github -" "${cache}"' "status must cache the expiries and drift, got:
 $(cat "${cache}" 2>/dev/null)"
-check '[[ $(HOME=${host_home} bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null | jq -r "keys | join(\",\")") == "fetched,generated_at,host,outcome,problems,repositories,schema,workspace" ]]' 'status --json must keep its document unchanged'
+check '[[ $(HOME=${host_home} bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null | jq -r "keys | join(\",\")") == "fetched,generated_at,host,outcome,problems,repositories,schema,updates,workspace" ]]' 'status --json must keep its document, adding only the updates member'
 
 # The banner reads the cache and the clock alone: only date is on its PATH.
 quiet_path=${work}/quiet-path
@@ -313,6 +317,94 @@ code=0
 document=$(HOME=${host_home} KI_AGENT_HOST_WORKSPACE='~/nowhere' bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null) || code=$?
 check '[[ ${code} == 4 ]] && jq -e ".repositories == [] and (.problems | index(\"workspace ${host_home}/nowhere does not exist\"))" <<<"${document}" >/dev/null' "a missing workspace must make the outcome unknown, got ${code}:
 ${document}"
+
+# OS updates (TECHNE-TOOLS-OPS-022). Each fixture system root stands in for a
+# host's update state; none may change the outcome or exit status.
+host_status
+baseline_code=${code} baseline_outcome=$(jq -r .outcome <<<"${document}")
+check '[[ ${baseline_code} == 3 ]] && jq -e ".updates == {os: null, pending: null, security: null, reboot_required: null,
+  reboot_required_since: null, reboot_packages: null, livepatch: null}" <<<"${document}" >/dev/null' "an unreadable OS must report every update field unknown, got ${code}:
+${document}"
+ago() { date -d "@$(($(date +%s) - $1 * 86400))" +%Y%m%d%H%M 2>/dev/null || date -r "$(($(date +%s) - $1 * 86400))" +%Y%m%d%H%M; }
+# sysroot <name> <apt-check answer, or fail>: an Ubuntu root with Ubuntu Pro unattached.
+sysroot() {
+  local root=${work}/sysroots/$1
+  mkdir -p "${root}/etc" "${root}/usr/lib/update-notifier" "${root}/usr/bin" "${root}/var/run"
+  printf 'NAME="Ubuntu"\nID=ubuntu\nID_LIKE=debian\n' >"${root}/etc/os-release"
+  if [[ $2 == fail ]]; then
+    stub "${root}/usr/lib/update-notifier/apt-check" 'echo "E: apt cache is locked" >&2; exit 2'
+  else
+    stub "${root}/usr/lib/update-notifier/apt-check" "printf '%s' '$2' >&2"
+  fi
+  stub "${root}/usr/bin/pro" '[[ $* == "status --format json" ]] && echo "{\"attached\":false,\"services\":[{\"name\":\"livepatch\",\"status\":null}]}"'
+  echo "${root}"
+}
+# updates_case <name> <expected updates member as jq>
+updates_case() {
+  code=0 expected=$2
+  document=$(HOME=${host_home} KI_AGENT_HOST_SYSROOT=${work}/sysroots/$1 bash "${scripts}/host/status.sh" --json --repositories "${repositories}" 2>/dev/null) || code=$?
+  check '[[ ${code} == "${baseline_code}" ]] && jq -e ".outcome == \"${baseline_outcome}\" and .updates == (${expected})" <<<"${document}" >/dev/null' "the $1 fixture must report its updates without changing the outcome, got ${code}:
+$(jq -c .updates <<<"${document}" 2>/dev/null || echo "${document}")"
+}
+
+sysroot none '0;0' >/dev/null
+updates_case none '{os: "ubuntu", pending: 0, security: 0, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: "disabled"}'
+
+sysroot security '34;12' >/dev/null
+updates_case security '{os: "ubuntu", pending: 34, security: 12, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: "disabled"}'
+
+root=$(sysroot reboot '30;6')
+printf '*** System restart required ***\n' >"${root}/var/run/reboot-required"
+printf 'linux-base\nlibc6\nlinux-base\n' >"${root}/var/run/reboot-required.pkgs"
+touch -t "$(ago 3)" "${root}/var/run/reboot-required"
+since=$(date -u -r "${root}/var/run/reboot-required" +%Y-%m-%dT%H:%M:%SZ)
+updates_case reboot "{os: \"ubuntu\", pending: 30, security: 6, reboot_required: true, reboot_required_since: \"${since}\", reboot_packages: [\"libc6\", \"linux-base\"], livepatch: \"disabled\"}"
+
+root=$(sysroot livepatch '2;0')
+mkdir -p "${root}/snap/bin"
+stub "${root}/snap/bin/canonical-livepatch" '[[ $* == "status --format json" ]] && echo "{\"Status\":[{\"Livepatch\":{\"State\":\"applied\"}}]}"'
+updates_case livepatch '{os: "ubuntu", pending: 2, security: 0, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: "applied"}'
+
+root=$(sysroot no-pro '0;0')
+rm "${root}/usr/bin/pro"
+updates_case no-pro '{os: "ubuntu", pending: 0, security: 0, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: "unsupported"}'
+
+sysroot apt-fails fail >/dev/null
+updates_case apt-fails '{os: "ubuntu", pending: null, security: null, reboot_required: false, reboot_required_since: null, reboot_packages: null, livepatch: "disabled"}'
+
+# macOS reads the last scan's catalogue only, and has no reboot-required flag.
+root=${work}/sysroots/macos
+mkdir -p "${root}/System/Library/CoreServices" "${root}/usr/sbin"
+: >"${root}/System/Library/CoreServices/SystemVersion.plist"
+stub "${root}/usr/sbin/softwareupdate" '[[ $* == "--list --no-scan" ]] || exit 2
+printf "Software Update Tool\n\nSoftware Update found the following new or updated software:\n"
+printf "* Label: macOS Background Security Improvement (a)-26.1\n\tTitle: macOS Background Security Improvement (a), Version: 26.1, Size: 1024KiB, Recommended: YES, Action: restart,\n"
+printf "* Label: Command Line Tools for Xcode-26.1\n\tTitle: Command Line Tools for Xcode, Version: 26.1, Size: 900000KiB, Recommended: YES,\n"'
+updates_case macos '{os: "macos", pending: 2, security: 1, reboot_required: null, reboot_required_since: null, reboot_packages: null, livepatch: "unsupported"}'
+
+# The text report and the banner: a required reboot shows at login straight
+# from the flag, and security updates pending past a day from the cache.
+cache=${host_home}/.cache/ki-agent-host/expiry
+text=$(HOME=${host_home} KI_AGENT_HOST_SYSROOT=${work}/sysroots/reboot bash "${scripts}/host/status.sh" --repositories "${repositories}" 2>&1) || code=$?
+check '[[ ${code} == "${baseline_code}" && ${text} == *"Security updates"*"6  SECURITY"* && ${text} == *"Reboot required"*"yes, since ${since} (libc6 linux-base)  REBOOT REQUIRED"* && ${text} == *"OUTCOME=${baseline_outcome}"* ]]' "the text report must show the updates without changing the outcome, got ${code}:
+${text}"
+check '[[ $(awk "\$1 == \"security\" { print \$2 }" "${cache}") == 6 ]]' "status must cache the pending security updates, got:
+$(cat "${cache}")"
+shown=$(KI_AGENT_HOST_SYSROOT=${work}/sysroots/reboot banner)
+check '[[ ${shown} == *"reboot required for 3 days (linux-base libc6); run status, then stop and start the host through the provider"* && ${shown} != *"security updates pending"* ]]' "the banner must show a required reboot and no fresh security line, got:
+${shown}"
+first_seen=$(($(date -u +%s) - 2 * 86400))
+sed -i.bak "s/^security .*/security 6 ${first_seen}/" "${cache}" && rm -f "${cache}.bak"
+HOME=${host_home} KI_AGENT_HOST_SYSROOT=${work}/sysroots/security bash "${scripts}/host/status.sh" --repositories "${repositories}" >/dev/null 2>&1 || true
+check 'grep -qx "security 12 ${first_seen}" "${cache}"' "status must keep when security updates were first seen, got:
+$(cat "${cache}")"
+shown=$(KI_AGENT_HOST_SYSROOT=${work}/sysroots/security banner)
+check '[[ ${shown} == *"12 security updates pending for 2 days"* && ${shown} != *"reboot required"* ]]' "the banner must flag security updates pending past a day, got:
+${shown}"
+HOME=${host_home} KI_AGENT_HOST_SYSROOT=${work}/sysroots/none bash "${scripts}/host/status.sh" --repositories "${repositories}" >/dev/null 2>&1 || true
+check 'grep -qx "security 0 -" "${cache}" && [[ -z $(KI_AGENT_HOST_SYSROOT=${work}/sysroots/none banner) ]]' "with no updates the banner must stay quiet, got:
+$(KI_AGENT_HOST_SYSROOT=${work}/sysroots/none banner)"
+rm "${cache}"
 
 # A second binding's provider-neutral values, with no AWS variable set
 # (TECHNE-TOOLS-OPS-012): another SSH name, workspace and instruction set.

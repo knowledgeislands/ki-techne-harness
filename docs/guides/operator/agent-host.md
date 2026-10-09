@@ -40,6 +40,8 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | `tailscale_tag` | `tag:ki-techne-{name}` | `AGENT_HOST_TAILSCALE_TAG` | `provision.sh` |
 | `repositories` | `operations/aws/agent-host/host/repositories.txt` | `AGENT_HOST_REPOSITORIES` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
 | `workspace` | `~/workspaces/kit` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
+| `reboot_window` | optional | `AGENT_HOST_REBOOT_WINDOW` | `provision.sh` |
+| `livepatch` | optional | `AGENT_HOST_LIVEPATCH` | `provision.sh` |
 | `aws.account` | required | `EXPECTED_AWS_ACCOUNT` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.region` | required | `AWS_REGION` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.admin_profile` | required | `AWS_PROFILE` | `provision.sh`, `destroy.sh` |
@@ -269,6 +271,58 @@ The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the r
 The GitHub token expires 90 days after it is created and the Tailscale node key on its own schedule; the status report and the login banner warn within 14 days, so rotate the token as in [GitHub](#github) when either shows it. The banner knows only what the last text report found, which is why it also says when that report is more than 7 days old.
 
 To bump a pin, change its locator in `recipes/direct-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; `rig apply` comes later, under TECHNE-TOOLS-OPS-018.
+
+## Patching and restart
+
+The recipe declares one patching model in its `[patching]` table, and each provider supplies the mechanism in its own patching table (TECHNE-TOOLS-OPS-022):
+
+1. **Security updates install themselves.** Unattended upgrades install security updates only, daily; other updates wait for a rebuild or a deliberate upgrade.
+2. **Kernel fixes go live through Livepatch where the binding opts in.** With `livepatch = true`, the host attaches Ubuntu Pro at build and enables Livepatch, which applies critical kernel fixes without a restart. It narrows the need for a restart; it does not remove it.
+3. **The host restarts only at a window the binding chooses.** With no `reboot_window`, the default, the host never restarts itself: status and the login banner say when a restart is needed, and you restart it. With a window, a daily `HH:MM` in the host's time zone, such as `04:00`, the host restarts at that time only when a restart is required and nobody is logged in.
+
+Updates never change the status outcome or exit status; they are a signal, like expiries and pins.
+
+### On AWS
+
+The boot script writes `/etc/apt/apt.conf.d/20auto-upgrades` and `52ki-agent-host-unattended-upgrades`, which allow the `-security`, ESM apps and ESM infra security origins only and always set `Automatic-Reboot "false"`. With a window, it also installs `/usr/local/sbin/ki-agent-host-reboot` and a daily `ki-agent-host-reboot.timer`; the guard restarts only when `/var/run/reboot-required` exists and `who` lists nobody. `who` does not see a detached `tmux` session, so land work before the window if an agent is running unattended.
+
+`provision.sh` passes the binding's window and Livepatch choice to the stack's `RebootWindow` and `Livepatch` parameters, and refuses a window not in `HH:MM` form. For Livepatch, first store your Ubuntu Pro token as a SecureString, then build:
+
+```sh
+aws ssm put-parameter --profile knowledge-islands-techne --region eu-west-1 \
+  --name /ki/techne/agent-host/ubuntu-pro-token --type SecureString --value file:///dev/stdin
+```
+
+Type the token, then Ctrl-D. `provision.sh` refuses Livepatch when the parameter is missing. The boot script reads it through the instance role into a file under `/run`, attaches with `pro attach --attach-config` and removes the file, so the token never reaches a command line or the disk. Rebuild keeps the parameter; withdraw deletes it, and you detach the machine in the Ubuntu Pro dashboard. The boot script runs only at first boot, so a window or Livepatch reaches a host only at its next build.
+
+### Owned hosts
+
+An owned Linux host (TECHNE-TOOLS-OPS-021) meets the same contract through its distribution's unattended-update service and systemd: security-only origins, and the same daily reboot timer and guard only when a window is set, enabled at enrolment by its owner as root. On macOS, the owner enables automatic security responses and system files at enrolment; there is no automatic restart by default. FileVault holds a restarted Mac at the unlock screen unless the restart is authenticated with `fdesetup authrestart`, which needs the owner's credentials, so a Mac restarts only when its owner is there or has prepared that.
+
+### Reading updates
+
+The text report gains an Updates section: operating system, pending updates, security updates flagged `SECURITY`, whether a restart is required and since when, flagged `REBOOT REQUIRED` with the packages that need it, and the Livepatch state. `--json` adds an `updates` member to the `techne/host-workspace/v1` document:
+
+```json
+"updates": {"os": "ubuntu", "pending": 34, "security": 12, "reboot_required": false,
+  "reboot_required_since": null, "reboot_packages": null, "livepatch": "disabled"}
+```
+
+`null` means unknown. `livepatch` is the Livepatch client's state, such as `applied`, else `enabled` or `disabled` from Ubuntu Pro, or `unsupported` where neither exists. macOS reports pending and security updates from the last scan's catalogue, and `reboot_required` as `null` because it has no such flag.
+
+The login banner reads `/var/run/reboot-required` itself, so a required restart shows at the next login with its age and packages. It also warns when security updates have been pending for more than a day, which suggests unattended upgrades are failing; that line comes from the last text report.
+
+### Restart route
+
+To restart the host by hand, as the banner asks:
+
+1. Run [Status](#status) and land anything at risk; a restart ends every running session.
+2. With `assume knowledge-islands-techne-agent-host`, stop the host with `bash operations/aws/agent-host/stop.sh`, then start it with `techne host start`, or with `techne-agent-host --aws`, which starts a stopped host before connecting.
+3. Reconnect over Tailscale and run status again; the reboot line should be gone.
+
+The EBS volume persists the workspace, so the restart loses only running sessions. Stop and start rather than a reboot from the host: `techne` has no `sudo`.
+
+The current host keeps its build's settings: unattended security updates are on, automatic restart is off and there is no Livepatch. It gains the report and banner at your next `setup`, and a window or Livepatch only at its next build.
 
 ## A working session
 

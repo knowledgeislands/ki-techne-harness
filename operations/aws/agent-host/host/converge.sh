@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Converge techne's workspace on the agent host to the declared state
-# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014). Runs on the host as techne, without sudo; setup.sh
+# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022). Runs on the host as techne, without sudo; setup.sh
 # stages and runs it from the Mac, and it also runs from the host's harness
 # clone. It prints each change and ends with "no changes" when there were none.
 set -euo pipefail
@@ -155,20 +155,33 @@ case $- in *i*)
   fi ;;
 esac'
 
-# The banner reads only host/status.sh'"'"'s cache and the clock: no network or
-# credential call (ODR-KI-ARCADIA-001 expiries).
+# The banner reads only host/status.sh'"'"'s cache, the reboot-required flag and
+# the clock: no network or credential call (ODR-KI-ARCADIA-001 expiries,
+# TECHNE-TOOLS-OPS-022 updates).
 # shellcheck disable=SC2016
 banner_content='# Agent-host login banner, managed by ki-techne-harness
-# operations/aws/agent-host (TECHNE-TOOLS-OPS-014); rerun setup rather than
-# editing. Reads only the expiry cache host/status.sh writes.
+# operations/aws/agent-host (TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022); rerun
+# setup rather than editing. Reads only the cache host/status.sh writes and the
+# local reboot-required flag; KI_AGENT_HOST_SYSROOT serves the offline checks.
 ki_agent_host_banner() {
+  now=$(date -u +%s)
+  flag=${KI_AGENT_HOST_SYSROOT:-}/var/run/reboot-required
+  if [ -e "$flag" ]; then
+    packages=""
+    if [ -r "$flag.pkgs" ]; then
+      while read -r package; do
+        case " $packages " in *" $package "*) ;; *) packages="${packages:+$packages }$package" ;; esac
+      done <"$flag.pkgs"
+    fi
+    since=$(date -u -r "$flag" +%s 2>/dev/null) || since=$now
+    echo "ki-agent-host: reboot required for $(( (now - since) / 86400 )) days${packages:+ ($packages)}; run status, then stop and start the host through the provider"
+  fi
   cache=$HOME/.cache/ki-agent-host/expiry
   if [ ! -r "$cache" ]; then
     echo "ki-agent-host: expiries not checked yet; run status from the operator'"'"'s workstation"
     return 0
   fi
-  now=$(date -u +%s)
-  while read -r key value; do
+  while read -r key value since; do
     case $key in
       checked)
         age=$(( (now - value) / 86400 ))
@@ -181,6 +194,10 @@ ki_agent_host_banner() {
         [ "$days" -le 14 ] && echo "ki-agent-host: $label expires $value ($days days)" ;;
       drift)
         [ -n "$value" ] && echo "ki-agent-host: tools differ from the recipe pins: $value; rerun setup" ;;
+      security)
+        case $value$since in *[!0-9]*|"") continue ;; esac
+        [ "$value" -gt 0 ] && [ $(( now - since )) -ge 86400 ] &&
+          echo "ki-agent-host: $value security updates pending for $(( (now - since) / 86400 )) days; unattended upgrades may be failing" ;;
     esac
   done <"$cache"
   return 0

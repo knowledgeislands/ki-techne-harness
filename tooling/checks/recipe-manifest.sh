@@ -5,7 +5,8 @@ set -euo pipefail
 # against the first binding, and the check refuses copies of the direct-host
 # manifest that declare a field twice, omit one or name an AWS concept outside
 # [providers.aws], and a binding whose values the script defaults do not match,
-# and copies whose status contract or teardown operations are malformed.
+# copies whose status contract or teardown operations are malformed, and copies
+# or bindings whose patching declaration or reboot window is malformed.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 check=${repo_root}/tooling/checks/recipe-manifest.py
@@ -72,6 +73,25 @@ refuse 'a missing teardown operation' '[operations] must declare exactly rebuild
 
 mutate stop-reader 's = s.replace("env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\"]", "env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\", \"template\"]")'
 refuse 'a parameter naming a script that does not read it' 'does not read AGENT_HOST_TAILSCALE_NAME' "${work}/stop-reader.toml"
+
+# The patching intent and each provider's mechanism (TECHNE-TOOLS-OPS-022).
+mutate patching-missing 'import re; s = re.sub(r"\n\[providers\.aws\.patching\][^\[]*", "\n", s)'
+refuse 'a provider without a patching mechanism' '[providers.aws.patching] is required' "${work}/patching-missing.toml"
+
+mutate patching-scope 's = s.replace("unattended = \"security\"", "unattended = \"all\"")'
+refuse 'unattended updates beyond security' 'patching.unattended must be one of security' "${work}/patching-scope.toml"
+
+mutate window-default 's = s.replace("[parameters.reboot_window]\nsummary", "[parameters.reboot_window]\ndefault = \"Sun 04:00\"\nsummary").replace("optional = true\nenv = \"AGENT_HOST_REBOOT_WINDOW\"", "env = \"AGENT_HOST_REBOOT_WINDOW\"")'
+refuse 'a reboot window carrying a weekday' 'reboot_window must be a daily 24-hour HH:MM with no weekday' "${work}/window-default.toml"
+
+mutate window-both 's = s.replace("[parameters.reboot_window]\nsummary", "[parameters.reboot_window]\ndefault = \"04:00\"\nsummary")'
+refuse 'an optional parameter with a default' 'exactly one of required = true, a default or optional = true' "${work}/window-both.toml"
+
+{ echo 'reboot_window = "Sun 04:00"'; cat "${binding}"; } >"${work}/weekday-window.toml"
+refuse 'a binding window carrying a weekday' 'reboot_window must be a daily 24-hour HH:MM with no weekday' "${manifest}" "${work}/weekday-window.toml"
+
+{ echo 'livepatch = "yes"'; cat "${binding}"; } >"${work}/livepatch-string.toml"
+refuse 'a binding Livepatch that is not a boolean' 'livepatch must be true or false' "${manifest}" "${work}/livepatch-string.toml"
 
 sed 's/eu-west-1/eu-central-1/' "${binding}" >"${work}/other-region.toml"
 refuse 'a binding the script defaults do not match' 'the default of AWS_REGION must be the binding value' "${manifest}" "${work}/other-region.toml"

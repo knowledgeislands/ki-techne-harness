@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Read-only report of work on the agent host that exists nowhere else, and of
-# what expires and has drifted from the pins (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014). Changes nothing but the expiry
-# cache the login banner reads; with --fetch it also updates remote-tracking refs.
+# Read-only report of work on the agent host that exists nowhere else, of what
+# expires and has drifted from the pins, and of OS updates (TECHNE-TOOLS-OPS-011,
+# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022). Changes
+# nothing but the cache the login banner reads; with --fetch it also updates
+# remote-tracking refs.
 #
 # usage: status.sh [--json] [--fetch] [--repositories <file>] [--expect <path>]...
 #
@@ -11,6 +12,8 @@
 # itself failed. The inventory fails closed: a missing workspace, an absent
 # declared repository, an undeclared one or a failed Git read is unknown.
 # --json prints one techne/host-workspace/v1 document instead of the table.
+# Pending updates and a required reboot are reported in its optional updates
+# member and never change the outcome or exit status.
 set -euo pipefail
 # An unexpected failure is a script failure, never a clean or at-risk outcome.
 trap 'exit 1' ERR
@@ -166,6 +169,53 @@ else
   outcome=clean status=0
 fi
 
+# OS updates (TECHNE-TOOLS-OPS-022), from world-readable state only: no root,
+# no network and no package-list refresh. A reading that fails is null.
+# KI_AGENT_HOST_SYSROOT prefixes every system path, for the offline checks.
+sysroot=${KI_AGENT_HOST_SYSROOT:-}
+os='' pending='' security='' reboot_required='' reboot_since='' reboot_packages='' livepatch=''
+if [[ -r ${sysroot}/etc/os-release ]]; then
+  os=$(sed -n 's/^ID=//p' "${sysroot}/etc/os-release" | tr -d '"' || true)
+  family=$(sed -n 's/^ID_LIKE=//p' "${sysroot}/etc/os-release" | tr -d '"' || true)
+  # apt-check prints "<pending>;<security>" on standard error.
+  if [[ -x ${sysroot}/usr/lib/update-notifier/apt-check ]] &&
+    counts=$("${sysroot}/usr/lib/update-notifier/apt-check" 2>&1 >/dev/null) && [[ ${counts} =~ ^([0-9]+)\;([0-9]+)$ ]]; then
+    pending=${BASH_REMATCH[1]} security=${BASH_REMATCH[2]}
+  fi
+  # Debian-family hosts flag a required reboot in /var/run/reboot-required.
+  if [[ " ${os} ${family} " == *' debian '* || " ${os} ${family} " == *' ubuntu '* ]]; then
+    flag=${sysroot}/var/run/reboot-required
+    if [[ -e ${flag} ]]; then
+      reboot_required=true
+      reboot_since=$(date -u -r "${flag}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true)
+      reboot_packages=$(sort -u "${flag}.pkgs" 2>/dev/null || true)
+    else
+      reboot_required=false
+    fi
+  fi
+  # Livepatch: the client's patch state where it is installed and readable,
+  # else whether Ubuntu Pro has the service on; unsupported without either.
+  livepatch=unsupported
+  if [[ -x ${sysroot}/snap/bin/canonical-livepatch ]]; then
+    livepatch=$("${sysroot}/snap/bin/canonical-livepatch" status --format json 2>/dev/null |
+      jq -r '.Status[0].Livepatch.State // empty' 2>/dev/null || true)
+  fi
+  if [[ ${livepatch} == unsupported || -z ${livepatch} ]] && [[ -x ${sysroot}/usr/bin/pro ]]; then
+    livepatch=$("${sysroot}/usr/bin/pro" status --format json 2>/dev/null |
+      jq -r '[.services[]? | select(.name == "livepatch") | .status][0] | if . == "enabled" then "enabled" else "disabled" end' \
+        2>/dev/null || true)
+  fi
+elif [[ -r ${sysroot}/System/Library/CoreServices/SystemVersion.plist ]]; then
+  os=macos livepatch=unsupported
+  # The catalogue from the last scan; --no-scan never reaches the network.
+  if listing=$("${sysroot}/usr/sbin/softwareupdate" --list --no-scan 2>&1); then
+    read -r pending security < <(awk '
+      /^\* Label:/ { pending++; label = tolower($0); next }
+      /^[[:space:]]+Title:/ && label != "" { if (index(label tolower($0), "security")) security++; label = "" }
+      END { print pending + 0, security + 0 }' <<<"${listing}")
+  fi
+fi
+
 if [[ ${json} == true ]]; then
   # host.id is the provider-defined identity of the machine. On AWS it is the
   # instance ID, which cloud-init records readably for every user.
@@ -175,10 +225,19 @@ if [[ ${json} == true ]]; then
       --arg schema "${schema}" --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       --arg hostname "$(hostname)" --arg host_id "${host_id}" --arg workspace "${workspace}" \
       --argjson fetched "${fetch}" --arg outcome "${outcome}" \
-      '{schema: $schema, generated_at: $generated_at,
-        host: {hostname: $hostname, id: (if $host_id == "" then null else $host_id end)},
+      --arg os "${os}" --arg pending "${pending}" --arg security "${security}" --arg reboot_required "${reboot_required}" \
+      --arg reboot_since "${reboot_since}" --arg reboot_packages "${reboot_packages}" --arg livepatch "${livepatch}" \
+      'def known: if . == "" then null else . end;
+       {schema: $schema, generated_at: $generated_at,
+        host: {hostname: $hostname, id: ($host_id | known)},
         workspace: $workspace, fetched: $fetched, outcome: $outcome,
-        repositories: $repositories, problems: ($problems | split("\n") | map(select(. != "")))}'
+        repositories: $repositories, problems: ($problems | split("\n") | map(select(. != ""))),
+        updates: {os: ($os | known), pending: ($pending | known | if . then tonumber else . end),
+          security: ($security | known | if . then tonumber else . end),
+          reboot_required: ($reboot_required | known | if . then . == "true" else . end),
+          reboot_required_since: ($reboot_since | known),
+          reboot_packages: (if $reboot_required == "true" then $reboot_packages | split("\n") | map(select(. != "")) else null end),
+          livepatch: ($livepatch | known)}}'
   exit "${status}"
 fi
 
@@ -259,10 +318,36 @@ if command -v tailscale >/dev/null && status_json=$(tailscale status --json 2>/d
 fi
 printf '  %-24s %s\n' 'Tailscale node key' "${tailscale_expiry}"
 
-# The banner's only input: the dates, drift and when they were checked.
+# OS updates (TECHNE-TOOLS-OPS-022): a signal only, never the outcome.
+echo
+echo 'Updates'
+printf '  %-24s %s\n' 'Operating system' "${os:-unknown}"
+printf '  %-24s %s\n' 'Pending updates' "${pending:-unknown}"
+flag=''
+[[ -n ${security} && ${security} != 0 ]] && flag='  SECURITY'
+printf '  %-24s %s%s\n' 'Security updates' "${security:-unknown}" "${flag}"
+case ${reboot_required} in
+  true)
+    reboot="yes, since ${reboot_since:-an unknown time}"
+    [[ -n ${reboot_packages} ]] && reboot+=" ($(paste -sd ' ' - <<<"${reboot_packages}"))"
+    reboot+='  REBOOT REQUIRED: run status, then stop and start the host through the provider' ;;
+  false) reboot=no ;;
+  *) reboot=unknown ;;
+esac
+printf '  %-24s %s\n' 'Reboot required' "${reboot}"
+printf '  %-24s %s\n' 'Livepatch' "${livepatch:-unknown}"
+
+# The banner's inputs: the dates, drift, security updates and when they were
+# checked. Pending security updates keep the time they were first seen, so the
+# banner can say when they have waited past a day for the unattended run.
+security_since=''
+if [[ -n ${security} && ${security} != 0 ]]; then
+  security_since=$(awk '$1 == "security" && $2 ~ /^[1-9][0-9]*$/ { print $3 }' "${expiry_cache}" 2>/dev/null || true)
+  [[ ${security_since} =~ ^[0-9]+$ ]] || security_since=$(date -u +%s)
+fi
 mkdir -p "$(dirname "${expiry_cache}")"
-printf 'checked %s\ngithub %s\ntailscale %s\ndrift %s\n' "$(date -u +%s)" "${github_date:--}" "${tailscale_date:--}" "${drift}" \
-  >"${expiry_cache}.tmp.$$"
+printf 'checked %s\ngithub %s\ntailscale %s\ndrift %s\nsecurity %s %s\n' "$(date -u +%s)" "${github_date:--}" "${tailscale_date:--}" \
+  "${drift}" "${security:--}" "${security_since:--}" >"${expiry_cache}.tmp.$$"
 mv "${expiry_cache}.tmp.$$" "${expiry_cache}"
 
 echo

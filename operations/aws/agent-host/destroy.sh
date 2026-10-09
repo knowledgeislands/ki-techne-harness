@@ -7,8 +7,8 @@ set -euo pipefail
 #   destroy.sh rebuild  [--discard <repository>... | --discard-unreadable-host]
 #   destroy.sh withdraw [--discard <repository>... | --discard-unreadable-host]
 #
-# rebuild deletes the stack only, keeping the github-token and model-api-key
-# parameters for the next build; withdraw deletes the stack and every
+# rebuild deletes the stack only, keeping the github-token, model-api-key and
+# any ubuntu-pro-token parameters for the next build; withdraw deletes the stack and every
 # parameter, then lists the footprint left to remove by hand. Both refuse
 # unless the host's status is clean: --discard must name exactly the
 # repositories at risk, and --discard-unreadable-host, for a host whose status
@@ -171,12 +171,13 @@ fi
 aws ssm delete-parameters \
   --profile "${profile}" \
   --region "${region}" \
-  --names "${parameter_prefix}/tailscale-auth-key" "${parameter_prefix}/github-token" "${parameter_prefix}/model-api-key" \
+  --names "${parameter_prefix}/tailscale-auth-key" "${parameter_prefix}/github-token" "${parameter_prefix}/model-api-key" "${parameter_prefix}/ubuntu-pro-token" \
   --output json
 cat <<EOF
 Withdrawn. Remove by hand what remains:
   - the tailnet device ${AGENT_HOST_TAILSCALE_NAME}, its tag, tag owner, grant and ssh rule, and any unused auth key;
   - the GitHub token and any model API key issued for the host, revoked where they were issued;
+  - any Ubuntu Pro attachment, detached from the host's machine in the Ubuntu Pro dashboard;
   - the operator role and its inline policy, and the operator profile;
   - the SSH and editor entries for the host.
 EOF

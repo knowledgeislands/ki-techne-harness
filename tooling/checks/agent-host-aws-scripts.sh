@@ -99,6 +99,17 @@ deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
 check '[[ ${deploy} == "AWS_PROFILE=knowledge-islands-techne cloudformation deploy --region eu-west-1 --stack-name ki-techne-agent-host "* ]]' "provision.sh must deploy ki-techne-agent-host in eu-west-1 with the admin profile, got: ${deploy}"
 check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020" ]]' "provision.sh must pass the agent-host values, got: ${deploy}"
 check 'log | grep -qF "Values=/ki/techne/agent-host/tailscale-auth-key"' 'provision.sh must look for the agent-host auth key'
+check '! log | grep -qF ubuntu-pro-token' 'provision.sh must not look for an Ubuntu Pro token without Livepatch'
+
+# Patching (TECHNE-TOOLS-OPS-022): a reboot window and Livepatch pass through
+# as overrides, Livepatch needs the Ubuntu Pro token, and a bad window is refused.
+run provision.sh -- AGENT_HOST_REBOOT_WINDOW=04:00 AGENT_HOST_LIVEPATCH=true || { out >&2; exit 1; }
+deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
+check '[[ ${deploy} == *" VolumeSize=40 RebootWindow=04:00 Livepatch=true --tags "* ]]' "provision.sh must pass the patching values, got: ${deploy}"
+check 'log | grep -qF "Values=/ki/techne/agent-host/ubuntu-pro-token"' 'provision.sh must look for the Ubuntu Pro token with Livepatch'
+for bad in AGENT_HOST_REBOOT_WINDOW=4:00 "AGENT_HOST_REBOOT_WINDOW=Sun 04:00" AGENT_HOST_LIVEPATCH=yes; do
+  check '! run provision.sh -- "${bad}" && ! log | grep -qF "cloudformation deploy"' "provision.sh must refuse ${bad}"
+done
 
 # stop.sh: reads the status with a short connect timeout, warns, and always stops.
 run stop.sh || { out >&2; exit 1; }
@@ -145,7 +156,7 @@ check 'out | grep -qF usage && [[ ! -s ${work}/aws.log ]]' 'destroy.sh must refu
 run destroy.sh withdraw -- "${confirm}" || { out >&2; exit 1; }
 check 'log | grep -qE "^ssh -o ConnectTimeout=10 .* ki-techne-agent-host bash -s -- --json --expect "' "withdraw must read the status first, got: $(log)"
 check 'log | grep -qF "cloudformation delete-stack --profile knowledge-islands-techne --region eu-west-1 --stack-name ki-techne-agent-host"' 'withdraw must delete the agent-host stack'
-check 'log | grep -qF -- "--names /ki/techne/agent-host/tailscale-auth-key /ki/techne/agent-host/github-token /ki/techne/agent-host/model-api-key"' 'withdraw must delete every agent-host parameter'
+check 'log | grep -qF -- "--names /ki/techne/agent-host/tailscale-auth-key /ki/techne/agent-host/github-token /ki/techne/agent-host/model-api-key /ki/techne/agent-host/ubuntu-pro-token"' 'withdraw must delete every agent-host parameter'
 check 'out | grep -qF "the operator role and its inline policy"' 'withdraw must list the manual footprint'
 
 run destroy.sh rebuild -- "${confirm}" || { out >&2; exit 1; }

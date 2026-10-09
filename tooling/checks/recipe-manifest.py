@@ -10,7 +10,10 @@ concept; harness paths are locations, not concepts, and are exempt. Every
 script a parameter names must read its environment variable. The [status]
 table declares the host-workspace report schema and an exit status for each
 outcome; each [operations.<name>] entry names an operation of a declared
-script. With --binding,
+script. The [patching] table declares the OS patching intent once, and each
+supported provider must give its mechanism under [providers.<provider>.patching]
+(TECHNE-TOOLS-OPS-022). A parameter is required, has a default or is optional;
+a reboot window is a daily 24-hour HH:MM with no weekday. With --binding,
 each script's default for that variable must equal the binding's resolved
 value, so running a script with no binding behaves as that binding would.
 """
@@ -24,7 +27,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = 'techne/recipe/v1'
 BINDING_SCHEMA = 'techne/host-binding/v1'
 RUNTIMES = {'direct'}
-NEUTRAL_FIELDS = {'host_name', 'tailscale_name', 'tailscale_tag', 'repositories', 'workspace'}
+NEUTRAL_FIELDS = {
+    'host_name', 'tailscale_name', 'tailscale_tag', 'repositories', 'workspace', 'reboot_window', 'livepatch',
+}
 PROVIDER_FIELDS = {
     'aws': {
         'account', 'region', 'admin_profile', 'operator_profile', 'tag', 'stack_name',
@@ -34,15 +39,31 @@ PROVIDER_FIELDS = {
 STATUS_SCHEMA = 'techne/host-workspace/v1'
 STATUS_EXITS = {'clean', 'failed', 'at-risk', 'unknown', 'unreachable'}
 OPERATIONS = {'rebuild', 'withdraw'}
-TOP_KEYS = {'schema', 'name', 'summary', 'runtime', 'paths', 'status', 'operations', 'parameters', 'footprint', 'providers'}
-PROVIDER_KEYS = {'summary', 'paths', 'parameters', 'selectors', 'tags', 'footprint'}
-PARAMETER_KEYS = {'summary', 'required', 'default', 'env', 'scripts'}
+TOP_KEYS = {
+    'schema', 'name', 'summary', 'runtime', 'paths', 'status', 'operations', 'patching', 'parameters', 'footprint',
+    'providers',
+}
+PROVIDER_KEYS = {'summary', 'paths', 'parameters', 'selectors', 'tags', 'footprint', 'patching'}
+PARAMETER_KEYS = {'summary', 'required', 'default', 'optional', 'env', 'scripts'}
+# The patching intent (TECHNE-TOOLS-OPS-022): the value each key may declare.
+PATCHING_INTENT = {'unattended': {'security'}, 'livepatch': {'opt-in'}, 'reboot': {'window'}}
+PATCHING_KEYS = set(PATCHING_INTENT) | {'report'}
+REBOOT_WINDOW = re.compile(r'^([01][0-9]|2[0-3]):[0-5][0-9]$')
 AWS_CONCEPT = re.compile(
     r'\b(aws|amazon|ec2|cloudformation|ssm|iam|vpc|ebs|ami|s3|arn|stack|account|region|profile)\b',
     re.IGNORECASE,
 )
 PLACEHOLDER = re.compile(r'\{([^{}]+)\}')
 ENV_NAME = re.compile(r'^[A-Z][A-Z0-9_]*$')
+
+
+def field_form_problem(field, value):
+    """The problem with a binding or default value of a field that has a fixed form, else None."""
+    if field == 'reboot_window' and not (isinstance(value, str) and REBOOT_WINDOW.match(value)):
+        return f'reboot_window must be a daily 24-hour HH:MM with no weekday, not {value!r}'
+    if field == 'livepatch' and not isinstance(value, bool):
+        return f'livepatch must be true or false, not {value!r}'
+    return None
 
 
 def is_harness_path(value):
@@ -164,6 +185,34 @@ def check_manifest(path):
         elif not all(isinstance(code, int) and 0 <= code <= 255 for code in exits.values()) or len(set(exits.values())) != len(exits):
             fail('status.exit must give each outcome its own exit status from 0 to 255')
 
+    patching = manifest.get('patching')
+    if not isinstance(patching, dict):
+        fail('[patching] is required')
+    else:
+        for key in sorted(patching.keys() ^ PATCHING_KEYS):
+            fail(f'unknown key patching.{key}' if key in patching else f'patching.{key} is required')
+        for key, allowed in PATCHING_INTENT.items():
+            if key in patching and patching[key] not in allowed:
+                fail(f'patching.{key} must be one of {", ".join(sorted(allowed))}')
+        report = patching.get('report')
+        if 'report' in patching and (not isinstance(report, list) or not report
+                                     or not all(isinstance(item, str) and item for item in report)
+                                     or len(set(report)) != len(report)):
+            fail('patching.report must list distinct field names')
+    for name, table in providers.items():
+        mechanism = table.get('patching')
+        if not isinstance(mechanism, dict):
+            fail(f'[providers.{name}.patching] is required')
+            continue
+        for key in sorted(mechanism.keys() ^ PATCHING_KEYS):
+            fail(f'unknown key providers.{name}.patching.{key}' if key in mechanism
+                 else f'providers.{name}.patching.{key} is required')
+        for key, value in mechanism.items():
+            if not isinstance(value, str) or not value:
+                fail(f'providers.{name}.patching.{key} must name the mechanism')
+            else:
+                check_template(f'providers.{name}.patching.{key}', value, name)
+
     operations = manifest.get('operations')
     if not isinstance(operations, dict) or operations.keys() != OPERATIONS:
         fail(f'[operations] must declare exactly {", ".join(sorted(OPERATIONS))}')
@@ -188,8 +237,11 @@ def check_manifest(path):
                 continue
             for key in sorted(parameter.keys() - PARAMETER_KEYS):
                 fail(f'unknown key {where}.{key}')
-            if (parameter.get('required') is True) == ('default' in parameter):
-                fail(f'{where} must be either required = true or have a default')
+            kinds = [parameter.get('required') is True, 'default' in parameter, parameter.get('optional') is True]
+            if kinds.count(True) != 1:
+                fail(f'{where} must be exactly one of required = true, a default or optional = true')
+            if 'default' in parameter and field_form_problem(field, parameter['default']):
+                fail(f'{where}.default: {field_form_problem(field, parameter["default"])}')
             if isinstance(parameter.get('default'), str):
                 check_template(f'{where}.default', parameter['default'], provider)
             env, listed = parameter.get('env'), parameter.get('scripts', [])
@@ -275,15 +327,22 @@ def check_binding_defaults(binding_path, manifest, providers, scripts):
     if len(chosen) != 1 or chosen[0] not in providers:
         return [f'{binding_path}: a binding needs exactly one provider table that the recipe supports']
     provider = chosen[0]
+    failures = []
+    for field in NEUTRAL_FIELDS:
+        if field in binding and field_form_problem(field, binding[field]):
+            failures.append(f'{binding_path}: {field_form_problem(field, binding[field])}')
+    if failures:
+        return failures
     values = resolve(binding, provider, manifest, providers)
 
-    failures = []
     sections = [('', manifest.get('parameters', {})), (provider, providers[provider].get('parameters', {}))]
     for owner, parameters in sections:
         for field, parameter in parameters.items():
             env, value = parameter.get('env'), values[f'{owner}.{field}' if owner else field]
             if env is None or value is None:
                 continue
+            if isinstance(value, bool):
+                value = 'true' if value else 'false'
             for script in parameter.get('scripts', []):
                 relative = scripts[script][1]
                 body = (ROOT / relative).read_text(encoding='utf-8')

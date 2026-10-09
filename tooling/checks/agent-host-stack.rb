@@ -3,6 +3,7 @@
 # Offline structural checks for the agent-host stack. CloudFormation short-form
 # tags (!Ref, !Sub) load as their plain values, which is sufficient here.
 
+require 'fileutils'
 require 'open3'
 require 'tmpdir'
 require 'tempfile'
@@ -81,13 +82,15 @@ check.call(instance.fetch('NetworkInterfaces').all? { |nic| nic['GroupSet'] == [
            'instance must use only the agent-host security group')
 
 # Every ${...} in the Fn::Sub body must name a parameter or pseudo parameter;
-# shell variables are written without braces.
+# shell variables are written without braces, and ${!name} renders as a literal ${name}.
 user_data = instance.dig('UserData', 'Fn::Base64')
 pseudo = { 'AWS::Region' => 'eu-west-1', 'AWS::AccountId' => '000000000000', 'AWS::Partition' => 'aws' }
 render = lambda do |overrides = {}|
   user_data.gsub(/\$\{([^}]+)\}/) do
     name = Regexp.last_match(1)
-    if pseudo.key?(name)
+    if name.start_with?('!')
+      "${#{name[1..]}}"
+    elsif pseudo.key?(name)
       pseudo[name]
     elsif parameters.key?(name)
       overrides.fetch(name) { parameters.dig(name, 'Default') }.to_s
@@ -151,6 +154,133 @@ if helper
     end
     check.call(!File.exist?(log), 'credential helper must not read the token for other hosts or actions')
   end
+end
+
+# OS patching (TECHNE-TOOLS-OPS-022). The window is a daily 24-hour HH:MM or
+# empty; CloudFormation matches AllowedPattern against the whole value.
+window_pattern = Regexp.new("\\A(?:#{parameters.dig('RebootWindow', 'AllowedPattern')})\\z")
+check.call(parameters.dig('RebootWindow', 'Default') == '' && parameters.dig('Livepatch', 'Default') == 'false',
+           'RebootWindow must default to none and Livepatch to off')
+check.call(['', '04:00', '23:59', '00:00'].all? { |value| window_pattern.match?(value) },
+           'RebootWindow must accept a daily HH:MM or empty')
+check.call(['Sun 04:00', 'Sun 04:00:00', '24:00', '4:00', '04:00:00', '*-*-* 04:00'].none? { |value| window_pattern.match?(value) },
+           'RebootWindow must reject a weekday, seconds or an invalid time')
+check.call(parameters.dig('Livepatch', 'AllowedValues') == %w[false true], 'Livepatch must be false or true')
+
+origins = rendered[%r{^Unattended-Upgrade::Allowed-Origins \{\n(.*?)^\};$}m, 1].to_s.lines.map(&:strip)
+check.call(origins == ['"${distro_id}:${distro_codename}-security";', '"${distro_id}ESMApps:${distro_codename}-apps-security";',
+                       '"${distro_id}ESM:${distro_codename}-infra-security";'],
+           "unattended upgrades must allow security origins only, got #{origins.inspect}")
+check.call(rendered.include?("#clear Unattended-Upgrade::Allowed-Origins;\n#clear Unattended-Upgrade::Origins-Pattern;"),
+           'the security-only origins must replace the image defaults')
+check.call(rendered.include?('APT::Periodic::Unattended-Upgrade "1";') && rendered.include?('APT::Periodic::Update-Package-Lists "1";'),
+           'user data must enable the daily list update and unattended upgrade')
+check.call(rendered.scan(/Automatic-Reboot\b.*$/) == ['Automatic-Reboot "false";'],
+           'unattended upgrades must never reboot the host themselves')
+check.call(!user_data.match?(/amazon-ssm-agent\.service.*enable|PatchManager|AWS-RunPatchBaseline/), 'patching must not use SSM')
+
+# run_block <name> <rendered> <pattern> <paths> <stubs>: runs one block of the
+# user data in a temporary root, its system paths moved there and its commands
+# stubbed to log their arguments; returns the root and the stub log. The
+# boot script's key_file is set by then, so the block may name it.
+run_block = lambda do |name, text, pattern, paths, stubs, env = {}|
+  block = text[pattern]
+  check.call(!block.nil?, "user data must hold the #{name} block")
+  next [nil, ''] unless block
+
+  root = Dir.mktmpdir("agent-host-#{name.tr(' ', '-')}")
+  bin = File.join(root, 'bin')
+  Dir.mkdir(bin)
+  log = File.join(root, 'stub.log')
+  stubs.each do |command, body|
+    File.write(File.join(bin, command), "#!/usr/bin/env bash\necho \"#{command} $*\" >>'#{log}'\n#{body}\n")
+    File.chmod(0o755, File.join(bin, command))
+  end
+  block = block.gsub('/snap/bin/aws', 'aws')
+  paths.each do |path|
+    FileUtils.mkdir_p(File.join(root, path))
+    block = block.gsub(path, File.join(root, path))
+  end
+  output, status = Open3.capture2e(env.merge('PATH' => "#{bin}:/usr/bin:/bin", 'key_file' => File.join(root, 'key')),
+                                   'bash', '-c', "set -euo pipefail\n#{block}")
+  check.call(status.success?, "the #{name} block must run:\n#{output}")
+  [root, File.exist?(log) ? File.read(log) : '']
+end
+
+# The reboot timer exists only with a window, fires daily at it, and its
+# service restarts only when a reboot is required and who lists no session.
+reboot_block = /^reboot_window=.*?\nif \[\[ -n \$reboot_window \]\]; then\n.*?enable --now ki-agent-host-reboot\.timer\nfi$/m
+unit_paths = ['/usr/local/sbin', '/etc/systemd/system']
+root, calls = run_block.call('reboot window', rendered, reboot_block, unit_paths, { 'systemctl' => '', 'chmod' => '' })
+check.call(root && Dir.glob(File.join(root, '{usr,etc}', '**', 'ki-agent-host-reboot*')).empty? && calls.empty?,
+           'with no window, user data must install no reboot timer')
+FileUtils.rm_rf(root) if root
+windowed = render.call('RebootWindow' => '04:00')
+root, calls = run_block.call('reboot window', windowed, reboot_block, unit_paths, { 'systemctl' => '', 'chmod' => '' })
+if root
+  timer = File.read(File.join(root, '/etc/systemd/system/ki-agent-host-reboot.timer')) rescue ''
+  check.call(timer.lines.grep(/^OnCalendar=/) == ["OnCalendar=*-*-* 04:00:00\n"],
+             "the reboot timer must fire daily at the window, got #{timer.inspect}")
+  check.call(timer.include?('WantedBy=timers.target') && !timer.match?(/Persistent=true/),
+             'the reboot timer must be enabled and must not catch up on a missed window')
+  check.call(calls.include?('systemctl enable --now ki-agent-host-reboot.timer'), "the reboot timer must be enabled, got #{calls.inspect}")
+  service = File.read(File.join(root, '/etc/systemd/system/ki-agent-host-reboot.service')) rescue ''
+  check.call(service.include?("ExecStart=#{root}/usr/local/sbin/ki-agent-host-reboot\n"), 'the reboot service must run the guard')
+  FileUtils.rm_rf(root)
+end
+
+guard = windowed[/<<'REBOOT'\n(.*?)^REBOOT$/m, 1]
+check.call(!guard.nil?, 'user data must install the reboot guard')
+if guard
+  Dir.mktmpdir('agent-host-reboot-guard') do |dir|
+    bin = File.join(dir, 'bin')
+    Dir.mkdir(bin)
+    log = File.join(dir, 'systemctl.log')
+    File.write(File.join(bin, 'systemctl'), "#!/usr/bin/env bash\necho \"$*\" >>'#{log}'\n")
+    File.write(File.join(bin, 'who'), "#!/usr/bin/env bash\ncat '#{dir}/who' 2>/dev/null || true\n")
+    [File.join(bin, 'systemctl'), File.join(bin, 'who')].each { |stub| File.chmod(0o755, stub) }
+    flag = File.join(dir, 'reboot-required')
+    script = File.join(dir, 'ki-agent-host-reboot')
+    File.write(script, guard.gsub('/var/run/reboot-required', flag))
+    File.chmod(0o755, script)
+    output, status = Open3.capture2e('shellcheck', '--shell=bash', script)
+    check.call(status.success?, "reboot guard fails shellcheck:\n#{output}")
+    attempt = lambda do
+      File.delete(log) if File.exist?(log)
+      Open3.capture2e({ 'PATH' => "#{bin}:/usr/bin:/bin" }, script)
+      File.exist?(log) ? File.read(log) : ''
+    end
+    check.call(attempt.call.empty?, 'the guard must not restart when no reboot is required')
+    File.write(flag, "*** System restart required ***\n")
+    File.write(File.join(dir, 'who'), "techne   pts/0        2026-10-09 04:00 (100.64.0.1)\n")
+    check.call(attempt.call.empty?, 'the guard must not restart while who lists a session')
+    File.delete(File.join(dir, 'who'))
+    check.call(attempt.call == "reboot\n", 'the guard must restart when a reboot is required and nobody is logged in')
+  end
+end
+
+# Livepatch reads the Pro token only when on, into a file on /run, and attaches
+# from that file; the token never reaches a command line or disk.
+livepatch_block = /^livepatch=.*?\nif \[\[ \$livepatch == true \]\]; then\n.*?^fi$/m
+pro_stubs = {
+  'aws' => 'echo stub-pro-token',
+  'pro' => 'cp "$3" "$(dirname "$0")/../attach-config"'
+}
+root, calls = run_block.call('Livepatch', rendered, livepatch_block, ['/run/'], pro_stubs)
+check.call(root && calls.empty?, "with Livepatch off, user data must not read the Pro token or attach, got #{calls.inspect}")
+FileUtils.rm_rf(root) if root
+patched = render.call('Livepatch' => 'true')
+check.call(patched[livepatch_block].to_s.include?("mktemp /run/ki-agent-host-pro."), 'the Pro attach configuration must live on /run')
+root, calls = run_block.call('Livepatch', patched, livepatch_block, ['/run/'], pro_stubs)
+if root
+  check.call(calls.include?('aws ssm get-parameter --region eu-west-1 --name /ki/techne/agent-host/ubuntu-pro-token --with-decryption'),
+             "Livepatch must read the Pro token under ParameterPrefix, got #{calls.inspect}")
+  check.call(calls.match?(%r{^pro attach --attach-config \S*/run/ki-agent-host-pro\.\S+$}) && !calls.include?('pro attach stub-pro-token'),
+             "Livepatch must attach from the configuration file, got #{calls.inspect}")
+  attach = File.read(File.join(root, 'attach-config')) rescue ''
+  check.call(attach == "token: stub-pro-token\nenable_services:\n  - livepatch\n", "the attach configuration must enable Livepatch, got #{attach.inspect}")
+  check.call(Dir.glob(File.join(root, 'run', 'ki-agent-host-pro.*')).empty?, 'the attach configuration must be removed after attaching')
+  FileUtils.rm_rf(root)
 end
 
 Tempfile.create(['agent-host-user-data', '.sh']) do |file|

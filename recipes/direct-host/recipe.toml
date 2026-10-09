@@ -4,8 +4,8 @@
 # through the environment variable declared for it, and each script defaults
 # that variable to the first binding's (agent-host) value.
 #
-# Paths are relative to the harness checkout. A parameter is required, or has
-# a default; a default may be derived from the binding through placeholders:
+# Paths are relative to the harness checkout. A parameter is required, has a
+# default or is optional; a default may be derived from the binding through placeholders:
 # {name} is the binding name, {<field>} a provider-neutral field and
 # {<provider>.<field>} a field of the binding's provider table. Each
 # [providers.<provider>] table names a provider the recipe supports.
@@ -53,6 +53,29 @@ script = "destroy"
 summary = "Remove the host and every stored credential, then list what remains by hand"
 script = "destroy"
 
+# OS patching (TECHNE-TOOLS-OPS-022), declared once as intent; each provider
+# table gives its mechanism in its own patching table. Security
+# updates install unattended as root, set up when the host is built or
+# enrolled; the operator user never needs root for patching. Livepatch is
+# opt-in. A reboot happens only at the binding's daily reboot_window, and only
+# when one is required and nobody is logged in; with no window the host never
+# restarts itself, and the binding owner restarts it through the provider's
+# stop and start. The report fields are the status document's optional
+# `updates` member; they never change the outcome or the exit status.
+[patching]
+unattended = "security"
+livepatch = "opt-in"
+reboot = "window"
+report = [
+  "os",
+  "pending",
+  "security",
+  "reboot_required",
+  "reboot_required_since",
+  "reboot_packages",
+  "livepatch",
+]
+
 [parameters.host_name]
 summary = "Operating-system host name and resource name"
 default = "ki-techne-{name}"
@@ -82,6 +105,19 @@ summary = "Workspace root on the host; a leading ~/ is the operator's home there
 default = "~/workspaces/kit"
 env = "KI_AGENT_HOST_WORKSPACE"
 scripts = ["setup", "status", "stop", "destroy"]
+
+# Optional: absent means no automatic reboot and no Livepatch.
+[parameters.reboot_window]
+summary = "Daily host-local time, a 24-hour HH:MM, at which the host restarts itself when a reboot is required and nobody is logged in"
+optional = true
+env = "AGENT_HOST_REBOOT_WINDOW"
+scripts = ["provision"]
+
+[parameters.livepatch]
+summary = "Whether critical kernel fixes go live without a restart, through the provider's Livepatch where it has one"
+optional = true
+env = "AGENT_HOST_LIVEPATCH"
+scripts = ["provision"]
 
 [providers.aws]
 summary = "One EC2 instance in its own VPC, built by a CloudFormation stack"
@@ -155,6 +191,15 @@ summary = "Root volume size in GiB"
 default = 40
 env = "AGENT_HOST_VOLUME_SIZE"
 scripts = ["provision"]
+
+# The boot script sets patching up at build, so a change reaches a host only at
+# its next build. Ubuntu Pro is attached from the ubuntu-pro-token SecureString
+# only when livepatch is on; the binding owner stores it.
+[providers.aws.patching]
+unattended = "unattended-upgrades from /etc/apt/apt.conf.d/20auto-upgrades and 52ki-agent-host-unattended-upgrades: security origins only, Automatic-Reboot false"
+livepatch = "Ubuntu Pro attached from {aws.parameter_prefix}/ubuntu-pro-token with Livepatch enabled"
+reboot = "ki-agent-host-reboot.timer daily at the window, restarting only when /var/run/reboot-required exists and who lists no session"
+report = "apt-check counts, /var/run/reboot-required and its packages, and canonical-livepatch or pro status"
 
 # An instance is the binding's only when every selector matches.
 [providers.aws.selectors]
