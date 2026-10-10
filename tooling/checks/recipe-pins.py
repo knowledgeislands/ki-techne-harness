@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline check of the agent-host recipe's pin file (TECHNE-TOOLS-OPS-014).
+"""Offline check of the agent-host recipe's pin file.
 
 usage: recipe-pins.py <rig.toml>
 

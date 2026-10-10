@@ -1,4 +1,4 @@
-# Kris's first binding (KI-ARCADIA-GOV-025), rendered by chezmoi to
+# Kris's first binding, rendered by chezmoi to
 # ~/.config/techne/hosts/agent-host.toml. The script defaults must equal its
 # resolved values, so a script run with no binding acts on this host.
 schema = "techne/host-binding/v1"

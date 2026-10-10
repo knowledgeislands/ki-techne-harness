@@ -38,7 +38,7 @@ Parameters:
     Type: String
     AllowedPattern: '/[a-z0-9/-]+'
     Default: /ki/techne/agent-host
-  # OS patching (TECHNE-TOOLS-OPS-022): a daily host-local HH:MM at which the
+  # OS patching: a daily host-local HH:MM at which the
   # host restarts itself when a reboot is required and nobody is logged in;
   # empty, the default, means it never restarts itself.
   RebootWindow:

@@ -156,7 +156,7 @@ if helper
   end
 end
 
-# OS patching (TECHNE-TOOLS-OPS-022). The window is a daily 24-hour HH:MM or
+# OS patching. The window is a daily 24-hour HH:MM or
 # empty; CloudFormation matches AllowedPattern against the whole value.
 window_pattern = Regexp.new("\\A(?:#{parameters.dig('RebootWindow', 'AllowedPattern')})\\z")
 check.call(parameters.dig('RebootWindow', 'Default') == '' && parameters.dig('Livepatch', 'Default') == 'false',

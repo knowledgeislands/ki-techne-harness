@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # Read-only report of work on the agent host that exists nowhere else, of what
-# expires and has drifted from the pins, and of OS updates (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-015,
-# TECHNE-TOOLS-OPS-022). Changes
-# nothing but the cache the login banner reads; with --fetch it also updates
-# remote-tracking refs.
+# expires and has drifted from the pins, of the binding owner's profile
+# (TECHNE-TOOLS-OPS-015), and of OS updates. Changes nothing but the cache the
+# login banner reads; with --fetch it also updates remote-tracking refs.
 #
 # usage: status.sh [--json] [--fetch] [--repositories <file>] [--expect <path>]...
 #
@@ -172,7 +170,7 @@ else
   outcome=clean status=0
 fi
 
-# OS updates (TECHNE-TOOLS-OPS-022), from world-readable state only: no root,
+# OS updates, from world-readable state only: no root,
 # no network and no package-list refresh. A reading that fails is null.
 # KI_AGENT_HOST_SYSROOT prefixes every system path, for the offline checks.
 sysroot=${KI_AGENT_HOST_SYSROOT:-}
@@ -364,7 +362,7 @@ if command -v tailscale >/dev/null && status_json=$(tailscale status --json 2>/d
 fi
 printf '  %-24s %s\n' 'Tailscale node key' "${tailscale_expiry}"
 
-# OS updates (TECHNE-TOOLS-OPS-022): a signal only, never the outcome.
+# OS updates: a signal only, never the outcome.
 echo
 echo 'Updates'
 printf '  %-24s %s\n' 'Operating system' "${os:-unknown}"

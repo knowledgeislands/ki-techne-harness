@@ -16,7 +16,7 @@ parameter_prefix=${AGENT_HOST_PARAMETER_PREFIX:-/ki/techne/agent-host}
 parameter_prefix=${parameter_prefix%/}
 instance_type=${AGENT_HOST_INSTANCE_TYPE:-t3.medium}
 volume_size=${AGENT_HOST_VOLUME_SIZE:-40}
-# Optional binding values (TECHNE-TOOLS-OPS-022): empty means no automatic
+# Optional binding values for OS patching: empty means no automatic
 # reboot and no Livepatch.
 reboot_window=${AGENT_HOST_REBOOT_WINDOW:-}
 livepatch=${AGENT_HOST_LIVEPATCH:-false}

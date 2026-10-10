@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Converge techne's workspace on the agent host from the operator's workstation
-# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-015). Stages the host scripts, the
+# (TECHNE-TOOLS-OPS-015). Stages the host scripts, the
 # recipe's files and, when AGENT_HOST_PROFILE names one, the binding owner's
 # validated profile payload over one SSH connection and runs host/converge.sh
 # there. SSH only: no AWS or Tailscale API call. Pass --pull to fast-forward
@@ -44,7 +44,7 @@ converge_args+=(--git-name "$(git config --global user.name)" --git-email "$(git
 stage=$(mktemp -d)
 trap 'rm -rf "${stage}"' EXIT
 cp "${here}/host/converge.sh" "${here}/host/status.sh" "${here}/host/profile-check.py" "${stage}/"
-# The recipe's pins, their Rig provider and its own host instructions (TECHNE-TOOLS-OPS-014).
+# The recipe's pins, their Rig provider and its own host instructions.
 cp "${here}/../../../recipes/agent-host/rig.toml" "${here}/../../../recipes/agent-host/rig-pins.sh" \
   "${here}/../../../recipes/agent-host/host-instructions.md" "${stage}/"
 cp "${repositories}" "${stage}/repositories.txt"

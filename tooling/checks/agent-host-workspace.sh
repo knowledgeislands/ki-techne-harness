@@ -4,12 +4,11 @@
 # shellcheck disable=SC2016,SC2034,SC2088
 set -euo pipefail
 
-# Offline checks of the agent-host workspace scripts (TECHNE-TOOLS-OPS-011,
-# TECHNE-TOOLS-OPS-013, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-015,
-# TECHNE-TOOLS-OPS-022). A temporary Mac home and host home, local Git origins
-# and stub ssh, chezmoi, curl, tailscale, zsh, mise, ki, rig, bun, codex and
-# claude stand in for the network and the host; an empty system root, or a
-# fixture one, stands in for the OS.
+# Offline checks of the agent-host workspace scripts (TECHNE-TOOLS-OPS-015). A
+# temporary Mac home and host home, local Git origins and stub ssh, chezmoi,
+# curl, tailscale, zsh, mise, ki, rig, bun, codex and claude stand in for the
+# network and the host; an empty system root, or a fixture one, stands in for
+# the OS.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 scripts=${repo_root}/operations/aws/agent-host
@@ -148,7 +147,7 @@ printf '%s\n\n\n%s\n\n# ~/.bashrc stock\ncase $- in\n    *i*) ;;\n      *) retur
 printf '%s\n' "${legacy}" >"${host_home}/.config/husky/init.sh"
 echo 'export KNIP_DISABLE_RAW_TRANSFER=1' >"${host_home}/.ki-host-env"
 echo '{"theme":"dark"}' >"${host_home}/.claude/settings.json"
-# What the retired chezmoi cat path rendered (TECHNE-TOOLS-OPS-011), beside a
+# What the retired chezmoi cat path rendered, beside a
 # file of the operator's own.
 for file in CLAUDE.md memory-scope.md; do
   printf '<!-- Rendered for ki-techne-agent-host from the Mac'"'"'s chezmoi source; rerun setup rather than editing. -->\n# %s\n' \
@@ -208,7 +207,7 @@ check 'grep -qx local "${workspace}/gamma/README.md"' 'gamma must keep its uncom
 check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == $(git -C "${work}/origins/beta.git" rev-parse main) ]]' 'beta must match its origin'
 check 'grep -q "npm:@openai/codex" "${host_home}/.config/mise/config.toml"' 'the mise pins must include Codex'
 
-# The pins (TECHNE-TOOLS-OPS-014): converge applies the pin file's Linux and
+# The pins: converge applies the pin file's Linux and
 # macOS locators alike, installs it and the provider for Rig, and renders the
 # recipe's instructions and the host marker.
 pins=${repo_root}/recipes/agent-host/rig.toml
@@ -294,7 +293,7 @@ check '[[ -z $(HOME=${host_home} KI_AGENT_HOST_BANNER=1 PATH=${quiet_path}:/usr/
 rm "${state}/rig-drift" "${state}/tailscale.json"
 check '[[ $(sort -u "${state}/ssh.log") == ki-techne-agent-host ]]' 'with no binding variable, SSH must reach only ki-techne-agent-host'
 
-# The techne/host-workspace/v1 document (TECHNE-TOOLS-OPS-013).
+# The techne/host-workspace/v1 document.
 code=0
 document=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" --json --connect-timeout 5 2>/dev/null) || code=$?
 check '[[ ${code} == 3 ]] && jq -e ".schema == \"techne/host-workspace/v1\" and .outcome == \"at-risk\" and .fetched == false and .problems == []
@@ -346,7 +345,7 @@ document=$(HOME=${host_home} KI_AGENT_HOST_WORKSPACE='~/nowhere' bash "${scripts
 check '[[ ${code} == 4 ]] && jq -e ".repositories == [] and (.problems | index(\"workspace ${host_home}/nowhere does not exist\"))" <<<"${document}" >/dev/null' "a missing workspace must make the outcome unknown, got ${code}:
 ${document}"
 
-# OS updates (TECHNE-TOOLS-OPS-022). Each fixture system root stands in for a
+# OS updates. Each fixture system root stands in for a
 # host's update state; none may change the outcome or exit status.
 host_status
 baseline_code=${code} baseline_outcome=$(jq -r .outcome <<<"${document}")
@@ -656,8 +655,8 @@ setup >/dev/null || true
 check 'grep -qF "hand-off" "${host_home}/.bashrc"' 'zsh, once found again, must get the hand-off back'
 
 
-# A second binding's provider-neutral values, with no AWS variable set
-# (TECHNE-TOOLS-OPS-012): another SSH name and workspace.
+# A second binding's provider-neutral values, with no AWS variable set:
+# another SSH name and workspace.
 : >"${state}/ssh.log"
 rm -f "${state}/ki-active" "${state}/ki-dev"
 bound() {

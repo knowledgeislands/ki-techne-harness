@@ -1,5 +1,5 @@
-# The agent-host recipe's pins (ODR-KI-ARCADIA-001, ADR-KI-ARCADIA-003 stage 1,
-# TECHNE-TOOLS-OPS-014): the one file declaring the host's tool versions, as
+# The agent-host recipe's pins (ODR-KI-ARCADIA-001, ADR-KI-ARCADIA-003 stage 1):
+# the one file declaring the host's tool versions, as
 # Rig's agent-host profile. converge.sh installs it as ~/.config/rig/rig.toml,
 # reads each tool's locator for the host's OS and installs that version itself;
 # status.sh reports drift through `rig status --profile agent-host`. Bump a pin

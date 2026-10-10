@@ -1,4 +1,4 @@
-# The agent-host recipe (KI-ARCADIA-GOV-025, TECHNE-TOOLS-OPS-012): an agent
+# The agent-host recipe: an agent
 # host whose agents run on the host itself. A binding names one supported
 # provider by its provider table; every binding value reaches the scripts only
 # through the environment variable declared for it, and each script defaults
@@ -26,7 +26,7 @@ footprint = [
 [paths]
 setup = "operations/aws/agent-host/setup.sh"
 status = "operations/aws/agent-host/status.sh"
-# The pins (TECHNE-TOOLS-OPS-014): Rig's agent-host profile, one variant per target OS.
+# The pins: Rig's agent-host profile, one variant per target OS.
 pins = "recipes/agent-host/rig.toml"
 
 # The status report (ODR-KI-ARCADIA-001): `status --json` prints one document
@@ -53,7 +53,7 @@ script = "destroy"
 summary = "Remove the host and every stored credential, then list what remains by hand"
 script = "destroy"
 
-# OS patching (TECHNE-TOOLS-OPS-022), declared once as intent; each provider
+# OS patching, declared once as intent; each provider
 # table gives its mechanism in its own patching table. Security
 # updates install unattended as root, set up when the host is built or
 # enrolled; the operator user never needs root for patching. Livepatch is

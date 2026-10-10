@@ -3,7 +3,7 @@
 #
 # Placeholder destinations: TCP 443 is not yet narrowed to concrete addresses.
 # The model API and repository host FQDN or CIDR values need live information
-# and are decided with TECHNE-TOOLS-OPS-008 before any apply.
+# and are decided before any apply.
 #   - model API: <placeholder>
 #   - repository host: <placeholder>
 apiVersion: networking.k8s.io/v1

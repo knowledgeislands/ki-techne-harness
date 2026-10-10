@@ -1,6 +1,6 @@
 # Build and operate the agent host
 
-This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host that `KI-ARCADIA-GOV-020` authorises. The host is a separate EC2 instance, `ki-techne-agent-host`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
+This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host. The host is a separate EC2 instance, `ki-techne-agent-host`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
 
 The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in `GDR-KI-ARCADIA-004` and set through `KI-ARCADIA-GOV-023` within the bounds `KI-ARCADIA-GOV-020` accepted. The exemption has no automatic lapse: it stands until Kris changes or withdraws it. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
 
@@ -302,7 +302,7 @@ To bump a pin, change its locator in `recipes/agent-host/rig.toml` for each OS b
 
 ## Patching and restart
 
-The recipe declares one patching model in its `[patching]` table, and each provider supplies the mechanism in its own patching table (TECHNE-TOOLS-OPS-022):
+The recipe declares one patching model in its `[patching]` table, and each provider supplies the mechanism in its own patching table:
 
 1. **Security updates install themselves.** Unattended upgrades install security updates only, daily; other updates wait for a rebuild or a deliberate upgrade.
 2. **Kernel fixes go live through Livepatch where the binding opts in.** With `livepatch = true`, the host attaches Ubuntu Pro at build and enables Livepatch, which applies critical kernel fixes without a restart. It narrows the need for a restart; it does not remove it.

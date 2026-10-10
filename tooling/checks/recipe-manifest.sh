@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Offline checks for the recipe manifests (TECHNE-TOOLS-OPS-012): each passes
+# Offline checks for the recipe manifests: each passes
 # against the first binding, and the check refuses copies of the agent-host
 # manifest that declare a field twice, omit one or name an AWS concept outside
 # [providers.aws], and a binding whose values the script defaults do not match,
@@ -58,7 +58,7 @@ refuse 'a provider-neutral script reading a provider field' 'is not a aws script
 mutate list 's = "providers = [\"aws\"]\n" + s'
 refuse 'a providers list beside the provider tables' 'not valid TOML' "${work}/list.toml"
 
-# The status contract and teardown operations (TECHNE-TOOLS-OPS-013).
+# The status contract and teardown operations.
 mutate status-schema 's = s.replace("techne/host-workspace/v1", "techne/host-workspace/v0")'
 refuse 'another status schema' 'status.schema must be techne/host-workspace/v1' "${work}/status-schema.toml"
 
@@ -74,7 +74,7 @@ refuse 'a missing teardown operation' '[operations] must declare exactly rebuild
 mutate stop-reader 's = s.replace("env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\"]", "env = \"AGENT_HOST_TAILSCALE_NAME\"\nscripts = [\"setup\", \"status\", \"provision\", \"stop\", \"destroy\", \"template\"]")'
 refuse 'a parameter naming a script that does not read it' 'does not read AGENT_HOST_TAILSCALE_NAME' "${work}/stop-reader.toml"
 
-# The patching intent and each provider's mechanism (TECHNE-TOOLS-OPS-022).
+# The patching intent and each provider's mechanism.
 mutate patching-missing 'import re; s = re.sub(r"\n\[providers\.aws\.patching\][^\[]*", "\n", s)'
 refuse 'a provider without a patching mechanism' '[providers.aws.patching] is required' "${work}/patching-missing.toml"
 

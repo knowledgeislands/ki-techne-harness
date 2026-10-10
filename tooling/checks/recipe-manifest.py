@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline checks for techne/recipe/v1 manifests (TECHNE-TOOLS-OPS-012).
+"""Offline checks for techne/recipe/v1 manifests.
 
 usage: recipe-manifest.py [--binding <binding.toml>] <recipe.toml>...
 
@@ -11,8 +11,8 @@ script a parameter names must read its environment variable. The [status]
 table declares the host-workspace report schema and an exit status for each
 outcome; each [operations.<name>] entry names an operation of a declared
 script. The [patching] table declares the OS patching intent once, and each
-supported provider must give its mechanism under [providers.<provider>.patching]
-(TECHNE-TOOLS-OPS-022). A parameter is required, has a default or is optional;
+supported provider must give its mechanism under [providers.<provider>.patching].
+A parameter is required, has a default or is optional;
 a reboot window is a daily 24-hour HH:MM with no weekday. With --binding,
 each script's default for that variable must equal the binding's resolved
 value, so running a script with no binding behaves as that binding would.
@@ -48,7 +48,7 @@ TOP_KEYS = {
 }
 PROVIDER_KEYS = {'summary', 'paths', 'parameters', 'selectors', 'tags', 'footprint', 'patching'}
 PARAMETER_KEYS = {'summary', 'required', 'default', 'optional', 'env', 'scripts'}
-# The patching intent (TECHNE-TOOLS-OPS-022): the value each key may declare.
+# The patching intent: the value each key may declare.
 PATCHING_INTENT = {'unattended': {'security'}, 'livepatch': {'opt-in'}, 'reboot': {'window'}}
 PATCHING_KEYS = set(PATCHING_INTENT) | {'report'}
 REBOOT_WINDOW = re.compile(r'^([01][0-9]|2[0-3]):[0-5][0-9]$')

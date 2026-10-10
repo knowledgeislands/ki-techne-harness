@@ -2,10 +2,9 @@
 set -euo pipefail
 
 # Report, read-only, the agent host's unlanded work per repository and what
-# expires (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-013). SSH only; runs
-# host/status.sh on the host against the binding's declared repositories. Text
-# mode then compares this workstation's tools with the recipe's pins, as a
-# signal only that never changes the exit status (TECHNE-TOOLS-OPS-014).
+# expires. SSH only; runs host/status.sh on the host against the binding's
+# declared repositories. Text mode then compares this workstation's tools with
+# the recipe's pins, as a signal only that never changes the exit status.
 #
 # usage: status.sh [--json] [--fetch] [--connect-timeout <seconds>]
 #

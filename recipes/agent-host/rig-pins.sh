@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rig's observe-only agent-host-pins provider (TECHNE-TOOLS-OPS-014): compares
+# Rig's observe-only agent-host-pins provider: compares
 # a tool's running version with its pin in rig.toml beside this file. converge.sh
 # installs it as Rig's provider executable; it never installs anything.
 #

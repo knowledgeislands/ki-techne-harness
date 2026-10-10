@@ -3,11 +3,10 @@
 # shellcheck disable=SC2016
 set -euo pipefail
 
-# Offline checks for the agent-host AWS scripts (TECHNE-TOOLS-OPS-012,
-# TECHNE-TOOLS-OPS-013). A stub aws records each call, and a stub ssh answers
-# the status read with a canned report. With no binding variable set,
-# provision.sh, stop.sh and destroy.sh must act on the agent-host binding's
-# values exactly; with a second binding's values they must act on those values
+# Offline checks for the agent-host AWS scripts. A stub aws records each call,
+# and a stub ssh answers the status read with a canned report. With no binding
+# variable set, provision.sh, stop.sh and destroy.sh must act on the agent-host
+# binding's values exactly; with a second binding's values they must act on those values
 # only. stop.sh must warn and still stop; destroy.sh's rebuild and withdraw must
 # refuse unless the status is clean or the matching override is given.
 
@@ -101,7 +100,7 @@ check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=
 check 'log | grep -qF "Values=/ki/techne/agent-host/tailscale-auth-key"' 'provision.sh must look for the agent-host auth key'
 check '! log | grep -qF ubuntu-pro-token' 'provision.sh must not look for an Ubuntu Pro token without Livepatch'
 
-# Patching (TECHNE-TOOLS-OPS-022): a reboot window and Livepatch pass through
+# Patching: a reboot window and Livepatch pass through
 # as overrides, Livepatch needs the Ubuntu Pro token, and a bad window is refused.
 run provision.sh -- AGENT_HOST_REBOOT_WINDOW=04:00 AGENT_HOST_LIVEPATCH=true || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")

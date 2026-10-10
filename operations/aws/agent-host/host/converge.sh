@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Converge techne's workspace on the agent host to the declared state
-# (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022,
-# TECHNE-TOOLS-OPS-015). Runs on the host as techne, without sudo; setup.sh
-# stages and runs it from the operator's workstation, with the binding owner's
-# profile payload when one is supplied, and it also runs from the host's
-# harness clone, where it keeps the last applied payload's files. It prints
-# each change and ends with "no changes" when there were none.
+# Converge techne's workspace on the agent host to the declared state: its
+# checkouts and shell environment, the recipe's pins, the login banner and the
+# binding owner's profile (TECHNE-TOOLS-OPS-015). Runs on the host as techne,
+# without sudo; setup.sh stages and runs it from the operator's workstation,
+# with the binding owner's profile payload when one is supplied, and it also
+# runs from the host's harness clone, where it keeps the last applied payload's
+# files. It prints each change and ends with "no changes" when there were none.
 set -euo pipefail
 
 harness_id=knowledgeislands/ki-agentic-harness
@@ -17,7 +17,7 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 recipe_dir=${script_dir}
 [[ -f ${recipe_dir}/rig.toml ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/agent-host
 
-# Pins (TECHNE-TOOLS-OPS-014): the recipe's Rig profile declares them; each
+# Pins: the recipe's Rig profile declares them; each
 # tool's locator for this OS is its version.
 pins=${recipe_dir}/rig.toml
 case $(uname -s) in
@@ -162,7 +162,7 @@ ${rest}"
 # The quoted variables expand in the shells that source the file, not here.
 # shellcheck disable=SC2016
 env_content='# Agent-host shell environment, managed by ki-techne-harness
-# operations/aws/agent-host (TECHNE-TOOLS-OPS-011, TECHNE-TOOLS-OPS-015); rerun
+# operations/aws/agent-host (TECHNE-TOOLS-OPS-015); rerun
 # setup rather than editing. ~/.profile, ~/.bashrc, husky'"'"'s init.sh and, for
 # zsh, ~/.zshenv source it, so login, non-interactive and Git hook shells all
 # find the pinned tools. It stays sourceable from any POSIX shell.
@@ -193,11 +193,11 @@ case $- in *i*)
 esac'
 
 # The banner reads only host/status.sh'"'"'s cache, the reboot-required flag and
-# the clock: no network or credential call (ODR-KI-ARCADIA-001 expiries,
-# TECHNE-TOOLS-OPS-022 updates).
+# the clock: no network or credential call (ODR-KI-ARCADIA-001 expiries, and
+# the OS updates and reboot flag).
 # shellcheck disable=SC2016
 banner_content='# Agent-host login banner, managed by ki-techne-harness
-# operations/aws/agent-host (TECHNE-TOOLS-OPS-014, TECHNE-TOOLS-OPS-022); rerun
+# operations/aws/agent-host; rerun
 # setup rather than editing. Reads only the cache host/status.sh writes and the
 # local reboot-required flag; KI_AGENT_HOST_SYSROOT serves the offline checks.
 ki_agent_host_banner() {
@@ -321,7 +321,7 @@ if [[ $("${mise}" --version 2>/dev/null | awk '{ print $1 }') != "${mise_version
   changed "mise ${mise_version}"
 fi
 
-mise_config="# Managed by ki-techne-harness operations/aws/agent-host from the recipe's pins (TECHNE-TOOLS-OPS-014).
+mise_config="# Managed by ki-techne-harness operations/aws/agent-host from the recipe's pins.
 [tools]
 bun = \"${bun_version}\"
 node = \"${node_version}\"
@@ -604,7 +604,7 @@ if ${profile}; then
   done < <(jq -r '.removed[]' "${profile_dir}/manifest.json")
 fi
 
-# The chezmoi cat path of TECHNE-TOOLS-OPS-011 rendered personal files into
+# The retired chezmoi cat path rendered personal files into
 # ~/.claude with this header; one the payload does not deliver is removed, so a
 # run without a payload leaves the recipe layer alone.
 for target in "${HOME}"/.claude/*.md; do

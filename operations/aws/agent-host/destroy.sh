@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The recipe's destroy path, in two operations (ODR-KI-ARCADIA-001,
-# TECHNE-TOOLS-OPS-013):
+# The recipe's destroy path, in two operations (ODR-KI-ARCADIA-001):
 #
 #   destroy.sh rebuild  [--discard <repository>... | --discard-unreadable-host]
 #   destroy.sh withdraw [--discard <repository>... | --discard-unreadable-host]
