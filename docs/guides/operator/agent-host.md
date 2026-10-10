@@ -247,7 +247,7 @@ It uses SSH to the binding's Tailscale name only, `ki-techne-agent-host` unless 
 - Rig at its pinned tag, with the pin file as `~/.config/rig/rig.toml` and the observe-only `agent-host-pins` provider: Rig reports drift and installs nothing yet;
 - `autoMemoryEnabled` set to `false` in `~/.claude/settings.json`;
 - the recipe's own host instructions, `recipes/agent-host/host-instructions.md`, as `~/.claude/rules/ki-agent-host.md` for Claude Code and as the first part of `~/.codex/AGENTS.md` for Codex: push where you worked, be level before working on the other machine, and leave roadmap writes to the workstation checkout;
-- the host marker, `~/.config/ki/host-marker`, which `ki` will honour by refusing roadmap writes once [KI-TOOL-CLI-115](https://github.com/knowledgeislands/tools-ki/blob/main/docs/roadmap/KI-TOOL-CLI-115-refuse-host-roadmap-writes.md) lands;
+- the host marker, `~/.config/ki/host-marker`, which a future `ki` release will honour by refusing roadmap writes on the host;
 - the login banner, `~/.config/ki-agent-host/banner.sh`, which an interactive shell shows once.
 - the binding owner's profile payload, when one is sent, as [Profile payload](#profile-payload) describes.
 
