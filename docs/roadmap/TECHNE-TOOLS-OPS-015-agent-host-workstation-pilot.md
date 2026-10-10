@@ -6,13 +6,12 @@ kind: deliver
 purpose: capability
 project: agent-host
 component: operations
-horizon: now
-status: awaiting-review
+status: done
 blocks: [TECHNE-TOOLS-OPS-017]
 blocked_by: []
 baseline_ref: 977abc90f86814c39d57e2b5489be8bd8494d67c
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-09T21:53:46Z
+updated_at: 2026-10-10T05:40:40Z
 ---
 
 # Agent-Host Workstation Pilot
@@ -162,6 +161,10 @@ The full diff from `977abc9` was reread against the plan and the boundary. It to
 ### Mini recap
 
 Commits `9e1de9c` and `854e12f` deliver the hook, shell and status changes and the change-reporting fix; this record's commit records the result.
+
+## Done
+
+Accepted 2026-10-10 under Kris's decision in the Techne decisions log, Decision 35 (2026-10-10): "TECHNE-TOOLS-OPS-015 approved: accept via ki-accept (no prune yet)." The six-part Review packet stands as delivered. Re-checked at acceptance: `ki repo audit --repo .` reports `FAIL=0 WARN=2`, matching the 2026-10-08 baseline, because the earlier failure from TECHNE-TOOLS-OPS-022's open live Step cleared when that record closed. The outstanding concerns above stay open: the login-shell change with TECHNE-TOOLS-OPS-017, and the host-name check and the personal-configuration-tool refusal for later work.
 
 ## Discussion
 
