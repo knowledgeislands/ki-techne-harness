@@ -51,7 +51,7 @@ stub "${stubs}/zsh" "echo \"zsh \$*\" >>'${state}/handoff.log'"
 # Host-side tools, where converge.sh expects them.
 key='$(pwd | tr / _)'
 stub "${host_home}/.local/bin/mise" "case \$1 in
-  --version) echo '2026.10.4 linux-x64 (stub)' ;;
+  --version) echo '2026.10.6 linux-x64 (stub)' ;;
   ls) [[ -f '${state}'/mise-${key} ]] || echo 'node 24 (missing)' ;;
   install) touch '${state}'/mise-${key} ;;
   activate) echo \"ki_mise_hook=\$2\" ;;
@@ -78,7 +78,7 @@ case \$1 in
     else touch '${state}/repaired'; fi ;;
 esac"
 stub "${host_home}/.local/bin/bun" 'if [[ -d node_modules ]]; then echo "Checked 1 install across 1 package (no changes)"; else mkdir node_modules; echo "1 package installed"; fi'
-stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.161.0"'
+stub "${host_home}/.local/bin/codex" 'echo "codex-cli 0.162.0"'
 stub "${host_home}/.local/bin/claude" 'echo "2.2.0 (Claude Code)"'
 # rig status reports Codex drifted once a check asks it to, and the owner's
 # profile's ripgrep likewise; ripgrep is missing until rig apply installs it,
@@ -216,7 +216,7 @@ for tool in bun node; do
   pin=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["tool"][sys.argv[2]]["variant"]["macos"]["install"]["locator"])' "${pins}" "${tool}")
   check 'grep -qx "${tool} = \"${pin}\"" "${host_home}/.config/mise/config.toml"' "the mise configuration must pin ${tool} ${pin} exactly"
 done
-check 'grep -qx "\"npm:@openai/codex\" = \"0.161.0\"" "${host_home}/.config/mise/config.toml"' 'the mise configuration must pin Codex from the pin file'
+check 'grep -qx "\"npm:@openai/codex\" = \"0.162.0\"" "${host_home}/.config/mise/config.toml"' 'the mise configuration must pin Codex from the pin file'
 check 'cmp -s "${pins}" "${host_home}/.config/rig/rig.toml"' 'the pin file must be Rig'"'"'s configuration'
 check '[[ -x ${host_home}/.local/share/rig/providers/agent-host-pins ]] && cmp -s "${repo_root}/recipes/agent-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/agent-host-pins"' 'the provider must be installed for Rig'
 for file in .claude/rules/ki-agent-host.md .codex/AGENTS.md; do
@@ -234,7 +234,7 @@ stub "${tools}/codex" 'echo "codex-cli (no version)"'
 verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 observe agent-host-pins "$@"; }
 check '[[ $(verdict bun exact 1.4.2) == present && $(verdict node exact 24.21.0) == drifted ]]' 'the provider must compare exact pins'
 check '[[ $(verdict claude minimum 2.1.285) == present && $(verdict claude minimum 2.2.0) == drifted ]]' 'the provider must compare minimum pins numerically'
-check '[[ $(verdict codex exact 0.161.0) == unknown && $(verdict rig exact 0.4.0) == missing ]]' 'the provider must report unknown and missing tools'
+check '[[ $(verdict codex exact 0.162.0) == unknown && $(verdict rig exact 0.4.0) == missing ]]' 'the provider must report unknown and missing tools'
 check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 apply agent-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
 check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'

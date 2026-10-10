@@ -64,11 +64,11 @@ platforms = ["linux", "macos"]
 variant.linux.platforms = ["linux"]
 variant.linux.install.provider = "agent-host-pins"
 variant.linux.install.kind = "exact"
-variant.linux.install.locator = "2026.10.4"
+variant.linux.install.locator = "2026.10.6"
 variant.macos.platforms = ["macos"]
 variant.macos.install.provider = "agent-host-pins"
 variant.macos.install.kind = "exact"
-variant.macos.install.locator = "2026.10.4"
+variant.macos.install.locator = "2026.10.6"
 
 [tool.bun]
 name = "Bun"
@@ -109,11 +109,11 @@ platforms = ["linux", "macos"]
 variant.linux.platforms = ["linux"]
 variant.linux.install.provider = "agent-host-pins"
 variant.linux.install.kind = "exact"
-variant.linux.install.locator = "0.161.0"
+variant.linux.install.locator = "0.162.0"
 variant.macos.platforms = ["macos"]
 variant.macos.install.provider = "agent-host-pins"
 variant.macos.install.kind = "exact"
-variant.macos.install.locator = "0.161.0"
+variant.macos.install.locator = "0.162.0"
 
 [tool.claude]
 name = "Claude Code"
