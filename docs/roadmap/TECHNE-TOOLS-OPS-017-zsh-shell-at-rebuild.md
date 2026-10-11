@@ -6,13 +6,13 @@ kind: deliver
 purpose: debt
 project: agent-host
 component: infra
-status: in-progress
+status: awaiting-review
 horizon: now
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-015]
 baseline_ref: 7f1b70807950e3e6c0cd7270356d8a8b6b2592ed
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-11T03:09:49Z
+updated_at: 2026-10-11T03:10:44Z
 ---
 
 # Binding Shell at Rebuild
@@ -49,13 +49,13 @@ Record identifiers also sit in live artefacts that outlast their records, and re
 
 ## Steps
 
-- [ ] Pass the shell to the stack: add a `Shell` template parameter (allowed `bash` or `zsh`, default `zsh`), have the boot script create the operator user with `--shell "$(command -v <shell>)"`, add `provision` to the `shell` parameter's scripts in the recipe, and pass `Shell=` from `provision.sh`.
-- [ ] Retire the hand-off: `converge.sh` stops writing the hand-off block and removes any existing one through `strip_managed`; it checks the login shell (`getent passwd`) against the choice and warns, without failing, when they differ, naming the rebuild as the fix. Remove the hand-off outright, with no dormant fallback for other providers, and the escape-hatch handling that only it needed; keep the `.zshenv` block.
-- [ ] Rename the markers: the managed block becomes `# >>> ki-agent-host >>>`. `strip_managed` and the `.zshenv` test recognise any start line matching `# >>> ki-agent-host( (.*))? >>>` and any `# ki-agent-host: mise shims( (.*))?` line, so old markers on a host converged before the rebuild are replaced, not duplicated, and no record is named in the code.
-- [ ] Remove the remaining identifiers: replace the `ki-work-item` tag with `ki-authority: GDR-KI-ARCADIA-004` across the template, `provision.sh` and `[providers.aws.tags]`, and update the guide's `provision.sh` example to match; reword the stack description, the boot-script comments, the apt configuration comment and the reboot unit's `Description` without record identifiers; reword the guide's exemption and operator-policy sentences around `GDR-KI-ARCADIA-004` and the Arcadia policy link. Remove every other record identifier from the agent-host code, recipe, checks and guide, including TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-017, TECHNE-TOOLS-OPS-018, TECHNE-TOOLS-OPS-019 and other repositories' identifiers in comments.
-- [ ] Rename the examples: the guide and diagrams use `vega` for this host's OS, device and SSH names; recipe defaults stay person-neutral (`ki-techne-{name}`).
-- [ ] Update the offline checks: the shell parameter reaches the stack and the boot script; converge writes no hand-off and removes an old one; a fixture `.bashrc`, `.profile` and Husky file carrying the old marker converge to one new block; the tag and description checks follow step 4; add a check that the agent-host template, scripts and recipe contain no `[A-Z]+-[A-Z]+-[0-9]{3}` record identifier outside `ADR-`, `ODR-` and `GDR-` decision records.
-- [ ] Hand off to chezmoi (the binding owner's dotfiles source) in plain terms, non-blocking for this repository: set the binding's `AGENT_HOST_NAME` and `AGENT_HOST_TAILSCALE_NAME` to `vega`, set the payload manifest's `target_host` to `vega`, rename the SSH alias and drop the old `known_hosts` entry once the rebuilt host is up.
+- [x] Pass the shell to the stack: add a `Shell` template parameter (allowed `bash` or `zsh`, default `zsh`), have the boot script create the operator user with `--shell "$(command -v <shell>)"`, add `provision` to the `shell` parameter's scripts in the recipe, and pass `Shell=` from `provision.sh`.
+- [x] Retire the hand-off: `converge.sh` stops writing the hand-off block and removes any existing one through `strip_managed`; it checks the login shell (`getent passwd`) against the choice and warns, without failing, when they differ, naming the rebuild as the fix. Remove the hand-off outright, with no dormant fallback for other providers, and the escape-hatch handling that only it needed; keep the `.zshenv` block.
+- [x] Rename the markers: the managed block becomes `# >>> ki-agent-host >>>`. `strip_managed` and the `.zshenv` test recognise any start line matching `# >>> ki-agent-host( (.*))? >>>` and any `# ki-agent-host: mise shims( (.*))?` line, so old markers on a host converged before the rebuild are replaced, not duplicated, and no record is named in the code.
+- [x] Remove the remaining identifiers: replace the `ki-work-item` tag with `ki-authority: GDR-KI-ARCADIA-004` across the template, `provision.sh` and `[providers.aws.tags]`, and update the guide's `provision.sh` example to match; reword the stack description, the boot-script comments, the apt configuration comment and the reboot unit's `Description` without record identifiers; reword the guide's exemption and operator-policy sentences around `GDR-KI-ARCADIA-004` and the Arcadia policy link. Remove every other record identifier from the agent-host code, recipe, checks and guide, including TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-017, TECHNE-TOOLS-OPS-018, TECHNE-TOOLS-OPS-019 and other repositories' identifiers in comments.
+- [x] Rename the examples: the guide and diagrams use `vega` for this host's OS, device and SSH names; recipe defaults stay person-neutral (`ki-techne-{name}`).
+- [x] Update the offline checks: the shell parameter reaches the stack and the boot script; converge writes no hand-off and removes an old one; a fixture `.bashrc`, `.profile` and Husky file carrying the old marker converge to one new block; the tag and description checks follow step 4; add a check that the agent-host template, scripts and recipe contain no `[A-Z]+-[A-Z]+-[0-9]{3}` record identifier outside `ADR-`, `ODR-` and `GDR-` decision records.
+- [x] Hand off to chezmoi (the binding owner's dotfiles source) in plain terms, non-blocking for this repository: set the binding's `AGENT_HOST_NAME` and `AGENT_HOST_TAILSCALE_NAME` to `vega`, set the payload manifest's `target_host` to `vega`, rename the SSH alias and drop the old `known_hosts` entry once the rebuilt host is up. Delivered as a plain-terms handoff in this record's review and the run report; this run's authority covered this repository only, so nothing was written to chezmoi.
 
 ## Files touched
 
@@ -94,6 +94,45 @@ None: the recipe manifest's `shell` parameter gains a script, which `recipes/age
 ### Roadmap
 
 [TECHNE-TOOLS-OPS-023](TECHNE-TOOLS-OPS-023-controller-target-stack-tags.md) captures the controller and target stacks' `ki-work-item` tags, which stay out of this record's scope.
+
+## Review
+
+### Delivered
+
+The approved boundary, in code, tests and guide only, from baseline `7f1b70807950e3e6c0cd7270356d8a8b6b2592ed` to commit `508793e`: the stack sets the operator user's login shell from the binding's choice, `converge.sh` retires the `.bashrc` hand-off and warns when the login shell differs, the markers and every work-record identifier leave the agent-host stack, scripts, recipe, checks and guide, and the guide uses `vega` for this host and calls the recipe the AWS base for a remote agentic rig (Decision 40(2a) in the Techne thread's decisions log). Excluded, as planned: the rebuild itself, any AWS, Tailscale or host change, and the chezmoi values.
+
+### Change Summary
+
+- `infra/aws/agent-host-stack.yaml`: new `Shell` parameter (`bash` or `zsh`, default `zsh`); the boot script runs `useradd --shell "$(command -v <shell>)"`; `ki-work-item: KI-ARCADIA-GOV-020` becomes `ki-authority: GDR-KI-ARCADIA-004` on every resource; the description, patching comment, apt configuration comment and reboot timer `Description` name no record.
+- `operations/aws/agent-host/provision.sh`: reads `AGENT_HOST_SHELL` (refusing anything but `bash` or `zsh`), passes `Shell=`, tags the stack `ki-authority=GDR-KI-ARCADIA-004`. `recipes/agent-host/recipe.toml`: `shell` reaches `provision` too, and the provider tag follows.
+- `operations/aws/agent-host/host/converge.sh`: the managed marker is `# >>> ki-agent-host >>>`; `strip_managed` drops any `# >>> ki-agent-host( label)? >>>` block, which includes the old hand-off, and any `# ki-agent-host: mise shims( label)?` block; the `.zshenv` test matches by the same pattern; no hand-off or escape hatch is written; a `getent passwd` check warns without failing when the login shell differs from the choice, or cannot be read.
+- Identifier comments removed from `setup.sh`, `status.sh`, `host/status.sh`, `host/profile-check.py`, `rig.toml` and `recipe-manifest.py`.
+- Checks: `agent-host-stack.rb` asserts the `Shell` parameter, both rendered `useradd` lines and an identifier-free description; `agent-host-aws-scripts.sh` asserts `Shell=` passes through, a second binding's `bash`, a refused `fish`, and the new tag; `agent-host-workspace.sh` stubs `getent`, seeds `.profile`, `.bashrc` and Husky's `init.sh` with the old managed marker, the old hand-off and the hand-made block, and asserts one new block, no old markers, no hand-off, and the login-shell warnings; the hand-off shell-path and missing-shell checks are gone with the feature. New `tooling/checks/agent-host-record-ids.sh`, run from `controller.sh`, fails on any work-record identifier in the agent-host template, scripts and recipe outside `ADR-`, `ODR-` and `GDR-` records.
+- Guide `docs/guides/operator/agent-host.md` and the two Archify diagrams with their SVG renders: `vega` for the host, device, SSH, OS and `Name` tag; the tailnet tag, stack name, destroy confirmation and operator role keep their recipe names. The exemption sentence cites `GDR-KI-ARCADIA-004` only; the Shell section describes the provider-set login shell and the warning; Before a rebuild names the first rebuild after this change as the one expected exception.
+- Deviation: the workspace fixture assembles the old marker's record name from parts, so the check script holds no identifier while still exercising a real old marker.
+
+### Verification
+
+- `bun run test` with mise's Python 3.12.13 first on `PATH`: passed (2 of 2 tasks; root layout, controller unit tests, agent-host stack, workspace, AWS script, record identifier and recipe manifest checks).
+- Mutation check: restoring exact-text marker matching and changing the warning text in `converge.sh` made the workspace check fail on both; restored before commit.
+- Plan's identifier `grep` over the agent-host stack, `operations/aws/agent-host`, `recipes/agent-host`, `tooling/checks` and `docs/guides`: no match.
+- `ki repo audit`: PASS=16, WARN=2, FAIL=0. Both warnings predate this work (`ki-engineering` CI-1 on the inline `KI_VERSION` pin; `ki-repo` HOOK-1 on `.githooks/pre-commit`).
+- Not run: `bun run self:aws:validate` and the guide's Before a rebuild change set both call AWS, which this run's authority excludes. One attempt at `self:aws:validate` at the baseline failed locally on an expired SSO token before reaching CloudFormation; no other remote call was made. The template's offline structural check passed instead.
+
+### Outstanding concerns
+
+- The before-rebuild check at the last commit before this work (`7f1b708`) has not run against AWS; Kris runs it before the rebuild, from that commit, expecting `No changes to deploy`.
+- `bun run self:aws:validate` on the new template is Kris's, with `assume knowledge-islands-techne`.
+- chezmoi handoff, non-blocking for this repository: set the binding's `AGENT_HOST_NAME` and `AGENT_HOST_TAILSCALE_NAME` to `vega`, set the payload manifest's `target_host` to `vega`, rename the SSH alias to `vega` and drop the old `known_hosts` entry once the rebuilt host is up.
+- Until the rebuild, `converge.sh` on the current host warns that its login shell is `/bin/bash`, not `zsh`, and interactive sessions stay in bash because the hand-off is gone. Rerunning setup before the rebuild therefore loses the zsh hand-off on the current host.
+
+### Post-change review
+
+The goal holds in the repository: the provider now owns the login shell, and nothing in the agent-host artefacts names a work record, with a check keeping it so. Scope held to the planned files plus the new check script and its `controller.sh` line, which the plan's check step implies. The main regression risk is the interim period above: a setup rerun on the current host before the rebuild drops the hand-off. Tests cover the marker migration on a fixture carrying every old marker. Ready for review; acceptance should wait for, or explicitly defer, the post-rebuild checks in Verify.
+
+### Mini recap
+
+Delivered the shell-at-build change, hand-off retirement, marker and identifier sweep with an enforcing check, and the `vega` guide examples in one commit; offline tests and the repository audit pass. Open: the AWS before-rebuild check and validation, the rebuild, and the chezmoi values, all Kris's. Learning route: the run shows that the guide's Before a rebuild step needs AWS, so a run without AWS authority cannot discharge it; a future plan should name it as the owner's step.
 
 ## Discussion
 
