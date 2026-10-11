@@ -6,13 +6,13 @@ kind: deliver
 purpose: debt
 project: agent-host
 component: infra
-status: draft
+status: ready
 horizon: next
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-015]
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-10T16:44:13Z
+updated_at: 2026-10-11T01:26:00Z
 ---
 
 # Binding Shell at Rebuild
@@ -50,9 +50,9 @@ Record identifiers also sit in live artefacts that outlast their records, and re
 ## Steps
 
 - [ ] Pass the shell to the stack: add a `Shell` template parameter (allowed `bash` or `zsh`, default `zsh`), have the boot script create the operator user with `--shell "$(command -v <shell>)"`, add `provision` to the `shell` parameter's scripts in the recipe, and pass `Shell=` from `provision.sh`.
-- [ ] Retire the hand-off: `converge.sh` stops writing the hand-off block and removes any existing one through `strip_managed`; it checks the login shell (`getent passwd`) against the choice and warns, without failing, when they differ, naming the rebuild as the fix. Remove the escape-hatch handling that only the hand-off needed and keep the `.zshenv` block.
+- [ ] Retire the hand-off: `converge.sh` stops writing the hand-off block and removes any existing one through `strip_managed`; it checks the login shell (`getent passwd`) against the choice and warns, without failing, when they differ, naming the rebuild as the fix. Remove the hand-off outright, with no dormant fallback for other providers, and the escape-hatch handling that only it needed; keep the `.zshenv` block.
 - [ ] Rename the markers: the managed block becomes `# >>> ki-agent-host >>>`. `strip_managed` and the `.zshenv` test recognise any start line matching `# >>> ki-agent-host( (.*))? >>>` and any `# ki-agent-host: mise shims( (.*))?` line, so old markers on a host converged before the rebuild are replaced, not duplicated, and no record is named in the code.
-- [ ] Remove the remaining identifiers: replace the `ki-work-item` tag across the template, `provision.sh` and `[providers.aws.tags]` as Kris decides (see Discussion); reword the stack description, the boot-script comments, the apt configuration comment and the reboot unit's `Description` without record identifiers; reword the guide's exemption and operator-policy sentences around `GDR-KI-ARCADIA-004` and the Arcadia policy link. Strip the remaining record-identifier comments in the agent-host scripts, recipe and checks while the files are open.
+- [ ] Remove the remaining identifiers: replace the `ki-work-item` tag with `ki-authority: GDR-KI-ARCADIA-004` across the template, `provision.sh` and `[providers.aws.tags]`, and update the guide's `provision.sh` example to match; reword the stack description, the boot-script comments, the apt configuration comment and the reboot unit's `Description` without record identifiers; reword the guide's exemption and operator-policy sentences around `GDR-KI-ARCADIA-004` and the Arcadia policy link. Remove every other record identifier from the agent-host code, recipe, checks and guide, including TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-017, TECHNE-TOOLS-OPS-018, TECHNE-TOOLS-OPS-019 and other repositories' identifiers in comments.
 - [ ] Rename the examples: the guide and diagrams use `vega` for this host's OS, device and SSH names; recipe defaults stay person-neutral (`ki-techne-{name}`).
 - [ ] Update the offline checks: the shell parameter reaches the stack and the boot script; converge writes no hand-off and removes an old one; a fixture `.bashrc`, `.profile` and Husky file carrying the old marker converge to one new block; the tag and description checks follow step 4; add a check that the agent-host template, scripts and recipe contain no `[A-Z]+-[A-Z]+-[0-9]{3}` record identifier outside `ADR-`, `ODR-` and `GDR-` decision records.
 - [ ] Hand off to chezmoi (the binding owner's dotfiles source) in plain terms, non-blocking for this repository: set the binding's `AGENT_HOST_NAME` and `AGENT_HOST_TAILSCALE_NAME` to `vega`, set the payload manifest's `target_host` to `vega`, rename the SSH alias and drop the old `known_hosts` entry once the rebuilt host is up.
@@ -70,6 +70,7 @@ Record identifiers also sit in live artefacts that outlast their records, and re
 - `bun run test` passes, with Python 3.11 or later on `PATH` for the `tomllib` checks, and `ki repo audit` reports no failure.
 - `grep -rnE '\b(TECHNE|KI)-[A-Z]+-[A-Z]+-[0-9]{3}\b|TECHNE-OPS-[0-9]{3}' infra/aws/agent-host-stack.yaml operations/aws/agent-host recipes/agent-host tooling/checks docs/guides` finds nothing.
 - `bun run self:aws:validate` accepts the template offline. No change set, deployment or host change is made by this work.
+- At the last commit before this work lands, the guide's before-a-rebuild check has run against the current template; the rebuild then uses the new template.
 - After the binding owner rebuilds (outside this record): `ssh vega 'getent passwd techne'` shows the chosen shell, a new session lands in it without the hand-off, `.bashrc` carries one `# >>> ki-agent-host >>>` block and no hand-off, and `status.sh` reports no drift.
 
 ## Dependencies / blocks
@@ -92,16 +93,16 @@ None: the recipe manifest's `shell` parameter gains a script, which `recipes/age
 
 ### Roadmap
 
-None beyond this record. If Kris keeps the controller and target stacks out of scope, a separate triage record captures their tags.
+[TECHNE-TOOLS-OPS-023](TECHNE-TOOLS-OPS-023-controller-target-stack-tags.md) captures the controller and target stacks' `ki-work-item` tags, which stay out of this record's scope.
 
 ## Discussion
 
 Adopted into Next on 2026-10-10 under the owner's decision to adopt and plan it now. The rebuild itself still happens only when the binding owner runs it.
 
-Decisions for Kris before Ready:
+Kris settled the five decisions on 2026-10-11 (Decision 37 in the Techne thread's decisions log) and approved the plan on those terms for Ready. The plan above matches them.
 
-1. **The `ki-work-item` tag.** Recommended: replace it with `ki-authority = GDR-KI-ARCADIA-004`, the durable decision record the exemption lives in, so cost and inventory views keep a governance link. Alternative: drop the tag.
-2. **Hand-off retirement.** Recommended: remove the hand-off outright, with converge warning when the login shell differs from the choice. Alternative: keep it dormant behind the login-shell check as a fallback for other providers.
-3. **Breadth of the identifier sweep.** Recommended: remove every record identifier from the agent-host code, recipe, checks and guide (including TECHNE-TOOLS-OPS-015, TECHNE-TOOLS-OPS-017, TECHNE-TOOLS-OPS-018, TECHNE-TOOLS-OPS-019 and other repositories' identifiers in comments) and enforce it with a check, not just the four named. The controller and target stacks also carry `ki-work-item` tags, one naming a retired identifier; leave those to a separate triage record because they are not this host.
-4. **Name examples.** Recommended: the guide uses `vega` for this host; recipe defaults stay person-neutral.
-5. **Before-a-rebuild check.** The guide expects `No changes` from a change set; this record deliberately changes the template. Recommended: run the check at the last commit before this work lands, then rebuild from the new template.
+1. **The `ki-work-item` tag.** Resolved: replace it with `ki-authority = GDR-KI-ARCADIA-004`, the durable decision record the exemption lives in, so cost and inventory views keep a governance link.
+2. **Hand-off retirement.** Resolved: remove the hand-off outright once the provider sets the login shell, with converge warning when the login shell differs from the choice. No dormant fallback is kept.
+3. **Breadth of the identifier sweep.** Resolved: remove every record identifier from the agent-host code, recipe, checks and guide and enforce it with a check. The controller and target stacks' `ki-work-item` tags are captured separately as [TECHNE-TOOLS-OPS-023](TECHNE-TOOLS-OPS-023-controller-target-stack-tags.md).
+4. **Name examples.** Resolved: the guide uses `vega` for this host; recipe defaults stay person-neutral.
+5. **Before-a-rebuild check.** Resolved: run the guide's check at the last commit before this work lands, expecting `No changes`, then rebuild from the new template.
