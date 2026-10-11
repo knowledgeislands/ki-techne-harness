@@ -20,7 +20,7 @@ expected_tags = {
   'Name' => 'HostName',
   'ki-agent-host-id' => 'AgentHostId',
   'ki-lifecycle' => 'prototype',
-  'ki-work-item' => 'KI-ARCADIA-GOV-020'
+  'ki-authority' => 'GDR-KI-ARCADIA-004'
 }
 
 text = File.read(path)
@@ -74,6 +74,9 @@ end
 end
 check.call(template.dig('Outputs', 'TailscaleHostname', 'Value') == 'TailscaleHostname', 'TailscaleHostname output must be the parameter')
 check.call(parameters.dig('OperatorUser', 'Default') == 'techne', 'operator user default must be techne')
+check.call(parameters.dig('Shell', 'Default') == 'zsh' && parameters.dig('Shell', 'AllowedValues') == %w[bash zsh],
+           'Shell must default to zsh and allow only bash or zsh')
+check.call(!template.fetch('Description').match?(/[A-Z]+-[A-Z]+-[0-9]{3}/), 'the stack description must name no record')
 
 instance = resources.fetch('AgentHostInstance').fetch('Properties')
 check.call(instance.dig('MetadataOptions', 'HttpTokens') == 'required', 'instance metadata must require tokens')
@@ -117,6 +120,12 @@ check.call(rendered.include?('/ki/techne/agent-host/tailscale-auth-key'), 'user 
 check.call(rendered.include?('hostnamectl set-hostname ki-techne-agent-host'), 'user data must set the OS hostname')
 check.call(rendered.include?('preserve_hostname: true') && rendered.include?('127.0.1.1 ki-techne-agent-host'),
            'user data must keep the hostname across boots and resolvable in /etc/hosts')
+# The operator user's login shell is the binding's choice, set when the user is
+# created, since the user cannot change it later.
+check.call(rendered.include?(%(useradd --create-home --shell "$(command -v zsh)" 'techne')),
+           'user data must create the operator user with the default zsh login shell')
+check.call(render.call('Shell' => 'bash').include?(%(useradd --create-home --shell "$(command -v bash)" 'techne')),
+           'user data must create the operator user with the Shell parameter as login shell')
 check.call(!rendered.match?(/^\s*set -[a-z]*x/), 'user data must not trace commands')
 check.call(!rendered.match?(/sudoers|usermod|adduser|--groups|\s-G\s/), 'the operator user must not gain sudo or extra groups')
 check.call(rendered.include?("git config --global credential.https://github.com.helper ki-agent-host"),

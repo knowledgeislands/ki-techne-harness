@@ -8,7 +8,7 @@
 # Each tool has a variant per target OS. Its locator is the exact version, or
 # the minimum for kind "minimum". The observe-only agent-host-pins provider
 # (rig-pins.sh beside this file) compares the running tool's version with it;
-# no tool here installs through Rig until TECHNE-TOOLS-OPS-018.
+# no tool here installs through Rig yet.
 
 [rig]
 default-profile = "agent-host"

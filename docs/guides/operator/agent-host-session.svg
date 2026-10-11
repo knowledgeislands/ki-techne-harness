@@ -487,11 +487,11 @@ rect.c-bg-rect { fill: var(--bg); }
         </g>
         </g>
 
-        <g data-edge-from="helper" data-edge-to="zed" data-edge-label="zed ssh://ki-techne-agent-host" data-edge-key="3" data-edge-id="m-open">
+        <g data-edge-from="helper" data-edge-to="zed" data-edge-label="zed ssh://vega" data-edge-key="3" data-edge-id="m-open">
           <path data-composition-edge-from="helper" data-composition-edge-to="zed" data-composition-edge-id="m-open" data-composition-points="223.5,252;321,252" d="M 223.5 252 L 321 252" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <g>
           <rect x="167.25" y="232" width="210" height="18" rx="3" class="c-mask"/>
-          <text x="272.25" y="242" class="t-edge-emphasis" font-size="11" text-anchor="middle">zed ssh://ki-techne-agent-host</text>
+          <text x="272.25" y="242" class="t-edge-emphasis" font-size="11" text-anchor="middle">zed ssh://vega</text>
         </g>
         </g>
 

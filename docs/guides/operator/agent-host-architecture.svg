@@ -568,14 +568,14 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="745" y="436" class="t-security" font-size="7" text-anchor="middle">GOV-020 policy</text>
         </g>
 
-        <g id="node-host" data-node-id="host" data-node-label="ki-techne-agent-host" tabindex="0" role="button" aria-label="Focus ki-techne-agent-host, user techne: Claude Code, git, AWS 655383751458, eu-west-1 › Agent-host SG: no inbound" aria-pressed="false" data-node-kind="backend" data-node-sublabel="user techne: Claude Code, git" data-node-tag="t3.medium, Ubuntu" data-node-context="AWS 655383751458, eu-west-1 › Agent-host SG: no inbound">
-          <title>ki-techne-agent-host · user techne: Claude Code, git · AWS 655383751458, eu-west-1 › Agent-host SG: no inbound · t3.medium, Ubuntu</title>
+        <g id="node-host" data-node-id="host" data-node-label="vega" tabindex="0" role="button" aria-label="Focus vega, user techne: Claude Code, git, AWS 655383751458, eu-west-1 › Agent-host SG: no inbound" aria-pressed="false" data-node-kind="backend" data-node-sublabel="user techne: Claude Code, git" data-node-tag="t3.medium, Ubuntu" data-node-context="AWS 655383751458, eu-west-1 › Agent-host SG: no inbound">
+          <title>vega · user techne: Claude Code, git · AWS 655383751458, eu-west-1 › Agent-host SG: no inbound · t3.medium, Ubuntu</title>
           <rect x="980" y="190" width="210" height="84" rx="6" class="c-mask"/>
           <rect x="980" y="190" width="210" height="84" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(986 196) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="1085" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">ki-techne-agent-host</text>
+          <text data-node-label="" x="1085" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">vega</text>
         <text x="1085" y="246" class="t-muted" font-size="9" text-anchor="middle">user techne: Claude Code, git</text>
         <text x="1085" y="266" class="t-backend" font-size="7" text-anchor="middle">t3.medium, Ubuntu</text>
         </g>

@@ -16,6 +16,7 @@ parameter_prefix=${AGENT_HOST_PARAMETER_PREFIX:-/ki/techne/agent-host}
 parameter_prefix=${parameter_prefix%/}
 instance_type=${AGENT_HOST_INSTANCE_TYPE:-t3.medium}
 volume_size=${AGENT_HOST_VOLUME_SIZE:-40}
+shell=${AGENT_HOST_SHELL:-zsh}
 # Optional binding values for OS patching: empty means no automatic
 # reboot and no Livepatch.
 reboot_window=${AGENT_HOST_REBOOT_WINDOW:-}
@@ -23,6 +24,10 @@ livepatch=${AGENT_HOST_LIVEPATCH:-false}
 
 if [[ -n ${reboot_window} && ! ${reboot_window} =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
   echo "AGENT_HOST_REBOOT_WINDOW must be a daily 24-hour HH:MM with no weekday, not ${reboot_window}" >&2
+  exit 1
+fi
+if [[ ${shell} != bash && ${shell} != zsh ]]; then
+  echo "AGENT_HOST_SHELL must be bash or zsh, not ${shell}" >&2
   exit 1
 fi
 if [[ ${livepatch} != true && ${livepatch} != false ]]; then
@@ -78,8 +83,9 @@ aws cloudformation deploy \
     ParameterPrefix="${parameter_prefix}" \
     InstanceType="${instance_type}" \
     VolumeSize="${volume_size}" \
+    Shell="${shell}" \
     ${patching[@]+"${patching[@]}"} \
-  --tags ki-agent-host-id="${host_id}" ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+  --tags ki-agent-host-id="${host_id}" ki-lifecycle=prototype ki-authority=GDR-KI-ARCADIA-004
 
 aws cloudformation describe-stacks \
   --region "${region}" \

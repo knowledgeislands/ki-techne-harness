@@ -96,7 +96,7 @@ confirm=CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host
 run provision.sh || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
 check '[[ ${deploy} == "AWS_PROFILE=knowledge-islands-techne cloudformation deploy --region eu-west-1 --stack-name ki-techne-agent-host "* ]]' "provision.sh must deploy ki-techne-agent-host in eu-west-1 with the admin profile, got: ${deploy}"
-check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020" ]]' "provision.sh must pass the agent-host values, got: ${deploy}"
+check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 Shell=zsh --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-authority=GDR-KI-ARCADIA-004" ]]' "provision.sh must pass the agent-host values, got: ${deploy}"
 check 'log | grep -qF "Values=/ki/techne/agent-host/tailscale-auth-key"' 'provision.sh must look for the agent-host auth key'
 check '! log | grep -qF ubuntu-pro-token' 'provision.sh must not look for an Ubuntu Pro token without Livepatch'
 
@@ -104,9 +104,9 @@ check '! log | grep -qF ubuntu-pro-token' 'provision.sh must not look for an Ubu
 # as overrides, Livepatch needs the Ubuntu Pro token, and a bad window is refused.
 run provision.sh -- AGENT_HOST_REBOOT_WINDOW=04:00 AGENT_HOST_LIVEPATCH=true || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
-check '[[ ${deploy} == *" VolumeSize=40 RebootWindow=04:00 Livepatch=true --tags "* ]]' "provision.sh must pass the patching values, got: ${deploy}"
+check '[[ ${deploy} == *" VolumeSize=40 Shell=zsh RebootWindow=04:00 Livepatch=true --tags "* ]]' "provision.sh must pass the patching values, got: ${deploy}"
 check 'log | grep -qF "Values=/ki/techne/agent-host/ubuntu-pro-token"' 'provision.sh must look for the Ubuntu Pro token with Livepatch'
-for bad in AGENT_HOST_REBOOT_WINDOW=4:00 "AGENT_HOST_REBOOT_WINDOW=Sun 04:00" AGENT_HOST_LIVEPATCH=yes; do
+for bad in AGENT_HOST_REBOOT_WINDOW=4:00 "AGENT_HOST_REBOOT_WINDOW=Sun 04:00" AGENT_HOST_LIVEPATCH=yes AGENT_HOST_SHELL=fish; do
   check '! run provision.sh -- "${bad}" && ! log | grep -qF "cloudformation deploy"' "provision.sh must refuse ${bad}"
 done
 
@@ -199,14 +199,14 @@ scratch=(
   AWS_PROFILE=scratch-admin AWS_REGION=eu-central-1 EXPECTED_AWS_ACCOUNT=111111111111
   AGENT_HOST_ID=scratch AGENT_HOST_NAME=ki-techne-scratch AGENT_HOST_TAILSCALE_NAME=scratch-tail
   AGENT_HOST_TAILSCALE_TAG=tag:ki-techne-scratch AGENT_HOST_STACK_NAME=ki-techne-scratch
-  AGENT_HOST_PARAMETER_PREFIX=/ki/techne/scratch/ AGENT_HOST_INSTANCE_TYPE=t3.large AGENT_HOST_VOLUME_SIZE=60
+  AGENT_HOST_PARAMETER_PREFIX=/ki/techne/scratch/ AGENT_HOST_INSTANCE_TYPE=t3.large AGENT_HOST_VOLUME_SIZE=60 AGENT_HOST_SHELL=bash
   AGENT_HOST_REPOSITORIES="${work}/scratch-repositories.txt"
 )
 printf '# scratch\nscratch/one https://example.invalid/one.git\n' >"${work}/scratch-repositories.txt"
 account=111111111111 stack_host_id=scratch
 run provision.sh -- "${scratch[@]}" || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
-check '[[ ${deploy} == "AWS_PROFILE=scratch-admin cloudformation deploy --region eu-central-1 --stack-name ki-techne-scratch "*" --parameter-overrides AgentHostId=scratch HostName=ki-techne-scratch TailscaleHostname=scratch-tail TailscaleTag=tag:ki-techne-scratch ParameterPrefix=/ki/techne/scratch InstanceType=t3.large VolumeSize=60 --tags ki-agent-host-id=scratch "* ]]' "provision.sh must pass the second binding's values, got: ${deploy}"
+check '[[ ${deploy} == "AWS_PROFILE=scratch-admin cloudformation deploy --region eu-central-1 --stack-name ki-techne-scratch "*" --parameter-overrides AgentHostId=scratch HostName=ki-techne-scratch TailscaleHostname=scratch-tail TailscaleTag=tag:ki-techne-scratch ParameterPrefix=/ki/techne/scratch InstanceType=t3.large VolumeSize=60 Shell=bash --tags ki-agent-host-id=scratch "* ]]' "provision.sh must pass the second binding's values, got: ${deploy}"
 check '! log | grep -qE "=agent-host( |$)|ki-techne-agent-host|/ki/techne/agent-host|655383751458|eu-west-1"' "provision.sh must not reach the first binding, got: $(log)"
 
 run stop.sh -- "${scratch[@]/AWS_PROFILE=scratch-admin/AWS_PROFILE=scratch-operator}" || { out >&2; exit 1; }

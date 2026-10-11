@@ -4,9 +4,9 @@
 # shellcheck disable=SC2016,SC2034,SC2088
 set -euo pipefail
 
-# Offline checks of the agent-host workspace scripts (TECHNE-TOOLS-OPS-015). A
+# Offline checks of the agent-host workspace scripts. A
 # temporary Mac home and host home, local Git origins and stub ssh, chezmoi,
-# curl, tailscale, zsh, mise, ki, rig, bun, codex and claude stand in for the
+# curl, tailscale, getent, mise, ki, rig, bun, codex and claude stand in for the
 # network and the host; an empty system root, or a fixture one, stands in for
 # the OS.
 
@@ -40,13 +40,13 @@ stub() {
 # Mac-side tools. ssh skips its options and runs the remote command locally as
 # the host user.
 stub "${stubs}/ssh" "while [[ \$1 == -o ]]; do shift 2; done; echo \"\$1\" >>'${state}/ssh.log'; HOME='${host_home}' exec bash -c \"\$2\""
-# setup no longer reads the operator's chezmoi source (TECHNE-TOOLS-OPS-015).
+# setup no longer reads the operator's chezmoi source.
 stub "${stubs}/chezmoi" "echo \"\$*\" >>'${state}/chezmoi.log'"
 stub "${stubs}/curl" "echo \"\$*\" >>'${state}/curl.log'; exit 1"
 # tailscale reports a node key only once a check writes one.
 stub "${stubs}/tailscale" "cat '${state}/tailscale.json' 2>/dev/null"
-# The chosen shell: the hand-off's exec lands here and records itself.
-stub "${stubs}/zsh" "echo \"zsh \$*\" >>'${state}/handoff.log'"
+# The provider sets the login shell; a check can change it through a state file.
+stub "${stubs}/getent" "echo \"techne:x:1000:1000::/home/techne:\$(cat '${state}/login-shell' 2>/dev/null || echo /usr/bin/zsh)\""
 
 # Host-side tools, where converge.sh expects them.
 key='$(pwd | tr / _)'
@@ -136,15 +136,24 @@ echo more >>"${work}/seed-beta/README.md"
 git -C "${work}/seed-beta" -c user.name=seed -c user.email=seed@example.invalid commit --quiet -am more
 git -C "${work}/seed-beta" push --quiet "${work}/origins/beta.git" main
 
-legacy='# ki-agent-host: mise shims (TECHNE-TOOLS-OPS-011)
+# Markers from before the rebuild that retired the hand-off, each naming a
+# record; the identifier is assembled so this file names none.
+record=TECHNE-TOOLS-OPS
+old_block="# >>> ki-agent-host (${record}-011) >>>
+[ -f \"\$HOME/.config/ki-agent-host/env.sh\" ] && . \"\$HOME/.config/ki-agent-host/env.sh\"
+# <<< ki-agent-host <<<"
+old_handoff="# >>> ki-agent-host hand-off (${record}-015) >>>
+case \$- in *i*) exec /usr/bin/zsh -l ;; esac
+# <<< ki-agent-host hand-off <<<"
+legacy='# ki-agent-host: mise shims ('"${record}"'-011)
 case ":$PATH:" in *":$HOME/.local/share/mise/shims:"*) ;; *) PATH="$HOME/.local/share/mise/shims:$PATH" ;; esac
 export PATH
 # end ki-agent-host: mise shims'
 hand_env='[ -f "$HOME/.ki-host-env" ] && . "$HOME/.ki-host-env"'
-printf '%s\n\n# ~/.profile stock\nPATH="$HOME/bin:$PATH"\n\n%s\n' "${legacy}" "${hand_env}" >"${host_home}/.profile"
-printf '%s\n\n\n%s\n\n# ~/.bashrc stock\ncase $- in\n    *i*) ;;\n      *) return;;\nesac\neval "$(/home/techne/.local/bin/mise activate bash)"\n' \
-  "${legacy}" "${hand_env}" >"${host_home}/.bashrc"
-printf '%s\n' "${legacy}" >"${host_home}/.config/husky/init.sh"
+printf '%s\n%s\n\n# ~/.profile stock\nPATH="$HOME/bin:$PATH"\n\n%s\n' "${old_block}" "${legacy}" "${hand_env}" >"${host_home}/.profile"
+printf '%s\n%s\n%s\n\n\n%s\n\n# ~/.bashrc stock\ncase $- in\n    *i*) ;;\n      *) return;;\nesac\neval "$(/home/techne/.local/bin/mise activate bash)"\n' \
+  "${old_block}" "${old_handoff}" "${legacy}" "${hand_env}" >"${host_home}/.bashrc"
+printf '%s\n%s\n' "${old_block}" "${legacy}" >"${host_home}/.config/husky/init.sh"
 echo 'export KNIP_DISABLE_RAW_TRANSFER=1' >"${host_home}/.ki-host-env"
 echo '{"theme":"dark"}' >"${host_home}/.claude/settings.json"
 # What the retired chezmoi cat path rendered, beside a
@@ -179,10 +188,11 @@ on_host=$(HOME=${host_home} bash "${scripts}/host/converge.sh" --repositories "$
 check '[[ ${on_host} == *"no changes"* ]]' "a run on the host must change nothing, got:
 ${on_host}"
 
-start='# >>> ki-agent-host (TECHNE-TOOLS-OPS-011) >>>'
+start='# >>> ki-agent-host >>>'
 for file in .profile .bashrc .config/husky/init.sh; do
   check '[[ $(head -n 1 "${host_home}/${file}") == "${start}" ]]' "${file} must start with the agent-host block"
   check '[[ $(grep -cF "${start}" "${host_home}/${file}") == 1 ]]' "${file} must hold one agent-host block"
+  check '[[ $(grep -cE "^# (>>>|<<<) ki-agent-host" "${host_home}/${file}") == 2 ]]' "${file} must lose the old markers, not keep them beside the new block"
   check '! grep -qE "mise shims|ki-host-env|mise activate" "${host_home}/${file}"' "${file} must lose the hand-made blocks"
 done
 expected_profile="${start}
@@ -200,8 +210,18 @@ check '[[ $(jq -c . "${host_home}/.claude/settings.json") == "{\"theme\":\"dark\
 check '[[ ! -e ${host_home}/.claude/CLAUDE.md && ! -e ${host_home}/.claude/memory-scope.md ]] && ls "${host_home}"/.local/state/ki-agent-host/backups/*/memory-scope.md >/dev/null' 'files the chezmoi cat path rendered must be backed up and removed'
 check 'grep -qx "# my notes" "${host_home}/.claude/notes.md" && [[ ! -e ${state}/chezmoi.log ]]' 'the operator'"'"'s own file must stay, and setup must not run chezmoi'
 check '[[ $(cat "${host_home}/.local/state/ki-agent-host/shell") == zsh && $(head -n 1 "${host_home}/.zshenv") == "${start}" ]]' 'zsh, the default shell, must source the environment from ~/.zshenv'
-check 'grep -qF "exec '"'"'${stubs}/zsh'"'"' -l" "${host_home}/.bashrc"' 'interactive bash must hand off to zsh'
-check '(( $(grep -nF "hand-off (TECHNE-TOOLS-OPS-015)" "${host_home}/.bashrc" | cut -d: -f1) < $(grep -nF "*) return;;" "${host_home}/.bashrc" | cut -d: -f1) ))' 'the hand-off must come before Ubuntu'"'"'s interactive-only return'
+check '! grep -qE "hand-off|exec .*-l" "${host_home}/.bashrc"' 'converge must remove the old hand-off and write none'
+check '[[ ${first} != *"login shell"* ]]' "a login shell that matches the choice must raise no warning, got:
+${first}"
+echo /bin/bash >"${state}/login-shell"
+if differs=$(HOME=${host_home} PATH="${stubs}:${PATH}" bash "${scripts}/host/converge.sh" --repositories "${repositories}" 2>&1); then
+  check '[[ ${differs} == *"warning  the login shell is /bin/bash, not zsh; rebuilding the host sets it"* ]]' "a login shell other than the choice must warn, got:
+${differs}"
+else
+  check false "a login shell other than the choice must warn without failing, got:
+${differs}"
+fi
+rm "${state}/login-shell"
 check '[[ $(HOME=${host_home} git config --global user.name) == "Test Operator" ]]' 'the Git identity must come from the Mac'
 check 'grep -qx local "${workspace}/gamma/README.md"' 'gamma must keep its uncommitted change'
 check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == $(git -C "${work}/origins/beta.git" rev-parse main) ]]' 'beta must match its origin'
@@ -433,7 +453,7 @@ check 'grep -qx "security 0 -" "${cache}" && [[ -z $(KI_AGENT_HOST_SYSROOT=${wor
 $(KI_AGENT_HOST_SYSROOT=${work}/sysroots/none banner)"
 rm "${cache}"
 
-# The binding owner's profile payload (TECHNE-TOOLS-OPS-015). A payload is
+# The binding owner's profile payload. A payload is
 # rendered for the OS these checks run on, as a host's would be for Linux.
 case $(uname -s) in Darwin) target_os=macos ;; *) target_os=linux ;; esac
 # payload <dir> <revision> <path:mode>...: a techne/host-profile/v1 payload
@@ -600,18 +620,8 @@ check '[[ ${sent} == *"profile payload refused; nothing was changed"* && $(cat "
 ${sent}"
 check '[[ ! -s ${state}/curl.log ]]' 'a refused payload must reach nothing'
 
-# Shell paths (TECHNE-TOOLS-OPS-015). Interactive bash hands off to the chosen
-# shell unless it runs a command or an escape hatch is set; the start-up
-# files give every shell the environment.
-handoff() { : >"${state}/handoff.log"; HOME=${host_home} PATH=${quiet_path}:/usr/bin:/bin "$@" </dev/null >/dev/null 2>&1 || true; cat "${state}/handoff.log"; }
-check '[[ $(handoff /bin/bash -i) == "zsh -l" ]]' 'an interactive bash login must hand off to zsh'
-check '[[ -z $(handoff /bin/bash -i -c true) ]]' 'bash running a command must not hand off'
-check '[[ -z $(handoff env SSH_ORIGINAL_COMMAND=true /bin/bash -i) ]]' 'an SSH command must not hand off'
-check '[[ -z $(handoff env KI_AGENT_HOST_NO_HANDOFF=1 /bin/bash -i) ]]' 'KI_AGENT_HOST_NO_HANDOFF must keep bash'
-check '[[ -z $(handoff env KI_AGENT_HOST_HANDED_OFF=1 /bin/bash -i) ]]' 'a session that has handed off must not hand off again'
-touch "${host_home}/.config/ki-agent-host/no-handoff"
-check '[[ -z $(handoff /bin/bash -i) ]]' 'the no-handoff file must keep bash'
-rm "${host_home}/.config/ki-agent-host/no-handoff"
+# Shell paths. The start-up files give every shell the environment, and
+# interactive shells mise's hook.
 environment='printf "%s %s\n" "${KNIP_DISABLE_RAW_TRANSFER:-}" "${ki_mise_hook:-none}"; case ":$PATH:" in *"/.local/share/mise/shims:"*) echo shims ;; esac'
 hook=$(HOME=${host_home} PATH=/usr/bin:/bin /bin/sh -c '. "$HOME/.config/husky/init.sh"; '"${environment}" 2>/dev/null)
 check '[[ ${hook} == "1 none"*"shims" ]]' "a Git hook through husky must get the environment, got: ${hook}"
@@ -626,33 +636,20 @@ if [[ -n ${real_zsh} ]]; then
 else
   echo 'agent-host-workspace: zsh is not installed here, so the zsh start-up checks are skipped' >&2
 fi
-found=$(HOME=${host_home} KI_AGENT_HOST_NO_HANDOFF=1 PATH=${quiet_path}:/usr/bin:/bin /bin/bash -i -c "${environment}" 2>/dev/null | grep -v '^ki-agent-host:' || true)
+found=$(HOME=${host_home} PATH=${quiet_path}:/usr/bin:/bin /bin/bash -i -c "${environment}" 2>/dev/null | grep -v '^ki-agent-host:' || true)
 check '[[ ${found} == "1 bash"*"shims" ]]' "interactive bash must get the environment and mise, got: ${found}"
 
-# Choosing bash drops the hand-off and the ~/.zshenv block, keeping the rest.
+# Choosing bash drops the ~/.zshenv block, keeping the rest.
 echo '# my zshenv' >>"${host_home}/.zshenv"
 bash_run=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} AGENT_HOST_SHELL=bash bash "${scripts}/setup.sh" 2>&1) || true
-check '! grep -qF "hand-off" "${host_home}/.bashrc" && [[ $(cat "${host_home}/.zshenv") == "# my zshenv" && $(cat "${host_home}/.local/state/ki-agent-host/shell") == bash ]]' "choosing bash must drop the hand-off and the zsh block, got:
+check '[[ $(cat "${host_home}/.zshenv") == "# my zshenv" && $(cat "${host_home}/.local/state/ki-agent-host/shell") == bash ]]' "choosing bash must drop the zsh block, got:
 ${bash_run}"
-check '[[ -z $(handoff /bin/bash -i) ]]' 'with bash chosen, nothing may hand off'
+check '[[ ${bash_run} == *"the login shell is /usr/bin/zsh, not bash"* ]]' "choosing bash on a zsh host must warn, got:
+${bash_run}"
 refused_shell=$(HOME=${mac_home} AGENT_HOST_SHELL=fish bash "${scripts}/setup.sh" 2>&1) && check false 'setup must refuse an unsupported shell'
 check '[[ ${refused_shell} == *"fish is not a supported shell"* ]]' 'setup must name the refused shell'
 
-# A chosen shell that is not installed leaves bash with a warning.
-nozsh=${work}/nozsh
-mkdir -p "${nozsh}"
-IFS=: read -ra dirs <<<"${PATH}"
-for dir in "${dirs[@]}"; do
-  for tool in "${dir}"/*; do
-    name=${tool##*/}
-    [[ ${name} == zsh || -e ${nozsh}/${name} || ! -x ${tool} ]] || ln -s "${tool}" "${nozsh}/${name}"
-  done
-done
-missing=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} PATH=${nozsh} bash "${scripts}/setup.sh" 2>&1) || true
-check '[[ ${missing} == *"warning  zsh is not installed, so interactive sessions stay in bash"* ]] && ! grep -qF "hand-off" "${host_home}/.bashrc"' "a missing shell must warn and make no hand-off, got:
-${missing}"
 setup >/dev/null || true
-check 'grep -qF "hand-off" "${host_home}/.bashrc"' 'zsh, once found again, must get the hand-off back'
 
 
 # A second binding's provider-neutral values, with no AWS variable set:

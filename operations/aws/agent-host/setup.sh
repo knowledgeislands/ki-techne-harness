@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Converge techne's workspace on the agent host from the operator's workstation
-# (TECHNE-TOOLS-OPS-015). Stages the host scripts, the
+# Stages the host scripts, the
 # recipe's files and, when AGENT_HOST_PROFILE names one, the binding owner's
 # validated profile payload over one SSH connection and runs host/converge.sh
 # there. SSH only: no AWS or Tailscale API call. Pass --pull to fast-forward

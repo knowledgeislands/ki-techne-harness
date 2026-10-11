@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Read-only report of work on the agent host that exists nowhere else, of what
 # expires and has drifted from the pins, of the binding owner's profile
-# (TECHNE-TOOLS-OPS-015), and of OS updates. Changes nothing but the cache the
+# and of OS updates. Changes nothing but the cache the
 # login banner reads; with --fetch it also updates remote-tracking refs.
 #
 # usage: status.sh [--json] [--fetch] [--repositories <file>] [--expect <path>]...
@@ -217,7 +217,7 @@ elif [[ -r ${sysroot}/System/Library/CoreServices/SystemVersion.plist ]]; then
   fi
 fi
 
-# The binding owner's profile payload (TECHNE-TOOLS-OPS-015): its revision
+# The binding owner's profile payload: its revision
 # and, when it delivered a Rig fragment, the drift of that profile's tools.
 # profile_drift stays unset when Rig cannot read the profile.
 revision='' rig_profile='' profile_drift='' personal=()

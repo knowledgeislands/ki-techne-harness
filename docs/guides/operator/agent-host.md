@@ -1,8 +1,8 @@
 # Build and operate the agent host
 
-This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host. The host is a separate EC2 instance, `ki-techne-agent-host`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
+This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host. The recipe `agent-host` is the AWS base for a remote agentic rig: it takes a host as far as built and ready, and the binding owner's own setup rigs it for use. The host is a separate EC2 instance, `vega`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
 
-The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in `GDR-KI-ARCADIA-004` and set through `KI-ARCADIA-GOV-023` within the bounds `KI-ARCADIA-GOV-020` accepted. The exemption has no automatic lapse: it stands until Kris changes or withdraws it. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
+The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in the decision record `GDR-KI-ARCADIA-004` in `ki-arcadia-principal`. The exemption has no automatic lapse: it stands until Kris changes or withdraws it. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
 
 ## At a glance
 
@@ -16,11 +16,11 @@ Two AWS profiles are in play. The build, rebuild and withdrawal use the admin pr
 
 ## What the host is
 
-- **Operator OS user:** `techne`. It is a non-root user without `sudo`. Use `techne@ki-techne-agent-host` in the chezmoi SSH `Host` entry and in Zed's `ssh_connections` entry.
-- **Tailnet name:** `ki-techne-agent-host`, advertising `tag:ki-techne-agent-host`.
+- **Operator OS user:** `techne`. It is a non-root user without `sudo`. Use `techne@vega` in the chezmoi SSH `Host` entry and in Zed's `ssh_connections` entry.
+- **Tailnet name:** `vega`, advertising `tag:ki-techne-agent-host`.
 - **Access:** Tailscale SSH only. The security group has no inbound rule; the boot script disables the OpenSSH listener and the session-manager agent, and the instance role has no session-manager permission.
 - **Image:** Ubuntu from the controller's pinned image, with Git, `tmux`, `jq`, `zsh`, Node.js from the latest `24.x` release (checksum-verified), the AWS CLI and Tailscale. Claude Code is installed for `techne` by the native installer in `~/.local/bin`, and `techne`'s Git uses the `ki-agent-host` credential helper for GitHub.
-- **Hostname:** the boot script sets the OS hostname to `ki-techne-agent-host`, keeps it across reboots with cloud-init's `preserve_hostname` and adds it to `/etc/hosts` so `sudo` and local lookups resolve it. This applies from the next build: a host built before it, including the current one, keeps the AWS default name such as `ip-10-90-0-40` until it is rebuilt, because `techne` has no `sudo` to rename it. The same holds for `zsh`.
+- **Hostname:** the boot script sets the OS hostname to `vega`, keeps it across reboots with cloud-init's `preserve_hostname` and adds it to `/etc/hosts` so `sudo` and local lookups resolve it. This applies from the next build: a host built before it, including the current one, keeps the AWS default name such as `ip-10-90-0-40` until it is rebuilt, because `techne` has no `sudo` to rename it.
 - **Size:** `t3.medium` with a 40 GB encrypted `gp3` volume by default. At list prices this is roughly 33 USD a month while running, plus about 3.50 USD for the volume and 3.65 USD for the public IPv4 address, which exists only for outbound traffic.
 - **Secrets:** the instance role may read only Parameter Store names under `/ki/techne/agent-host/`, decrypting only through Parameter Store. The boot script reads `tailscale-auth-key` and nothing else. The Git credential helper reads `github-token` when Git asks for GitHub credentials. `model-api-key` stays unused: Claude Code signs in interactively as Kris instead, so no model API key is stored.
 - **Not on the host:** K3s, Paperclip, Kitteth, Telegram or any controller workload.
@@ -31,7 +31,7 @@ The stack is `infra/aws/agent-host-stack.yaml`; the scripts are in `operations/a
 
 The host is the first binding of the harness recipe `agent-host`, whose agents run on the host itself; the binding shares the recipe's name. The recipe's manifest, [`recipes/agent-host/recipe.toml`](../../../recipes/agent-host/recipe.toml), names the stack and scripts, the fields a binding fills in, the environment variable each script reads for each field, the resource selectors and recipe-owned tags, and the footprint a binding leaves. A binding is a person's named instance, held outside this repository at `~/.config/techne/hosts/<name>.toml` with schema `techne/host-binding/v1`; it names its provider by carrying exactly one provider table, here `[aws]`. The `techne` CLI in `tools-techne` reads both and runs these scripts with every variable set from the binding; the manifest and the variables are the only contract between the two repositories.
 
-Run by hand with no variable set, every script behaves as the `agent-host` binding: each default below is that binding's value. A field the manifest marks required has no recipe default, so the binding must give it; the scripts still default it to today's value. A recipe default may be derived from the binding name, written `{name}`.
+Run by hand with no variable set, every script behaves as the `agent-host` binding with the recipe defaults: each default below is derived from the binding name `agent-host`. Kris's binding also sets `host_name` and `tailscale_name` to `vega`, the host's own name, so its scripts run with those two variables set. A field the manifest marks required has no recipe default, so the binding must give it; the scripts still default it to today's value. A recipe default may be derived from the binding name, written `{name}`.
 
 | Binding field | Recipe default | Variable | Read by |
 | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | `reboot_window` | optional | `AGENT_HOST_REBOOT_WINDOW` | `provision.sh` |
 | `livepatch` | optional | `AGENT_HOST_LIVEPATCH` | `provision.sh` |
 | `profile` | optional | `AGENT_HOST_PROFILE` | `setup.sh` |
-| `shell` | `zsh` | `AGENT_HOST_SHELL` | `setup.sh` |
+| `shell` | `zsh` | `AGENT_HOST_SHELL` | `provision.sh`, `setup.sh` |
 | `aws.account` | required | `EXPECTED_AWS_ACCOUNT` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.region` | required | `AWS_REGION` | `provision.sh`, `stop.sh`, `destroy.sh` |
 | `aws.admin_profile` | required | `AWS_PROFILE` | `provision.sh`, `destroy.sh` |
@@ -55,7 +55,7 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | `aws.instance_type` | `t3.medium` | `AGENT_HOST_INSTANCE_TYPE` | `provision.sh` |
 | `aws.volume_size` | `40` | `AGENT_HOST_VOLUME_SIZE` | `provision.sh` |
 
-`setup.sh` and `status.sh` read no AWS variable: they reach the host by its Tailscale name over SSH, and pass the workspace to the host scripts, which expand a leading `~/` to the operator's home there. `stop.sh` and `destroy.sh` read the Tailscale name, repository list and workspace only to pass them to `status.sh`, which reads the host's status before they act. `provision.sh` passes the host name, Tailscale name and tag, tag value and parameter prefix to the stack's `HostName`, `TailscaleHostname`, `TailscaleTag`, `AgentHostId` and `ParameterPrefix` parameters, and tags the stack with the tag value. `profile` and `shell` reach `setup.sh` alone, as [Profile payload](#profile-payload) and [Shell](#shell) describe.
+`setup.sh` and `status.sh` read no AWS variable: they reach the host by its Tailscale name over SSH, and pass the workspace to the host scripts, which expand a leading `~/` to the operator's home there. `stop.sh` and `destroy.sh` read the Tailscale name, repository list and workspace only to pass them to `status.sh`, which reads the host's status before they act. `provision.sh` passes the host name, Tailscale name and tag, tag value, parameter prefix and shell to the stack's `HostName`, `TailscaleHostname`, `TailscaleTag`, `AgentHostId`, `ParameterPrefix` and `Shell` parameters, and tags the stack with the tag value. `profile` reaches `setup.sh` alone, and `shell` reaches `setup.sh` as well as the stack, as [Profile payload](#profile-payload) and [Shell](#shell) describe.
 
 `bun run test` checks the manifest offline: every binding field declared once, in its provider-neutral or provider section, no AWS concept outside `[providers.aws]`, each listed script reading its variable, and each script default equal to the `agent-host` binding's value. It also checks the `[status]` table, which declares the status report's schema and exit statuses, and the `[operations]` table, which names the `rebuild` and `withdraw` operations of the `destroy` script.
 
@@ -73,7 +73,7 @@ Name-based enforcement needs a DNS firewall, a network firewall or an egress pro
 
 ## Operator access
 
-The `knowledge-islands-techne-agent-host` AWS profile assumes the IAM role `arn:aws:iam::655383751458:role/ki/ki-techne-agent-host-operator` from Kris's existing `knowledge-islands-techne` SSO profile. The role lives in the Techne account alone: only that account's `AWSAdministratorAccess` SSO role may assume it, sessions last at most 8 hours, and its inline policy is the `KI-ARCADIA-GOV-020` least-privilege policy unchanged. Nothing in the organisation or its management account is created or changed for the prototype; it relies only on Kris's existing SSO access to the account.
+The `knowledge-islands-techne-agent-host` AWS profile assumes the IAM role `arn:aws:iam::655383751458:role/ki/ki-techne-agent-host-operator` from Kris's existing `knowledge-islands-techne` SSO profile. The role lives in the Techne account alone: only that account's `AWSAdministratorAccess` SSO role may assume it, sessions last at most 8 hours, and its inline policy is the least-privilege policy the exemption accepted, unchanged. Nothing in the organisation or its management account is created or changed for the prototype; it relies only on Kris's existing SSO access to the account.
 
 ## Before the build
 
@@ -191,9 +191,9 @@ The boot script ends by printing `ki-agent-host bootstrap complete`. It also wri
 
 ## Verify over Tailscale
 
-1. `tailscale status` lists `ki-techne-agent-host` with the tag.
-2. `ssh techne@ki-techne-agent-host 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions, and `ssh techne@ki-techne-agent-host hostname` prints `ki-techne-agent-host`. The first connection asks you to accept the host key. Claude Code is at `~/.local/bin/claude`, which is not on the `PATH` of a non-interactive SSH command, so name it in full there; an interactive login shell finds it as `claude`.
-3. In Zed, open the `ki-techne-agent-host` remote with `upload_binary_over_ssh` enabled; the host never downloads the Zed server itself.
+1. `tailscale status` lists `vega` with the tag.
+2. `ssh techne@vega 'whoami; git --version; node --version; ~/.local/bin/claude --version'` prints `techne` and the three versions, and `ssh techne@vega hostname` prints `vega`. The first connection asks you to accept the host key. Claude Code is at `~/.local/bin/claude`, which is not on the `PATH` of a non-interactive SSH command, so name it in full there; an interactive login shell finds it as `claude`.
+3. In Zed, open the `vega` remote with `upload_binary_over_ssh` enabled; the host never downloads the Zed server itself.
 4. Delete the spent auth-key parameter: `aws ssm delete-parameter --profile knowledge-islands-techne --region eu-west-1 --name /ki/techne/agent-host/tailscale-auth-key`. Tailscale keeps the node joined across reboots.
 
 Set up the `techne` workspace next, as [Workspace setup](#workspace-setup) describes, once the GitHub token is in place.
@@ -237,12 +237,12 @@ bash operations/aws/agent-host/setup.sh --pull # --pull fast-forwards clean chec
 
 Pass `--pull` on every rerun. Without it, a checkout behind origin keeps stale skill projections, and `ki repo --estate repair` can then fail; `converge.sh` reports that failure with a reminder to rerun with `--pull`.
 
-It uses SSH to the binding's Tailscale name only, `ki-techne-agent-host` unless `AGENT_HOST_TAILSCALE_NAME` is set. It validates the profile payload `AGENT_HOST_PROFILE` names, when one is set, and sends nothing if it is refused; then it copies the host scripts, the recipe's files and the payload over one connection and runs `host/converge.sh` there. That script converges:
+It uses SSH to the binding's Tailscale name only, `vega` for Kris's binding, or the recipe default `ki-techne-agent-host` when `AGENT_HOST_TAILSCALE_NAME` is not set. It validates the profile payload `AGENT_HOST_PROFILE` names, when one is set, and sends nothing if it is refused; then it copies the host scripts, the recipe's files and the payload over one connection and runs `host/converge.sh` there. That script converges:
 
 - the Git identity from the Mac's global configuration and the house pull, branch and push settings;
 - the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/kit/<organisation>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
 - mise and its global pins for Bun, Node and the Codex CLI, exact versions read from the recipe's pin file, then each repository's own mise tools and Bun dependencies, leaving each repository's `mise.toml` alone;
-- one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc`, Husky's `init.sh` and, for zsh, `.zshenv`, so tools are on `PATH` in non-interactive SSH and Git hooks too, and the hand-off to the chosen shell that [Shell](#shell) describes;
+- one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc`, Husky's `init.sh` and, for zsh, `.zshenv`, so tools are on `PATH` in non-interactive SSH and Git hooks too, and the login-shell check that [Shell](#shell) describes;
 - the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;
 - Rig at its pinned tag, with the pin file as `~/.config/rig/rig.toml` and the observe-only `agent-host-pins` provider: Rig reports drift and installs nothing yet;
 - `autoMemoryEnabled` set to `false` in `~/.claude/settings.json`;
@@ -257,14 +257,14 @@ Two steps remain Kris's. Sign Claude Code in as [Claude Code](#claude-code) desc
 
 ### Profile payload
 
-The binding owner's workstation layer reaches the host as one rendered directory, a `techne/host-profile/v1` payload (TECHNE-TOOLS-OPS-015). Kris's chezmoi source renders it with Cheztoi (DOTFILES-UE-073): one `chezmoi archive` call over exactly the targets the host's manifest names, with `--override-data` setting the values the host variants branch on.
+The binding owner's workstation layer reaches the host as one rendered directory, a `techne/host-profile/v1` payload. Kris's chezmoi source renders it with Cheztoi: one `chezmoi archive` call over exactly the targets the host's manifest names, with `--override-data` setting the values the host variants branch on.
 
 ```sh
 ~/.local/share/chezmoi/scripts/cheztoi-render --host vega --validator operations/aws/agent-host/host/profile-check.py
 AGENT_HOST_PROFILE=~/.cache/cheztoi/vega bash operations/aws/agent-host/setup.sh
 ```
 
-The payload holds `manifest.json` and, under `home/`, each file it lists at its path in the operator's home with its mode. The manifest names its `revision`, its `target_os` and, optionally, its `target_host`: the host name `status` reports, such as `ki-techne-agent-host`, which `converge.sh` compares with the host's before writing anything, so a payload rendered for one host is never applied to another. Leave `target_host` out until the host has the name the payload is for. An optional `rig` object names one Rig fragment under `~/.config/rig/conf.d/` and the profile it declares; the fragment may declare tools, categories and that profile only, through Rig's built-in providers.
+The payload holds `manifest.json` and, under `home/`, each file it lists at its path in the operator's home with its mode. The manifest names its `revision`, its `target_os` and, optionally, its `target_host`: the host name `status` reports, such as `vega`, which `converge.sh` compares with the host's before writing anything, so a payload rendered for one host is never applied to another. Leave `target_host` out until the host has the name the payload is for. An optional `rig` object names one Rig fragment under `~/.config/rig/conf.d/` and the profile it declares; the fragment may declare tools, categories and that profile only, through Rig's built-in providers.
 
 `host/profile-check.py` validates the payload on the workstation before anything is sent, and again on the host before anything is written. It refuses a path outside the home, a symbolic link, an unlisted file, a destination the recipe manages (such as `~/.bashrc`, the chosen shell's start-up file, `~/.config/mise/`, `~/.claude/settings.json`, `~/.ssh/` or the workspace), a secret, content invalid on the target OS (such as `/opt/homebrew` on Linux, or an unguarded `pbcopy`) and a fragment that reaches a custom provider, a managed resource or an identity of the recipe's own Rig configuration. A refusal sends or changes nothing.
 
@@ -274,9 +274,9 @@ To recover a lost or rebuilt host's profile, re-render the payload on the workst
 
 ### Shell
 
-`AGENT_HOST_SHELL`, `zsh` by default or `bash`, names the shell interactive sessions use. With zsh, `.zshenv` sources the environment file, and an interactive bash session hands off to `zsh -l` from a guarded block at the top of `.bashrc`. The hand-off never happens for a command, whether `bash -c` or an SSH command, or in a session that has already handed off. Interactive bash and zsh both get mise's hook.
+`AGENT_HOST_SHELL`, `zsh` by default or `bash`, names the operator user's login shell. The provider sets it when it builds the host: `provision.sh` passes it to the stack's `Shell` parameter and the boot script creates `techne` with it. `techne` cannot change its own login shell, so changing the choice takes a rebuild. With zsh, `.zshenv` sources the environment file; interactive bash and zsh both get mise's hook. Choosing `bash` removes the `.zshenv` block and keeps the rest of `.zshenv`.
 
-Two escape hatches keep bash when a personal start-up file breaks the login: set `KI_AGENT_HOST_NO_HANDOFF=1` for one session, such as `ssh -t ki-techne-agent-host env KI_AGENT_HOST_NO_HANDOFF=1 bash -l`, or create `~/.config/ki-agent-host/no-handoff` on the host to keep bash until it is removed. Choosing `bash` removes the hand-off and the `.zshenv` block and keeps the rest of `.zshenv`. When the chosen shell is not installed, `converge.sh` warns and makes no hand-off; the provider installs it (TECHNE-TOOLS-OPS-017).
+`converge.sh` reads the login shell with `getent passwd` and warns, without failing, when it differs from the choice, naming the rebuild as the fix. It writes no hand-off from `.bashrc` and removes one an earlier setup left. A host built before the stack took the shell keeps bash as its login shell, and warns, until it is rebuilt.
 
 ### Status
 
@@ -298,7 +298,7 @@ The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the r
 
 The GitHub token expires 90 days after it is created and the Tailscale node key on its own schedule; the status report and the login banner warn within 14 days, so rotate the token as in [GitHub](#github) when either shows it. The banner knows only what the last text report found, which is why it also says when that report is more than 7 days old.
 
-To bump a pin, change its locator in `recipes/agent-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; `rig apply` comes later, under TECHNE-TOOLS-OPS-018.
+To bump a pin, change its locator in `recipes/agent-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; installing through `rig apply` comes later.
 
 ## Patching and restart
 
@@ -370,9 +370,9 @@ Do both steps; either one alone stops access.
    bash operations/aws/agent-host/stop.sh             # --now skips the status read
    ```
 
-   It stops only a running instance tagged `ki-agent-host-id = agent-host`, `ki-lifecycle = prototype` and `Name = ki-techne-agent-host`. First it reads [Status](#status) with a 5-second connect timeout and prints a warning naming each repository at risk or unknown, or saying the status could not be read. It never refuses: a stop keeps the disk, so the work is still there when the host starts again. In an emergency, `--now` stops without waiting for the read.
+   It stops only a running instance tagged `ki-agent-host-id = agent-host`, `ki-lifecycle = prototype` and `Name = vega`. First it reads [Status](#status) with a 5-second connect timeout and prints a warning naming each repository at risk or unknown, or saying the status could not be read. It never refuses: a stop keeps the disk, so the work is still there when the host starts again. In an emergency, `--now` stops without waiting for the read.
 
-2. In the Tailscale admin console, remove the `ki-techne-agent-host` device and revoke any unused auth key for its tag.
+2. In the Tailscale admin console, remove the `vega` device and revoke any unused auth key for its tag.
 
 ## Before a rebuild
 
@@ -382,13 +382,13 @@ Before rebuilding the host or deploying a changed stack template, prove that the
 aws cloudformation deploy --profile knowledge-islands-techne --region eu-west-1 \
   --stack-name ki-techne-agent-host --template-file infra/aws/agent-host-stack.yaml \
   --capabilities CAPABILITY_IAM --no-execute-changeset \
-  --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host \
-    TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host \
+  --parameter-overrides AgentHostId=agent-host HostName=vega \
+    TailscaleHostname=vega TailscaleTag=tag:ki-techne-agent-host \
     ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 \
-  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-work-item=KI-ARCADIA-GOV-020
+  --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-authority=GDR-KI-ARCADIA-004
 ```
 
-Expect `No changes to deploy`. If a change set is created instead, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect to fix before the rebuild.
+Expect `No changes to deploy`. The one exception is the first rebuild after the stack took the `Shell` parameter and the `ki-authority` tag: run this check at the last commit before that change, then rebuild from the new template, which changes the tags, description, boot script and host names by design. If a change set is created otherwise, read it with `aws cloudformation describe-change-set` and delete it unexecuted with `aws cloudformation delete-change-set`; any listed resource change is a defect to fix before the rebuild.
 
 ## Rebuild and withdraw
 
@@ -399,7 +399,7 @@ CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/d
 CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/destroy.sh withdraw
 ```
 
-- **Rebuild** deletes the `ki-techne-agent-host` stack only, keeping the `github-token` and `model-api-key` parameters for the next build, then prints the rebuild sequence: remove the old `ki-techne-agent-host` device in the Tailscale admin console so the new host takes its name, store a fresh Tailscale auth key as [Before the build](#before-the-build) describes, overwriting any spent one, then run `provision.sh` and `setup.sh`. Run [Before a rebuild](#before-a-rebuild) first when the template has changed.
+- **Rebuild** deletes the `ki-techne-agent-host` stack only, keeping the `github-token` and `model-api-key` parameters for the next build, then prints the rebuild sequence: remove the old `vega` device in the Tailscale admin console so the new host takes its name, store a fresh Tailscale auth key as [Before the build](#before-the-build) describes, overwriting any spent one, then run `provision.sh` and `setup.sh`. Run [Before a rebuild](#before-a-rebuild) first when the template has changed.
 - **Withdraw** deletes the stack and the three parameters under `/ki/techne/agent-host/`, then lists what remains to remove by hand: the tailnet device, its tag, tag owner, grant and `ssh` rule and any unused auth key; the GitHub token and any model API key issued for the host; the `ki-techne-agent-host-operator` role, its inline policy and the `knowledge-islands-techne-agent-host` profile; and the SSH and Zed entries in the chezmoi source, applied only after reviewing `chezmoi diff`.
 
 A bare `destroy.sh` is refused. Both operations refuse a stack that is not tagged `ki-agent-host-id = agent-host`, and both may be rerun after a partial clean-up: a stack that is already gone is skipped, and missing parameters do not block withdrawal.
@@ -433,5 +433,5 @@ There is no EBS snapshot route.
 ### In an emergency
 
 1. Stop the host with `stop.sh --now`, as the [Kill switch](#kill-switch) describes.
-2. Remove the `ki-techne-agent-host` device in the Tailscale admin console.
+2. Remove the `vega` device in the Tailscale admin console.
 3. Rebuild or withdraw with `--discard-unreadable-host`, typing the confirmation. The host cannot be reached once its device is gone, so whatever was on it is lost.

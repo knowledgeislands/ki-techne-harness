@@ -87,7 +87,7 @@
     {
       "id": "host",
       "type": "backend",
-      "label": "ki-techne-agent-host",
+      "label": "vega",
       "sublabel": "user techne: Claude Code, git",
       "tag": "t3.medium, Ubuntu",
       "pos": [980, 190],

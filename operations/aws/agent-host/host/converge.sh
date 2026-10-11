@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Converge techne's workspace on the agent host to the declared state: its
 # checkouts and shell environment, the recipe's pins, the login banner and the
-# binding owner's profile (TECHNE-TOOLS-OPS-015). Runs on the host as techne,
+# binding owner's profile. Runs on the host as techne,
 # without sudo; setup.sh stages and runs it from the operator's workstation,
 # with the binding owner's profile payload when one is supplied, and it also
 # runs from the host's harness clone, where it keeps the last applied payload's
@@ -90,10 +90,11 @@ fi
 
 env_file=${HOME}/.config/ki-agent-host/env.sh
 backup_dir=${HOME}/.local/state/ki-agent-host/backups/$(date -u +%Y%m%dT%H%M%SZ)
-block_start='# >>> ki-agent-host (TECHNE-TOOLS-OPS-011) >>>'
+block_start='# >>> ki-agent-host >>>'
 block_end='# <<< ki-agent-host <<<'
-handoff_start='# >>> ki-agent-host hand-off (TECHNE-TOOLS-OPS-015) >>>'
-handoff_end='# <<< ki-agent-host hand-off <<<'
+# Any earlier marker of this script's, with or without a label, and the
+# retired interactive hand-off block, so a rerun replaces them.
+block_start_pattern='^# >>> ki-agent-host( .*)? >>>$'
 
 changes=0
 skips=0
@@ -122,13 +123,13 @@ write_file() {
   mv "$1.tmp.$$" "$1"
 }
 
-# Remove this script's block and the blocks the hand set-up of 2026-10-07 left,
-# then squeeze blank lines.
+# Remove this script's blocks, old markers included, and the blocks the hand
+# set-up of 2026-10-07 left, then squeeze blank lines.
 strip_managed() {
-  awk -v start="${block_start}" -v end="${block_end}" -v hstart="${handoff_start}" -v hend="${handoff_end}" '
-    $0 == start || $0 == hstart { managed = 1; next }
-    $0 == end || $0 == hend { managed = 0; next }
-    $0 == "# ki-agent-host: mise shims (TECHNE-TOOLS-OPS-011)" { legacy = 1; next }
+  awk '
+    /^# >>> ki-agent-host( .*)? >>>$/ { managed = 1; next }
+    /^# <<< ki-agent-host( .*)? <<<$/ { managed = 0; next }
+    /^# ki-agent-host: mise shims( .*)?$/ { legacy = 1; next }
     $0 == "# end ki-agent-host: mise shims" { legacy = 0; next }
     managed || legacy { next }
     $0 == "[ -f \"$HOME/.ki-host-env\" ] && . \"$HOME/.ki-host-env\"" { next }
@@ -138,17 +139,14 @@ strip_managed() {
 }
 
 # Put one block that sources the environment file at the top of a start-up file,
-# above Ubuntu's interactive-only return in .bashrc, followed by any extra
-# managed block given.
+# above Ubuntu's interactive-only return in .bashrc.
 source_block() {
-  local file=$1 extra=${2:-} rest content
+  local file=$1 rest content
   rest=''
   [[ -f ${file} ]] && rest=$(strip_managed "${file}")
   content="${block_start}
 [ -f \"\$HOME/.config/ki-agent-host/env.sh\" ] && . \"\$HOME/.config/ki-agent-host/env.sh\"
 ${block_end}"
-  [[ -n ${extra} ]] && content="${content}
-${extra}"
   [[ -n ${rest} ]] && content="${content}
 
 ${rest}"
@@ -162,7 +160,7 @@ ${rest}"
 # The quoted variables expand in the shells that source the file, not here.
 # shellcheck disable=SC2016
 env_content='# Agent-host shell environment, managed by ki-techne-harness
-# operations/aws/agent-host (TECHNE-TOOLS-OPS-015); rerun
+# operations/aws/agent-host; rerun
 # setup rather than editing. ~/.profile, ~/.bashrc, husky'"'"'s init.sh and, for
 # zsh, ~/.zshenv source it, so login, non-interactive and Git hook shells all
 # find the pinned tools. It stays sourceable from any POSIX shell.
@@ -251,31 +249,12 @@ banner_file=${HOME}/.config/ki-agent-host/banner.sh
 if write_file "${banner_file}" "${banner_content}"; then
   changed "${banner_file}"
 fi
-# The chosen shell (TECHNE-TOOLS-OPS-015): an interactive bash session hands
-# off to it as a login shell. A command (bash -c, or an SSH command) never
-# hands off, and KI_AGENT_HOST_NO_HANDOFF or the no-handoff file keeps bash, so
-# a broken personal start-up file cannot shut the operator out.
-handoff=''
-if [[ ${shell_choice} != bash ]]; then
-  if shell_path=$(command -v "${shell_choice}"); then
-    handoff="${handoff_start}
-case \$- in *i*)
-  if [ -z \"\${BASH_EXECUTION_STRING:-}\" ] && [ -z \"\${SSH_ORIGINAL_COMMAND:-}\" ] && [ -z \"\${KI_AGENT_HOST_NO_HANDOFF:-}\" ] && [ -z \"\${KI_AGENT_HOST_HANDED_OFF:-}\" ] &&
-    [ ! -e \"\$HOME/.config/ki-agent-host/no-handoff\" ] && [ -x '${shell_path}' ]; then
-    KI_AGENT_HOST_HANDED_OFF=1; export KI_AGENT_HOST_HANDED_OFF; exec '${shell_path}' -l
-  fi ;;
-esac
-${handoff_end}"
-  else
-    warn "${shell_choice} is not installed, so interactive sessions stay in bash; the provider installs it (TECHNE-TOOLS-OPS-017)"
-  fi
-fi
 source_block "${HOME}/.profile"
-source_block "${HOME}/.bashrc" "${handoff}"
+source_block "${HOME}/.bashrc"
 source_block "${HOME}/.config/husky/init.sh"
 if [[ ${shell_choice} == zsh ]]; then
   source_block "${HOME}/.zshenv"
-elif [[ -f ${HOME}/.zshenv ]] && grep -qxF "${block_start}" "${HOME}/.zshenv"; then
+elif [[ -f ${HOME}/.zshenv ]] && grep -qE "${block_start_pattern}" "${HOME}/.zshenv"; then
   # Back to bash: zsh no longer needs the block, and the rest is the owner's.
   if write_file "${HOME}/.zshenv" "$(strip_managed "${HOME}/.zshenv")"; then
     changed "${HOME}/.zshenv no longer sources the agent-host environment"
@@ -283,6 +262,14 @@ elif [[ -f ${HOME}/.zshenv ]] && grep -qxF "${block_start}" "${HOME}/.zshenv"; t
 fi
 mkdir -p "${state_dir}"
 printf '%s\n' "${shell_choice}" >"${state_dir}/shell"
+# The provider sets the login shell when it builds the host, and this user
+# cannot change it, so a difference is reported, not fixed.
+login_shell=$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7 || true)
+if [[ -z ${login_shell} ]]; then
+  warn "the login shell could not be read, so it is not checked against ${shell_choice}"
+elif [[ $(basename "${login_shell}") != "${shell_choice}" ]]; then
+  warn "the login shell is ${login_shell}, not ${shell_choice}; rebuilding the host sets it"
+fi
 if [[ -e ${HOME}/.ki-host-env ]]; then
   backup "${HOME}/.ki-host-env"
   rm -f "${HOME}/.ki-host-env"
@@ -357,7 +344,7 @@ fi
 
 # Rig and the pins profile ------------------------------------------------------------
 
-# Rig only observes the pins until TECHNE-TOOLS-OPS-018 (ADR-KI-ARCADIA-003 stage 1).
+# Rig only observes the pins for now (ADR-KI-ARCADIA-003 stage 1).
 rig=${HOME}/.local/bin/rig
 if [[ $("${rig}" --version 2>/dev/null || true) != "rig ${rig_version}" ]]; then
   installer=$(mktemp)
@@ -565,7 +552,7 @@ if [[ $(stat -c %a "${HOME}/.codex/AGENTS.md" 2>/dev/null || stat -f %Lp "${HOME
 fi
 
 # ODR-KI-ARCADIA-001: the operator's workstation checkout is the roadmap
-# writing checkout; KI-TOOL-CLI-115 has ki refuse roadmap writes where this is.
+# writing checkout; ki refuses roadmap writes where this is.
 marker="# ki agent-host marker, managed by ki-techne-harness operations/aws/agent-host.
 # This machine is an agent host of the agent-host recipe, not a roadmap writing
 # checkout: roadmap writes belong to the operator's workstation checkout.
@@ -574,7 +561,7 @@ if write_file "${HOME}/.config/ki/host-marker" "${marker}"; then
   changed "${HOME}/.config/ki/host-marker"
 fi
 
-# The binding owner's profile payload (TECHNE-TOOLS-OPS-015) ----------------------
+# The binding owner's profile payload ------------------------------------------
 
 # The payload's files, each written as this user with its mode. The composed
 # ~/.codex/AGENTS.md is written above.

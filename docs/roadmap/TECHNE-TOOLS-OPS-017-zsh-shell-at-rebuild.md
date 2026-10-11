@@ -6,13 +6,13 @@ kind: deliver
 purpose: debt
 project: agent-host
 component: infra
-status: ready
-horizon: next
+status: in-progress
+horizon: now
 blocks: []
 blocked_by: [TECHNE-TOOLS-OPS-015]
-baseline_ref: null
+baseline_ref: 7f1b70807950e3e6c0cd7270356d8a8b6b2592ed
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-11T01:26:00Z
+updated_at: 2026-10-11T03:09:49Z
 ---
 
 # Binding Shell at Rebuild

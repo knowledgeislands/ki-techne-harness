@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Prototype agent host reached only over Tailscale SSH (KI-ARCADIA-GOV-020)
+Description: Prototype agent host reached only over Tailscale SSH
 
 Parameters:
   AgentHostId:
@@ -30,6 +30,11 @@ Parameters:
     Type: String
     AllowedPattern: '[a-z][a-z0-9-]{0,30}'
     Default: techne
+  # The operator user's login shell, the binding's shell choice.
+  Shell:
+    Type: String
+    AllowedValues: [bash, zsh]
+    Default: zsh
   TailscaleTag:
     Type: String
     AllowedPattern: 'tag:[a-z0-9-]+'
@@ -74,8 +79,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -87,8 +92,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   GatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -110,8 +115,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   RouteTable:
     Type: AWS::EC2::RouteTable
@@ -124,8 +129,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   DefaultRoute:
     Type: AWS::EC2::Route
@@ -176,8 +181,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   AgentHostRole:
     Type: AWS::IAM::Role
@@ -212,8 +217,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
 
   AgentHostInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -254,8 +259,8 @@ Resources:
           Value: !Ref AgentHostId
         - Key: ki-lifecycle
           Value: prototype
-        - Key: ki-work-item
-          Value: KI-ARCADIA-GOV-020
+        - Key: ki-authority
+          Value: GDR-KI-ARCADIA-004
       # Shell variables are written $name, never with braces, so Fn::Sub
       # substitutes only the template parameters and pseudo parameters; ${!name}
       # is Fn::Sub's escape for a literal ${name}, which apt's configuration uses.
@@ -281,7 +286,7 @@ Resources:
           apt-get install -y --no-install-recommends ca-certificates curl git jq tmux xz-utils zsh
           snap install aws-cli --classic
 
-          # OS patching (TECHNE-TOOLS-OPS-022). Security updates install unattended
+          # OS patching. Security updates install unattended
           # and never restart the host: unattended-upgrades checks for logged-in
           # users when its run ends, not when the restart happens.
           cat > /etc/apt/apt.conf.d/20auto-upgrades <<'APT'
@@ -289,7 +294,7 @@ Resources:
           APT::Periodic::Unattended-Upgrade "1";
           APT
           cat > /etc/apt/apt.conf.d/52ki-agent-host-unattended-upgrades <<'APT'
-          // Managed by the ki-agent-host boot script (TECHNE-TOOLS-OPS-022): security origins only.
+          // Managed by the ki-agent-host boot script: security origins only.
           #clear Unattended-Upgrade::Allowed-Origins;
           #clear Unattended-Upgrade::Origins-Pattern;
           Unattended-Upgrade::Allowed-Origins {
@@ -329,7 +334,7 @@ Resources:
           UNIT
             cat > /etc/systemd/system/ki-agent-host-reboot.timer <<'UNIT'
           [Unit]
-          Description=Daily agent-host reboot window (TECHNE-TOOLS-OPS-022)
+          Description=Daily agent-host reboot window
 
           [Timer]
           OnCalendar=*-*-* ${RebootWindow}:00
@@ -349,7 +354,7 @@ Resources:
           rm -f "/tmp/$node_tarball"
 
           if ! id -u '${OperatorUser}' >/dev/null 2>&1; then
-            useradd --create-home --shell /bin/bash '${OperatorUser}'
+            useradd --create-home --shell "$(command -v ${Shell})" '${OperatorUser}'
           fi
           sudo -u '${OperatorUser}' -H bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
 

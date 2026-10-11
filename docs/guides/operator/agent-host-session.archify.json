@@ -94,7 +94,7 @@
       "from": "helper",
       "to": "zed",
       "y": 252,
-      "label": "zed ssh://ki-techne-agent-host",
+      "label": "zed ssh://vega",
       "variant": "emphasis"
     },
     {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a binding owner's techne/host-profile/v1 payload (TECHNE-TOOLS-OPS-015).
+"""Validate a binding owner's techne/host-profile/v1 payload.
 
 usage: profile-check.py [--os linux|macos] [--hostname <name>] [--shell bash|zsh]
                         [--workspace <path>] [--recipe-rig <rig.toml>] <payload>

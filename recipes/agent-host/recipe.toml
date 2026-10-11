@@ -119,7 +119,7 @@ optional = true
 env = "AGENT_HOST_LIVEPATCH"
 scripts = ["provision"]
 
-# The binding owner's workstation layer (TECHNE-TOOLS-OPS-015). Optional:
+# The binding owner's workstation layer. Optional:
 # absent means the host gets the recipe layer alone. The payload is a
 # techne/host-profile/v1 directory rendered on the operator's workstation.
 [parameters.profile]
@@ -129,10 +129,10 @@ env = "AGENT_HOST_PROFILE"
 scripts = ["setup"]
 
 [parameters.shell]
-summary = "Interactive shell sessions hand off to: bash or zsh"
+summary = "The operator user's login shell: bash or zsh"
 default = "zsh"
 env = "AGENT_HOST_SHELL"
-scripts = ["setup"]
+scripts = ["provision", "setup"]
 
 [providers.aws]
 summary = "One EC2 instance in its own VPC, built by a CloudFormation stack"
@@ -226,4 +226,4 @@ operator_role = "{aws.operator_role}"
 
 [providers.aws.tags]
 ki-lifecycle = "prototype"
-ki-work-item = "KI-ARCADIA-GOV-020"
+ki-authority = "GDR-KI-ARCADIA-004"
