@@ -12,7 +12,6 @@ knowledgeislands/mcp-git-audit https://github.com/knowledgeislands/mcp-git-audit
 knowledgeislands/mcp-gsuite https://github.com/knowledgeislands/mcp-gsuite.git
 knowledgeislands/mcp-housekeeping-chatgpt https://github.com/knowledgeislands/mcp-housekeeping-chatgpt.git
 knowledgeislands/mcp-housekeeping-claude https://github.com/knowledgeislands/mcp-housekeeping-claude.git
-knowledgeislands/mcp-housekeeping-codex https://github.com/knowledgeislands/mcp-housekeeping-codex.git
 knowledgeislands/mcp-ki-kb-fs https://github.com/knowledgeislands/mcp-ki-kb-fs.git
 knowledgeislands/mcp-ki-kb-notion-mirror https://github.com/knowledgeislands/mcp-ki-kb-notion-mirror.git
 knowledgeislands/mcp-m365 https://github.com/knowledgeislands/mcp-m365.git
