@@ -6,13 +6,13 @@ kind: deliver
 purpose: upkeep
 project: agent-host
 component: recipes
-status: draft
+status: ready
 horizon: next
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-11T01:38:30Z
-updated_at: 2026-10-11T01:38:30Z
+updated_at: 2026-10-11T03:10:57Z
 ---
 
 # Weekly Pin Bump
@@ -76,7 +76,7 @@ The Techne programme hold bars managing remote environments, not local work. Thi
 
 ## Dependencies / blocks
 
-None blocking. [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [TECHNE-TOOLS-OPS-018](TECHNE-TOOLS-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
+The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Decision 40(3a) in the Techne thread's decisions log), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [TECHNE-TOOLS-OPS-018](TECHNE-TOOLS-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
 
 ## Documentation impact
 
@@ -98,9 +98,9 @@ None beyond the overlaps under Dependencies / blocks. Each weekly run is spawned
 
 ## Discussion
 
-Captured, adopted into Next and planned on 2026-10-11 under Decision 38. Kept `draft` for Kris's approval. The decisions below need settling before it can be Ready; the plan above assumes the recommendations.
+Captured, adopted into Next and planned on 2026-10-11 under Decision 38. On 2026-10-11 Kris accepted all four decisions below as recommended and moved the record to Ready, holding the pin-bump tool until the role profile's `roles/` move lands (Decision 40(3a) and 40(8) in the Techne thread's decisions log). The plan above matches the decisions. The paths in Current state, Steps and Files touched name today's `recipes/agent-host/rig.toml`; read them as the profile's new path once it moves.
 
-1. **Node's release line.** Recommended: stay on the pinned major (24, the current LTS line) and only raise within it; the run reports a newer LTS major as a note, and moving to it is a separate decision. Alternative: follow the newest LTS major automatically.
-2. **Claude Code's minimum.** Recommended: leave the minimum alone in the weekly run, because Claude Code updates itself and the pin is only a floor; raise it by hand when a needed feature requires it. Alternative: raise it to the latest release each week, at the cost of the host showing drift until it updates itself.
-3. **How the run is triggered.** Recommended: `spawn-policy: when-due`, so whenever Kris or an agent runs `ki-next` on the Mac and the week has passed, the run is spawned and done there (interactively or through `ki agent launch`), with no scheduler for now. Alternative: a launchd job on the Mac that queues the run weekly, which is a Mac environment change made through chezmoi and needs its own approval.
-4. **Other tools' major versions.** Recommended: raise rig, ki, mise, bun and codex to their latest stable release whatever the size of the jump, and rely on `bun run test` and Kris's review as the gate. Alternative: hold major jumps for a separate decision, like node.
+1. **Node's release line.** Resolved as recommended: stay on the pinned major (24, the current LTS line) and only raise within it; the run reports a newer LTS major as a note, and moving to it is a separate decision. Alternative: follow the newest LTS major automatically.
+2. **Claude Code's minimum.** Resolved as recommended: leave the minimum alone in the weekly run, because Claude Code updates itself and the pin is only a floor; raise it by hand when a needed feature requires it. Alternative: raise it to the latest release each week, at the cost of the host showing drift until it updates itself.
+3. **How the run is triggered.** Resolved as recommended: `spawn-policy: when-due`, so whenever Kris or an agent runs `ki-next` on the Mac and the week has passed, the run is spawned and done there (interactively or through `ki agent launch`), with no scheduler for now. Alternative: a launchd job on the Mac that queues the run weekly, which is a Mac environment change made through chezmoi and needs its own approval.
+4. **Other tools' major versions.** Resolved as recommended: raise rig, ki, mise, bun and codex to their latest stable release whatever the size of the jump, and rely on `bun run test` and Kris's review as the gate. Alternative: hold major jumps for a separate decision, like node.
