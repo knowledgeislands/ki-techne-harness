@@ -1,5 +1,5 @@
 ---
-areas: { CTRL: 1, FAB: 1, OPS: 23 }
+areas: { CTRL: 1, FAB: 1, OPS: 24 }
 ---
 
 # Roadmap issue ledger
@@ -8,4 +8,4 @@ This ledger reserves fixed issuing-area namespaces. Allocate the next work item 
 
 - `CTRL` reserves through `001`.
 - `FAB` reserves through `001`.
-- `OPS` reserves through `023`.
+- `OPS` reserves through `024`.
