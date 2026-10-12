@@ -7,12 +7,16 @@ purpose: upkeep
 project: agent-host
 component: recipes
 status: ready
-horizon: next
+horizon: hold
+hold:
+  reason: parked
+  condition: the Techne agent-host thread resumes
+  review: 2026-11-12
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-11T01:38:30Z
-updated_at: 2026-10-11T03:10:57Z
+updated_at: 2026-10-12T05:27:00Z
 ---
 
 # Weekly Pin Bump
@@ -97,6 +101,8 @@ None. The pin file's shape and the provider are unchanged, apart from the new ru
 None beyond the overlaps under Dependencies / blocks. Each weekly run is spawned from the template as its own record.
 
 ## Discussion
+
+Held 2026-10-12 by Kris Brown's approval of the roadmap minimisation batch 5 (Decision 107 of the state-of-play thread): parked with the other agent-host records until the Techne agent-host thread resumes. Release when that thread is resumed, or reconsider at the review date. The record stays Ready; this is distinct from KI-HARNESS-GOV-168, which covers CI `ki` pins rather than the pins in `rig.toml`.
 
 Captured, adopted into Next and planned on 2026-10-11 under Decision 38. On 2026-10-11 Kris accepted all four decisions below as recommended and moved the record to Ready, holding the pin-bump tool until the role profile's `roles/` move lands (Decision 40(3a) and 40(8) in the Techne thread's decisions log). The plan above matches the decisions. The paths in Current state, Steps and Files touched name today's `recipes/agent-host/rig.toml`; read them as the profile's new path once it moves.
 
