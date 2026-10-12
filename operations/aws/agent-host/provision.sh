@@ -85,7 +85,7 @@ aws cloudformation deploy \
     VolumeSize="${volume_size}" \
     Shell="${shell}" \
     ${patching[@]+"${patching[@]}"} \
-  --tags ki-agent-host-id="${host_id}" ki-lifecycle=prototype ki-authority=GDR-KI-ARCADIA-004
+  --tags ki-agent-host-id="${host_id}" ki-lifecycle=prototype ki-authority=GDR-KI-PRINCIPAL-004
 
 aws cloudformation describe-stacks \
   --region "${region}" \

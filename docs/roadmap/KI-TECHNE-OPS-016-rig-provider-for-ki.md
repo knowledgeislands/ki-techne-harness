@@ -21,7 +21,7 @@ Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`
 
 ## Context
 
-[ADR-KI-ARCADIA-003](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-003-the-agent-host-workstation-model.md) in `ki-arcadia-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 3 chooses a small harness custom provider under `rig-provider-v1` that wraps `ki`'s own signed installer.
+[ADR-KI-PRINCIPAL-003](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Decisions/ADR-KI-PRINCIPAL-003-the-agent-host-workstation-model.md) in `ki-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 3 chooses a small harness custom provider under `rig-provider-v1` that wraps `ki`'s own signed installer.
 
 `ki` ships signed `tar.gz` archives with a signed checksum manifest that its installer (`tools-ki/install.sh`) verifies. Rig's direct-download provider handles only a single executable checked by SHA-256, and mise's GitHub-release backend would drop the signature check. The provider lives with the recipe and needs no `tools-rig` release.
 

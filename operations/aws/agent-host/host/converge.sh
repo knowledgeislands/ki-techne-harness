@@ -191,7 +191,7 @@ case $- in *i*)
 esac'
 
 # The banner reads only host/status.sh'"'"'s cache, the reboot-required flag and
-# the clock: no network or credential call (ODR-KI-ARCADIA-001 expiries, and
+# the clock: no network or credential call (ODR-KI-PRINCIPAL-001 expiries, and
 # the OS updates and reboot flag).
 # shellcheck disable=SC2016
 banner_content='# Agent-host login banner, managed by ki-techne-harness
@@ -344,7 +344,7 @@ fi
 
 # Rig and the pins profile ------------------------------------------------------------
 
-# Rig only observes the pins for now (ADR-KI-ARCADIA-003 stage 1).
+# Rig only observes the pins for now (ADR-KI-PRINCIPAL-003 stage 1).
 rig=${HOME}/.local/bin/rig
 if [[ $("${rig}" --version 2>/dev/null || true) != "rig ${rig_version}" ]]; then
   installer=$(mktemp)
@@ -551,7 +551,7 @@ if [[ $(stat -c %a "${HOME}/.codex/AGENTS.md" 2>/dev/null || stat -f %Lp "${HOME
   changed "${HOME}/.codex/AGENTS.md mode ${codex_mode}"
 fi
 
-# ODR-KI-ARCADIA-001: the operator's workstation checkout is the roadmap
+# ODR-KI-PRINCIPAL-001: the operator's workstation checkout is the roadmap
 # writing checkout; ki refuses roadmap writes where this is.
 marker="# ki agent-host marker, managed by ki-techne-harness operations/aws/agent-host.
 # This machine is an agent host of the agent-host recipe, not a roadmap writing

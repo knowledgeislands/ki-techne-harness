@@ -20,7 +20,7 @@ expected_tags = {
   'Name' => 'HostName',
   'ki-agent-host-id' => 'AgentHostId',
   'ki-lifecycle' => 'prototype',
-  'ki-authority' => 'GDR-KI-ARCADIA-004'
+  'ki-authority' => 'GDR-KI-PRINCIPAL-004'
 }
 
 text = File.read(path)

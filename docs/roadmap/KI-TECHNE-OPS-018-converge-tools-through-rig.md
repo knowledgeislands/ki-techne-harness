@@ -21,7 +21,7 @@ The agent host's shared tools - Bun, Node, Codex and `ki` - are installed by `ri
 
 ## Context
 
-[ADR-KI-ARCADIA-003](https://github.com/knowledgeislands/ki-arcadia-principal/blob/main/Admin/Governance/Decisions/ADR-KI-ARCADIA-003-the-agent-host-workstation-model.md) in `ki-arcadia-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 2 stages Rig: stage 1 (TECHNE-TOOLS-OPS-014) declares the `agent-host` profile and observes drift through `rig status`; the pilot installs personal tools through Rig; this record is stage 3.
+[ADR-KI-PRINCIPAL-003](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Decisions/ADR-KI-PRINCIPAL-003-the-agent-host-workstation-model.md) in `ki-principal` records the agent-host workstation model; Kris Brown approved it on 2026-10-08. Its decision 2 stages Rig: stage 1 (TECHNE-TOOLS-OPS-014) declares the `agent-host` profile and observes drift through `rig status`; the pilot installs personal tools through Rig; this record is stage 3.
 
 This record is gated. It starts only when both conditions hold:
 

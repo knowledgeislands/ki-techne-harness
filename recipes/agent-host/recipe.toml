@@ -29,7 +29,7 @@ status = "operations/aws/agent-host/status.sh"
 # The pins: Rig's agent-host profile, one variant per target OS.
 pins = "recipes/agent-host/rig.toml"
 
-# The status report (ODR-KI-ARCADIA-001): `status --json` prints one document
+# The status report (ODR-KI-PRINCIPAL-001): `status --json` prints one document
 # of this schema, and the exit status carries its outcome. `--fetch` updates
 # remote-tracking refs first; `--connect-timeout <seconds>` bounds the read.
 [status]
@@ -226,4 +226,4 @@ operator_role = "{aws.operator_role}"
 
 [providers.aws.tags]
 ki-lifecycle = "prototype"
-ki-authority = "GDR-KI-ARCADIA-004"
+ki-authority = "GDR-KI-PRINCIPAL-004"

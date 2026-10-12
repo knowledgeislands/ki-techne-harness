@@ -96,7 +96,7 @@ confirm=CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host
 run provision.sh || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
 check '[[ ${deploy} == "AWS_PROFILE=knowledge-islands-techne cloudformation deploy --region eu-west-1 --stack-name ki-techne-agent-host "* ]]' "provision.sh must deploy ki-techne-agent-host in eu-west-1 with the admin profile, got: ${deploy}"
-check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 Shell=zsh --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-authority=GDR-KI-ARCADIA-004" ]]' "provision.sh must pass the agent-host values, got: ${deploy}"
+check '[[ ${deploy} == *" --parameter-overrides AgentHostId=agent-host HostName=ki-techne-agent-host TailscaleHostname=ki-techne-agent-host TailscaleTag=tag:ki-techne-agent-host ParameterPrefix=/ki/techne/agent-host InstanceType=t3.medium VolumeSize=40 Shell=zsh --tags ki-agent-host-id=agent-host ki-lifecycle=prototype ki-authority=GDR-KI-PRINCIPAL-004" ]]' "provision.sh must pass the agent-host values, got: ${deploy}"
 check 'log | grep -qF "Values=/ki/techne/agent-host/tailscale-auth-key"' 'provision.sh must look for the agent-host auth key'
 check '! log | grep -qF ubuntu-pro-token' 'provision.sh must not look for an Ubuntu Pro token without Livepatch'
 

@@ -8,7 +8,7 @@ set -euo pipefail
 # usage: stop.sh [--now]
 #
 # Before stopping it reads the host's status with a short connect timeout and
-# warns about any work at risk or unknown (ODR-KI-ARCADIA-001); it never
+# warns about any work at risk or unknown (ODR-KI-PRINCIPAL-001); it never
 # refuses. --now skips the read.
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 profile=${AWS_PROFILE:-knowledge-islands-techne-agent-host}

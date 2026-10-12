@@ -6,7 +6,7 @@
 #
 # usage: status.sh [--json] [--fetch] [--repositories <file>] [--expect <path>]...
 #
-# Work is safe only once it is in Git on a remote (ODR-KI-ARCADIA-001). The
+# Work is safe only once it is in Git on a remote (ODR-KI-PRINCIPAL-001). The
 # outcome is clean (exit 0), at-risk (3) or unknown (4); 1 means the script
 # itself failed. The inventory fails closed: a missing workspace, an absent
 # declared repository, an undeclared one or a failed Git read is unknown.
@@ -280,7 +280,7 @@ days_until() {
   echo $(((target - now) / 86400))
 }
 
-# soon <date>: its days left, marked when 14 or fewer (ODR-KI-ARCADIA-001).
+# soon <date>: its days left, marked when 14 or fewer (ODR-KI-PRINCIPAL-001).
 soon() {
   local days
   days=$(days_until "$1")

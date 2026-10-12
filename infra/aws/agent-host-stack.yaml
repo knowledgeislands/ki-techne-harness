@@ -80,7 +80,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -93,7 +93,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   GatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -116,7 +116,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   RouteTable:
     Type: AWS::EC2::RouteTable
@@ -130,7 +130,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   DefaultRoute:
     Type: AWS::EC2::Route
@@ -182,7 +182,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   AgentHostRole:
     Type: AWS::IAM::Role
@@ -218,7 +218,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
 
   AgentHostInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -260,7 +260,7 @@ Resources:
         - Key: ki-lifecycle
           Value: prototype
         - Key: ki-authority
-          Value: GDR-KI-ARCADIA-004
+          Value: GDR-KI-PRINCIPAL-004
       # Shell variables are written $name, never with braces, so Fn::Sub
       # substitutes only the template parameters and pseudo parameters; ${!name}
       # is Fn::Sub's escape for a literal ${name}, which apt's configuration uses.
