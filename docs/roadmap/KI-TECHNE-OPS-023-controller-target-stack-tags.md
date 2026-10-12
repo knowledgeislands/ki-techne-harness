@@ -4,12 +4,14 @@ area: OPS
 title: Controller and target tags
 purpose: debt
 component: infra
-status: triage
+kind: deliver
+status: draft
+horizon: future
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-11T01:24:30Z
-updated_at: 2026-10-11T01:24:30Z
+updated_at: 2026-10-12T19:56:25Z
 ---
 
 # Controller and Target Tags
@@ -36,3 +38,7 @@ Tags change only through a stack update, so removal from live stacks needs a rem
 ## Discussion
 
 Not adopted. Open questions for planning: whether the replacement is `ki-authority` naming a durable decision record, as Kris chose for the agent host, or no tag; and which tag `destroy.sh` keys on.
+
+### Adoption
+
+On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play thread, Decision 147): adopted as `deliver / Future`. Live stack updates need remote authority the Techne Programme Hold does not grant, and the replacement tag name is Kris's decision during planning. Adoption grants no implementation, acceptance or remote authority.

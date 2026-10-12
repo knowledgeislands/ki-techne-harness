@@ -5,12 +5,18 @@ title: Converge tools through Rig
 purpose: debt
 project: agent-host
 component: operations
-status: triage
+kind: deliver
+status: draft
+horizon: hold
+hold:
+  reason: waiting-for
+  condition: Rig installs a signed ki release, and vega is rebuilt so rig status can be shown clean through a pin bump
+  review: 2026-11-12
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-12T05:25:30Z
+updated_at: 2026-10-12T19:56:25Z
 ---
 
 # Converge Tools Through Rig
@@ -42,3 +48,7 @@ This record stays in triage until both gate conditions hold; the lessons of the 
 Lessons from the workstation pilot, TECHNE-TOOLS-OPS-015, on 2026-10-09: `rig apply` counts a tool it only re-verifies as completed, so its `completed=` summary cannot tell a change from none. `converge.sh` reads `rig status --profile <profile> --format json` before the apply and reports a change only when a tool was not already present; the shared tools should follow the same pattern. Run Rig with `RIG_PROGRESS=never` and stdin closed, as the pilot does, so its output stays parseable over SSH.
 
 Merged from KI-TECHNE-OPS-016 on 2026-10-12: [ADR-KI-PRINCIPAL-003](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Decisions/ADR-KI-PRINCIPAL-003-the-agent-host-workstation-model.md) decision 3 chooses the custom provider that wraps `ki`'s signed installer. Rig's built-in `direct-download` `executable` kind covers a single binary checked by SHA-256 but not `ki`'s signed `tar.gz` archives, and the payload validator refuses a custom provider in an owner's fragment, so the provider ships with the recipe and needs no `tools-rig` release.
+
+### Adoption
+
+On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play thread, Decision 147): adopted as `deliver / Hold`. Its existing gates are the hold condition: Rig must install a signed `ki` release, and `rig status` must stay clean through a pin bump. vega has been deleted and is not yet rebuilt, so the second gate cannot clear now. Remote work stays within the Techne Programme Hold. Adoption grants no implementation, acceptance or remote authority.
