@@ -5,12 +5,14 @@ title: Rig provider for ki
 purpose: capability
 project: agent-host
 component: recipes
-status: triage
-blocks: [KI-TECHNE-OPS-018]
+status: cancelled
+resolution: merged
+resolution_target: KI-TECHNE-OPS-018
+blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-09T18:25:06Z
+updated_at: 2026-10-12T05:25:30Z
 ---
 
 # Rig Provider for ki
@@ -29,6 +31,10 @@ Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`
 
 - In scope: the provider under `rig-provider-v1`, installing an exact `ki` version through its signed installer into the user's home without root; observing the installed version for `rig status`; offline tests with stubs.
 - Out of scope: switching `converge.sh`'s `ki` install to Rig (KI-TECHNE-OPS-018); a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing.
+
+## Cancelled
+
+Cancelled 2026-10-12 by Kris Brown as merged into KI-TECHNE-OPS-018 (Decision 107 of the state-of-play thread, approving the roadmap minimisation batch 3). Rig installing `ki` is one of the four tools KI-TECHNE-OPS-018 already converges through Rig; its Boundary now carries this record's provider scope and the requirement to keep `ki`'s own signature check. No provider was built.
 
 ## Discussion
 

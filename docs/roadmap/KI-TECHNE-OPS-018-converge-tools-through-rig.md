@@ -7,10 +7,10 @@ project: agent-host
 component: operations
 status: triage
 blocks: []
-blocked_by: [KI-TECHNE-OPS-016]
+blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-09T18:25:06Z
+updated_at: 2026-10-12T05:25:30Z
 ---
 
 # Converge Tools Through Rig
@@ -25,18 +25,20 @@ The agent host's shared tools - Bun, Node, Codex and `ki` - are installed by `ri
 
 This record is gated. It starts only when both conditions hold:
 
-1. Rig can install `ki`'s signed release, through the provider in KI-TECHNE-OPS-016.
+1. Rig can install `ki`'s signed release, through the provider this record now carries (merged from KI-TECHNE-OPS-016 on 2026-10-12).
 2. Stage 1's `rig status` has reported clean on the host through at least one pin bump.
 
 `converge.sh` keeps bootstrapping Rig and mise at pinned versions, because Rig does not bootstrap the managers it drives. Claude Code stays installed by the stack's boot script and observed against its declared minimum.
 
 ## Boundary
 
-- In scope: replacing `converge.sh`'s Bun, Node, Codex and `ki` installs with `rig apply --profile agent-host`; generating or checking the global mise manifest from the same declaration so one file stays authoritative; offline tests; the operator guide.
-- Out of scope: Rig and mise bootstrap; Claude Code's install; Git settings, startup files, the repository set, `ki bootstrap`, the registry and projections, and Claude settings, which are not tool installs and stay in `converge.sh`; any live remote action.
+- In scope: a small custom provider under `rig-provider-v1`, beside the recipe's own `rig.toml` (never in an owner's payload), that installs an exact `ki` version through `ki`'s own signed installer into the user's home without root and reports the installed version for `rig status`; the provider must keep `ki`'s signature check over its signed archives and checksum manifest, never falling back to a SHA-256-only download or mise's GitHub-release backend; replacing `converge.sh`'s Bun, Node, Codex and `ki` installs with `rig apply --profile agent-host`; generating or checking the global mise manifest from the same declaration so one file stays authoritative; offline tests; the operator guide.
+- Out of scope: a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing; Rig and mise bootstrap; Claude Code's install; Git settings, startup files, the repository set, `ki bootstrap`, the registry and projections, and Claude settings, which are not tool installs and stay in `converge.sh`; any live remote action.
 
 ## Discussion
 
 This record stays in triage until both gate conditions hold; the lessons of the pilot and of stage 1 are written into it before it is adopted.
 
 Lessons from the workstation pilot, TECHNE-TOOLS-OPS-015, on 2026-10-09: `rig apply` counts a tool it only re-verifies as completed, so its `completed=` summary cannot tell a change from none. `converge.sh` reads `rig status --profile <profile> --format json` before the apply and reports a change only when a tool was not already present; the shared tools should follow the same pattern. Run Rig with `RIG_PROGRESS=never` and stdin closed, as the pilot does, so its output stays parseable over SSH.
+
+Merged from KI-TECHNE-OPS-016 on 2026-10-12: [ADR-KI-PRINCIPAL-003](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Decisions/ADR-KI-PRINCIPAL-003-the-agent-host-workstation-model.md) decision 3 chooses the custom provider that wraps `ki`'s signed installer. Rig's built-in `direct-download` `executable` kind covers a single binary checked by SHA-256 but not `ki`'s signed `tar.gz` archives, and the payload validator refuses a custom provider in an owner's fragment, so the provider ships with the recipe and needs no `tools-rig` release.
