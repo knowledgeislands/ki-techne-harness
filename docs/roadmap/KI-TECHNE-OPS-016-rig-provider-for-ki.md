@@ -1,12 +1,12 @@
 ---
-id: TECHNE-TOOLS-OPS-016
+id: KI-TECHNE-OPS-016
 area: OPS
 title: Rig provider for ki
 purpose: capability
 project: agent-host
 component: recipes
 status: triage
-blocks: [TECHNE-TOOLS-OPS-018]
+blocks: [KI-TECHNE-OPS-018]
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
@@ -28,7 +28,7 @@ Rig can install and verify `ki`'s signed release on the agent host, keeping `ki`
 ## Boundary
 
 - In scope: the provider under `rig-provider-v1`, installing an exact `ki` version through its signed installer into the user's home without root; observing the installed version for `rig status`; offline tests with stubs.
-- Out of scope: switching `converge.sh`'s `ki` install to Rig (TECHNE-TOOLS-OPS-018); a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing.
+- Out of scope: switching `converge.sh`'s `ki` install to Rig (KI-TECHNE-OPS-018); a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing.
 
 ## Discussion
 

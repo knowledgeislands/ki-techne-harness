@@ -1,5 +1,5 @@
 ---
-id: TECHNE-TOOLS-OPS-019
+id: KI-TECHNE-OPS-019
 area: OPS
 title: Person-neutral recipe defaults
 purpose: debt
@@ -28,7 +28,7 @@ A generic review of the agent-host design on 2026-10-08 found that the scripts d
 ## Boundary
 
 - In scope: removing person-specific defaults from `setup.sh`, `provision.sh`, `stop.sh`, `status.sh`, `destroy.sh` and `recipe.toml`; changing `check_binding_defaults` to check a fixture binding rather than a live one; shipping `repositories.txt` as an example; declaring optional binding fields `repositories`, `profile` (the payload source) and `shell` (default zsh) in the recipe, with a short note in the recipe and the operator guide on how a binding uses them to personalise a host; and the operator guide's matching lines.
-- Out of scope: removing the `AGENT_HOST_INSTRUCTIONS` list, the `chezmoi cat` path and the `chezmoi` requirement from `setup.sh`, together with the payload hook and its contract (TECHNE-TOOLS-OPS-015); the shell hand-off (TECHNE-TOOLS-OPS-015) and the provider's login shell (TECHNE-TOOLS-OPS-017); the binding schema and CLI in `tools-techne`, which needs a paired record for the new fields; splitting the operator guide or moving the neutral scripts out of `operations/aws/` (TECHNE-TOOLS-OPS-020 and TECHNE-TOOLS-OPS-021); and any remote action.
+- Out of scope: removing the `AGENT_HOST_INSTRUCTIONS` list, the `chezmoi cat` path and the `chezmoi` requirement from `setup.sh`, together with the payload hook and its contract (TECHNE-TOOLS-OPS-015); the shell hand-off (TECHNE-TOOLS-OPS-015) and the provider's login shell (KI-TECHNE-OPS-017); the binding schema and CLI in `tools-techne`, which needs a paired record for the new fields; splitting the operator guide or moving the neutral scripts out of `operations/aws/` (TECHNE-TOOLS-OPS-020 and TECHNE-TOOLS-OPS-021); and any remote action.
 
 ## Discussion
 

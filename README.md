@@ -1,4 +1,4 @@
-# Techne Harness
+# Knowledge Islands Techne Harness
 
 Techne Harness is the product monorepo for runnable personal-controller and execution-fabric implementations in the Knowledge Islands ecosystem. The independently released [`tools-techne`](https://github.com/knowledgeislands/tools-techne) repository owns the `techne` operator interface.
 

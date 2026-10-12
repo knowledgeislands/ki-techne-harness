@@ -1,5 +1,5 @@
 ---
-id: TECHNE-TOOLS-OPS-018
+id: KI-TECHNE-OPS-018
 area: OPS
 title: Converge tools through Rig
 purpose: debt
@@ -7,7 +7,7 @@ project: agent-host
 component: operations
 status: triage
 blocks: []
-blocked_by: [TECHNE-TOOLS-OPS-016]
+blocked_by: [KI-TECHNE-OPS-016]
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
 updated_at: 2026-10-09T18:25:06Z
@@ -25,7 +25,7 @@ The agent host's shared tools - Bun, Node, Codex and `ki` - are installed by `ri
 
 This record is gated. It starts only when both conditions hold:
 
-1. Rig can install `ki`'s signed release, through the provider in TECHNE-TOOLS-OPS-016.
+1. Rig can install `ki`'s signed release, through the provider in KI-TECHNE-OPS-016.
 2. Stage 1's `rig status` has reported clean on the host through at least one pin bump.
 
 `converge.sh` keeps bootstrapping Rig and mise at pinned versions, because Rig does not bootstrap the managers it drives. Claude Code stays installed by the stack's boot script and observed against its declared minimum.

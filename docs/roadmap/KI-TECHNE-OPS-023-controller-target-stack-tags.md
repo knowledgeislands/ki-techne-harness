@@ -1,5 +1,5 @@
 ---
-id: TECHNE-TOOLS-OPS-023
+id: KI-TECHNE-OPS-023
 area: OPS
 title: Controller and target tags
 purpose: debt
@@ -20,7 +20,7 @@ The controller and disposable-target AWS stacks carry no work-record identifier 
 
 ## Context
 
-Captured on 2026-10-11 while settling [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md). Kris decided that record removes every record identifier from the agent-host stack and that the other stacks' `ki-work-item` tags go to a separate triage record, because they are not that host.
+Captured on 2026-10-11 while settling [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md). Kris decided that record removes every record identifier from the agent-host stack and that the other stacks' `ki-work-item` tags go to a separate triage record, because they are not that host.
 
 - `infra/aws/controller-stack.yaml` and `infra/aws/target-stack.yaml` tag every resource `ki-work-item: TECHNE-OPS-007`, an identifier from a retired numbering.
 - `operations/aws/controller/provision.sh` and `operations/aws/target/provision.sh` pass `--tags ki-work-item=TECHNE-OPS-007`.
@@ -31,7 +31,7 @@ Tags change only through a stack update, so removal from live stacks needs a rem
 ## Boundary
 
 - In scope: the controller and target stack templates, their `provision.sh` tags, the target `destroy.sh` guard, and any offline checks and guides that name the tag.
-- Out of scope: the agent-host stack, which [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md) covers; updating live stacks, which waits for remote-environment authority.
+- Out of scope: the agent-host stack, which [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) covers; updating live stacks, which waits for remote-environment authority.
 
 ## Discussion
 

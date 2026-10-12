@@ -1,5 +1,5 @@
 ---
-id: TECHNE-TOOLS-OPS-024
+id: KI-TECHNE-OPS-024
 area: OPS
 title: Weekly pin bump
 kind: deliver
@@ -34,7 +34,7 @@ The Techne programme hold bars managing remote environments, not local work. Thi
 ## Boundary
 
 - In scope: a pin-bump tool in this repository that looks up each pinned tool's latest release and rewrites both locators, plus a read-only `--check` mode; offline tests for it; a housekeeping template and the `.ki.toml` declaration it needs; making the existing offline checks read tool versions from the pin file, so a bump does not break `bun run test`; and removing the Mac-versus-pins section from `status.sh`, its check and the operator guide.
-- Out of scope: running setup on the host or any other remote-environment change; installing a Mac scheduler (launchd or similar), which is an environment change that needs its own approval; changing how the Mac's own tools are governed (Homebrew and Rig, through chezmoi); the record-identifier comments in `status.sh`, which [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md) owns.
+- Out of scope: running setup on the host or any other remote-environment change; installing a Mac scheduler (launchd or similar), which is an environment change that needs its own approval; changing how the Mac's own tools are governed (Homebrew and Rig, through chezmoi); the record-identifier comments in `status.sh`, which [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) owns.
 
 ## Current state
 
@@ -76,7 +76,7 @@ The Techne programme hold bars managing remote environments, not local work. Thi
 
 ## Dependencies / blocks
 
-The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Decision 40(3a) in the Techne thread's decisions log), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [TECHNE-TOOLS-OPS-017](TECHNE-TOOLS-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [TECHNE-TOOLS-OPS-018](TECHNE-TOOLS-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
+The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Decision 40(3a) in the Techne thread's decisions log), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
 
 ## Documentation impact
 
