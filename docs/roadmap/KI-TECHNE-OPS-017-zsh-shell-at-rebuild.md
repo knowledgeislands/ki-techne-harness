@@ -6,13 +6,12 @@ kind: deliver
 purpose: debt
 project: agent-host
 component: infra
-status: awaiting-review
-horizon: now
+status: done
 blocks: []
-blocked_by: [TECHNE-TOOLS-OPS-015]
+blocked_by: []
 baseline_ref: 7f1b70807950e3e6c0cd7270356d8a8b6b2592ed
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-11T03:10:44Z
+updated_at: 2026-10-12T05:10:30Z
 ---
 
 # Binding Shell at Rebuild
@@ -133,6 +132,10 @@ The goal holds in the repository: the provider now owns the login shell, and not
 ### Mini recap
 
 Delivered the shell-at-build change, hand-off retirement, marker and identifier sweep with an enforcing check, and the `vega` guide examples in one commit; offline tests and the repository audit pass. Open: the AWS before-rebuild check and validation, the rebuild, and the chezmoi values, all Kris's. Learning route: the run shows that the guide's Before a rebuild step needs AWS, so a run without AWS authority cannot discharge it; a future plan should name it as the owner's step.
+
+## Done
+
+Accepted 2026-10-12 by Kris Brown on the review packet above (state-of-play decisions log, Decision 102, approving roadmap batch 1), for the repository delivery in `508793e`. The post-rebuild checks in Verify are explicitly deferred: the AWS before-rebuild check and validation, the live rebuild and the chezmoi `vega` values stay with the Techne: agent-host thread, which is on hold. The stale `blocked_by` on the pre-rename identifier `TECHNE-TOOLS-OPS-015` is cleared at acceptance.
 
 ## Discussion
 
