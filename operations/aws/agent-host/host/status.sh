@@ -19,7 +19,7 @@ set -euo pipefail
 trap 'exit 1' ERR
 
 schema=techne/host-workspace/v1
-workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
+workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces}
 # shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 # Text mode records what it finds here for the login banner.

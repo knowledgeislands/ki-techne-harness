@@ -34,7 +34,7 @@ done
 if [[ -n ${profile} ]]; then
   [[ -d ${profile} ]] || { echo "AGENT_HOST_PROFILE: ${profile} is not a directory" >&2; exit 2; }
   # shellcheck disable=SC2088 # the recipe default keeps its literal ~/ for the host.
-  python3 "${here}/host/profile-check.py" --shell "${shell_choice}" --workspace "${workspace:-~/workspaces/kit}" \
+  python3 "${here}/host/profile-check.py" --shell "${shell_choice}" --workspace "${workspace:-~/workspaces}" \
     --recipe-rig "${here}/../../../recipes/agent-host/rig.toml" "${profile}" ||
     { echo "AGENT_HOST_PROFILE: ${profile} is not a valid profile payload; nothing was sent" >&2; exit 1; }
 fi

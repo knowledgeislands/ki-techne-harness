@@ -39,7 +39,7 @@ Run by hand with no variable set, every script behaves as the `agent-host` bindi
 | `tailscale_name` | `ki-techne-{name}` | `AGENT_HOST_TAILSCALE_NAME` | `setup.sh`, `status.sh`, `provision.sh`, `stop.sh`, `destroy.sh` |
 | `tailscale_tag` | `tag:ki-techne-{name}` | `AGENT_HOST_TAILSCALE_TAG` | `provision.sh` |
 | `repositories` | `operations/aws/agent-host/host/repositories.txt` | `AGENT_HOST_REPOSITORIES` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
-| `workspace` | `~/workspaces/kit` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
+| `workspace` | `~/workspaces` | `KI_AGENT_HOST_WORKSPACE` | `setup.sh`, `status.sh`, `stop.sh`, `destroy.sh` |
 | `reboot_window` | optional | `AGENT_HOST_REBOOT_WINDOW` | `provision.sh` |
 | `livepatch` | optional | `AGENT_HOST_LIVEPATCH` | `provision.sh` |
 | `profile` | optional | `AGENT_HOST_PROFILE` | `setup.sh` |
@@ -240,7 +240,7 @@ Pass `--pull` on every rerun. Without it, a checkout behind origin keeps stale s
 It uses SSH to the binding's Tailscale name only, `vega` for Kris's binding, or the recipe default `ki-techne-agent-host` when `AGENT_HOST_TAILSCALE_NAME` is not set. It validates the profile payload `AGENT_HOST_PROFILE` names, when one is set, and sends nothing if it is refused; then it copies the host scripts, the recipe's files and the payload over one connection and runs `host/converge.sh` there. That script converges:
 
 - the Git identity from the Mac's global configuration and the house pull, branch and push settings;
-- the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/kit/<organisation>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
+- the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/<territory>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
 - mise and its global pins for Bun, Node and the Codex CLI, exact versions read from the recipe's pin file, then each repository's own mise tools and Bun dependencies, leaving each repository's `mise.toml` alone;
 - one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc`, Husky's `init.sh` and, for zsh, `.zshenv`, so tools are on `PATH` in non-interactive SSH and Git hooks too, and the login-shell check that [Shell](#shell) describes;
 - the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;

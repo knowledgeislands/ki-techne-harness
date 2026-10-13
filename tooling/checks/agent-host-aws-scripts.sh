@@ -50,7 +50,7 @@ cat >/dev/null
 echo "ssh $*" >>"${STUB_LOG}"
 case ${STUB_STATUS:-clean} in
   unreachable) echo 'ssh: connect to host: Operation timed out' >&2; exit 255 ;;
-  malformed) echo 'Repositories under /home/techne/workspaces/kit'; exit 0 ;;
+  malformed) echo 'Repositories under /home/techne/workspaces'; exit 0 ;;
   *) cat "${STUB_REPORTS}/${STUB_STATUS:-clean}.json"; exit "$(cat "${STUB_REPORTS}/${STUB_STATUS:-clean}.exit")" ;;
 esac
 STUB
@@ -61,16 +61,16 @@ mkdir "${work}/reports"
 report() {
   jq -n --arg outcome "$3" --argjson repositories "$4" --argjson problems "${5:-[]}" --arg instance "${6:-i-0123456789abcdef0}" \
     '{schema: "techne/host-workspace/v1", generated_at: "2026-10-08T00:00:00Z",
-      host: {hostname: "ki-techne-agent-host", id: $instance}, workspace: "/home/techne/workspaces/kit",
+      host: {hostname: "ki-techne-agent-host", id: $instance}, workspace: "/home/techne/workspaces",
       fetched: false, outcome: $outcome, repositories: $repositories, problems: $problems}' >"${work}/reports/$1.json"
   echo "$2" >"${work}/reports/$1.exit"
 }
 repo() { printf '{"path": "%s", "state": "%s", "branch": "main", "dirty": %s, "unpushed": %s, "stashes": 0, "upstream": null, "problem": %s}' "$@"; }
-report clean 0 clean "[$(repo knowledgeislands/alpha clean 0 0 null)]"
-report at-risk 3 at-risk "[$(repo knowledgeislands/alpha at-risk 2 1 null), $(repo knowledgeislands/beta at-risk 0 3 null), $(repo knowledgeislands/gamma clean 0 0 null)]"
-report unknown 4 unknown "[$(repo knowledgeislands/alpha unknown 0 0 '"git status failed"')]" '["declared repository knowledgeislands/beta is absent"]'
-report other-host 0 clean "[$(repo knowledgeislands/alpha clean 0 0 null)]" '[]' i-0fedcba9876543210
-report mismatched 3 clean "[$(repo knowledgeislands/alpha clean 0 0 null)]"
+report clean 0 clean "[$(repo knowledge-islands/alpha clean 0 0 null)]"
+report at-risk 3 at-risk "[$(repo knowledge-islands/alpha at-risk 2 1 null), $(repo knowledge-islands/beta at-risk 0 3 null), $(repo knowledge-islands/gamma clean 0 0 null)]"
+report unknown 4 unknown "[$(repo knowledge-islands/alpha unknown 0 0 '"git status failed"')]" '["declared repository knowledge-islands/beta is absent"]'
+report other-host 0 clean "[$(repo knowledge-islands/alpha clean 0 0 null)]" '[]' i-0fedcba9876543210
+report mismatched 3 clean "[$(repo knowledge-islands/alpha clean 0 0 null)]"
 
 bash_dir=$(dirname "$(command -v bash)")
 jq_dir=$(dirname "$(command -v jq)")
@@ -113,15 +113,15 @@ done
 # stop.sh: reads the status with a short connect timeout, warns, and always stops.
 run stop.sh || { out >&2; exit 1; }
 check 'log | grep -qF -- "--profile knowledge-islands-techne-agent-host --region eu-west-1 --filters Name=tag:ki-agent-host-id,Values=agent-host Name=tag:ki-lifecycle,Values=prototype Name=tag:Name,Values=ki-techne-agent-host Name=instance-state-name,Values=pending,running"' "stop.sh must select the agent host with the operator profile, got: $(log)"
-check 'log | grep -qE "^ssh -o ConnectTimeout=5 .* ki-techne-agent-host bash -s -- --json --expect knowledgeislands/apps-observatory "' "stop.sh must read the status with a short connect timeout and the declared repositories, got: $(log)"
+check 'log | grep -qE "^ssh -o ConnectTimeout=5 .* ki-techne-agent-host bash -s -- --json --expect knowledge-islands/apps-knowledgeislands.info "' "stop.sh must read the status with a short connect timeout and the declared repositories, got: $(log)"
 check 'log | grep -qF "ec2 stop-instances" && ! out | grep -q warning' 'stop.sh must stop a clean host without a warning'
 
 status=at-risk run stop.sh || { out >&2; exit 1; }
-check 'out | grep -qF "at-risk knowledgeislands/alpha" && out | grep -qF "at-risk knowledgeislands/beta" && ! out | grep -qF gamma' "stop.sh must name the repositories at risk, got: $(out)"
+check 'out | grep -qF "at-risk knowledge-islands/alpha" && out | grep -qF "at-risk knowledge-islands/beta" && ! out | grep -qF gamma' "stop.sh must name the repositories at risk, got: $(out)"
 check 'log | grep -qF "ec2 stop-instances"' 'stop.sh must stop a host with work at risk'
 
 status=unknown run stop.sh || { out >&2; exit 1; }
-check 'out | grep -qF "unknown knowledgeislands/alpha: git status failed" && out | grep -qF "unknown: declared repository knowledgeislands/beta is absent"' "stop.sh must report unknown work, got: $(out)"
+check 'out | grep -qF "unknown knowledge-islands/alpha: git status failed" && out | grep -qF "unknown: declared repository knowledge-islands/beta is absent"' "stop.sh must report unknown work, got: $(out)"
 check 'log | grep -qF "ec2 stop-instances"' 'stop.sh must stop a host whose work is unknown'
 
 for case in unreachable malformed mismatched; do
@@ -149,7 +149,7 @@ run destroy.sh || true
 check 'out | grep -qF "usage: destroy.sh rebuild|withdraw" && [[ ! -s ${work}/aws.log ]]' 'destroy.sh must refuse to run without an operation'
 run destroy.sh withdraw || true
 check 'out | grep -qF "set CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host" && [[ ! -s ${work}/aws.log ]]' 'destroy.sh must refuse before any call without the confirmation'
-run destroy.sh rebuild --discard knowledgeislands/alpha --discard-unreadable-host -- "${confirm}" || true
+run destroy.sh rebuild --discard knowledge-islands/alpha --discard-unreadable-host -- "${confirm}" || true
 check 'out | grep -qF usage && [[ ! -s ${work}/aws.log ]]' 'destroy.sh must refuse both overrides together'
 
 run destroy.sh withdraw -- "${confirm}" || { out >&2; exit 1; }
@@ -164,16 +164,16 @@ check 'out | grep -qF "Kept /ki/techne/agent-host/github-token and /ki/techne/ag
 
 for operation in rebuild withdraw; do
   status=at-risk run destroy.sh "${operation}" -- "${confirm}" && check false "${operation} must refuse work at risk"
-  check '! log | grep -q delete && out | grep -qF "knowledgeislands/alpha: 2 uncommitted, 1 unpushed" && out | grep -qF -- "--discard knowledgeislands/alpha knowledgeislands/beta" && out | grep -qF "git bundle create"' "${operation} must refuse, list the work at risk and the recovery routes, got: $(out)"
+  check '! log | grep -q delete && out | grep -qF "knowledge-islands/alpha: 2 uncommitted, 1 unpushed" && out | grep -qF -- "--discard knowledge-islands/alpha knowledge-islands/beta" && out | grep -qF "git bundle create"' "${operation} must refuse, list the work at risk and the recovery routes, got: $(out)"
 done
-status=at-risk run destroy.sh withdraw --discard knowledgeislands/alpha -- "${confirm}" && check false 'withdraw must refuse a discard that omits a repository at risk'
+status=at-risk run destroy.sh withdraw --discard knowledge-islands/alpha -- "${confirm}" && check false 'withdraw must refuse a discard that omits a repository at risk'
 check '! log | grep -q delete' 'withdraw must delete nothing when the discard omits a repository'
-status=at-risk run destroy.sh withdraw --discard knowledgeislands/alpha knowledgeislands/beta knowledgeislands/gamma -- "${confirm}" && check false 'withdraw must refuse a discard naming a repository not at risk'
+status=at-risk run destroy.sh withdraw --discard knowledge-islands/alpha knowledge-islands/beta knowledge-islands/gamma -- "${confirm}" && check false 'withdraw must refuse a discard naming a repository not at risk'
 status=at-risk run destroy.sh withdraw --discard-unreadable-host -- "${confirm}" && check false 'withdraw must refuse the unreadable-host override for a readable host'
-status=at-risk run destroy.sh rebuild --discard knowledgeislands/beta knowledgeislands/alpha -- "${confirm}" || { out >&2; exit 1; }
-check 'log | grep -qF "cloudformation delete-stack" && out | grep -qF "discarding the at-risk work in: knowledgeislands/alpha knowledgeislands/beta"' "rebuild must proceed when the discard names exactly the work at risk, got: $(out)"
+status=at-risk run destroy.sh rebuild --discard knowledge-islands/beta knowledge-islands/alpha -- "${confirm}" || { out >&2; exit 1; }
+check 'log | grep -qF "cloudformation delete-stack" && out | grep -qF "discarding the at-risk work in: knowledge-islands/alpha knowledge-islands/beta"' "rebuild must proceed when the discard names exactly the work at risk, got: $(out)"
 
-run destroy.sh withdraw --discard knowledgeislands/alpha -- "${confirm}" && check false 'withdraw must refuse a discard when nothing is at risk'
+run destroy.sh withdraw --discard knowledge-islands/alpha -- "${confirm}" && check false 'withdraw must refuse a discard when nothing is at risk'
 
 for case in unknown unreachable malformed mismatched; do
   status=${case} run destroy.sh withdraw -- "${confirm}" && check false "withdraw must refuse a ${case} status"
@@ -181,7 +181,7 @@ for case in unknown unreachable malformed mismatched; do
   status=${case} input='discard ki-techne-agent-host' run destroy.sh withdraw --discard-unreadable-host -- "${confirm}" || { out >&2; exit 1; }
   check 'log | grep -qF "cloudformation delete-stack" && log | grep -qF "ssm delete-parameters"' "withdraw must proceed for a ${case} status with the override and confirmation, got: $(out)"
 done
-status=unknown run destroy.sh withdraw --discard knowledgeislands/alpha -- "${confirm}" && check false 'withdraw must refuse a named discard for an unknown status'
+status=unknown run destroy.sh withdraw --discard knowledge-islands/alpha -- "${confirm}" && check false 'withdraw must refuse a named discard for an unknown status'
 status=unreachable input='yes' run destroy.sh withdraw --discard-unreadable-host -- "${confirm}" && check false 'withdraw must refuse a wrong typed confirmation'
 check '! log | grep -q delete && out | grep -qF "confirmation did not match"' 'withdraw must delete nothing without the typed confirmation'
 

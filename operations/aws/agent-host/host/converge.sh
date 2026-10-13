@@ -9,7 +9,7 @@
 set -euo pipefail
 
 harness_id=knowledgeislands/ki-agentic-harness
-harness_path=knowledgeislands/ki-agentic-harness
+harness_path=knowledge-islands/ki-agentic-harness
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # The recipe's files: staged beside this script by setup.sh, or in the harness
@@ -41,7 +41,7 @@ mise_version=$(pin mise)
 bun_version=$(pin bun)
 node_version=$(pin node)
 codex_version=$(pin codex)
-workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces/kit}
+workspace=${KI_AGENT_HOST_WORKSPACE:-$HOME/workspaces}
 # shellcheck disable=SC2088 # a literal ~/ from the binding means this home.
 [[ ${workspace} == '~/'* ]] && workspace=${HOME}/${workspace#'~/'}
 repositories=${script_dir}/repositories.txt

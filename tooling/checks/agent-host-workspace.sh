@@ -122,12 +122,12 @@ for name in alpha beta gamma; do origin "${name}"; done
 repositories=${work}/repositories.txt
 {
   echo '# test set'
-  for name in alpha beta gamma; do echo "knowledgeislands/${name} ${work}/origins/${name}.git"; done
+  for name in alpha beta gamma; do echo "knowledge-islands/${name} ${work}/origins/${name}.git"; done
 } >"${repositories}"
 
 # Existing host state: beta is behind its origin, gamma has uncommitted work, and
 # the start-up files carry the hand-made blocks of 2026-10-07.
-workspace=${host_home}/workspaces/kit/knowledgeislands
+workspace=${host_home}/workspaces/knowledge-islands
 mkdir -p "${workspace}"
 git clone --quiet "${work}/origins/beta.git" "${workspace}/beta"
 git clone --quiet "${work}/origins/gamma.git" "${workspace}/gamma"
@@ -173,16 +173,16 @@ mkdir -p "${KI_AGENT_HOST_SYSROOT}"
 setup() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/setup.sh" --pull 2>&1; }
 
 first=$(setup) || { echo "${first}" >&2; echo 'agent-host-workspace: first setup run failed' >&2; exit 1; }
-check '[[ ${first} == *"cloned knowledgeislands/alpha"* ]]' 'first run must clone alpha'
-check '[[ ${first} == *"fast-forwarded knowledgeislands/beta"* ]]' 'first run must fast-forward the clean, behind beta'
-check '[[ ${first} == *"skipped  knowledgeislands/gamma: uncommitted changes"* ]]' 'first run must leave the dirty gamma alone'
-check '[[ ${first} == *"dependencies in knowledgeislands/alpha"* && ${first} == *"registered knowledgeislands/alpha"* ]]' 'first run must install and register alpha'
+check '[[ ${first} == *"cloned knowledge-islands/alpha"* ]]' 'first run must clone alpha'
+check '[[ ${first} == *"fast-forwarded knowledge-islands/beta"* ]]' 'first run must fast-forward the clean, behind beta'
+check '[[ ${first} == *"skipped  knowledge-islands/gamma: uncommitted changes"* ]]' 'first run must leave the dirty gamma alone'
+check '[[ ${first} == *"dependencies in knowledge-islands/alpha"* && ${first} == *"registered knowledge-islands/alpha"* ]]' 'first run must install and register alpha'
 check '[[ ${first} != *"no changes"* ]]' 'first run must report changes'
 
 second=$(setup) || { echo "${second}" >&2; echo 'agent-host-workspace: second setup run failed' >&2; exit 1; }
 check '[[ ${second} == *"CHANGES=0 "* && ${second} == *"no changes"* ]]' "second run must report no changes, got:
 ${second}"
-check '[[ ${second} == *"skipped  knowledgeislands/gamma: uncommitted changes"* ]]' 'second run must still leave gamma alone'
+check '[[ ${second} == *"skipped  knowledge-islands/gamma: uncommitted changes"* ]]' 'second run must still leave gamma alone'
 
 on_host=$(HOME=${host_home} bash "${scripts}/host/converge.sh" --repositories "${repositories}" 2>&1) || true
 check '[[ ${on_host} == *"no changes"* ]]' "a run on the host must change nothing, got:
@@ -318,9 +318,9 @@ code=0
 document=$(HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/status.sh" --json --connect-timeout 5 2>/dev/null) || code=$?
 check '[[ ${code} == 3 ]] && jq -e ".schema == \"techne/host-workspace/v1\" and .outcome == \"at-risk\" and .fetched == false and .problems == []
   and ([.repositories[] | {path, state, dirty, unpushed}] == [
-    {path: \"knowledgeislands/alpha\", state: \"at-risk\", dirty: 0, unpushed: 1},
-    {path: \"knowledgeislands/beta\", state: \"clean\", dirty: 0, unpushed: 0},
-    {path: \"knowledgeislands/gamma\", state: \"at-risk\", dirty: 1, unpushed: 0}])" <<<"${document}" >/dev/null' "status --json must report alpha and gamma at risk, got ${code}:
+    {path: \"knowledge-islands/alpha\", state: \"at-risk\", dirty: 0, unpushed: 1},
+    {path: \"knowledge-islands/beta\", state: \"clean\", dirty: 0, unpushed: 0},
+    {path: \"knowledge-islands/gamma\", state: \"at-risk\", dirty: 1, unpushed: 0}])" <<<"${document}" >/dev/null' "status --json must report alpha and gamma at risk, got ${code}:
 ${document}"
 
 # host_status [argument...]: the host script's document, with ${code} set.
@@ -332,7 +332,7 @@ host_status() {
 git -C "${workspace}/alpha" worktree add --quiet --detach "${workspace}/alpha-review"
 echo draft >"${workspace}/alpha-review/draft.md"
 host_status
-check '[[ ${code} == 3 ]] && jq -e "[.repositories[].path] == [\"knowledgeislands/alpha\", \"knowledgeislands/beta\", \"knowledgeislands/gamma\"]
+check '[[ ${code} == 3 ]] && jq -e "[.repositories[].path] == [\"knowledge-islands/alpha\", \"knowledge-islands/beta\", \"knowledge-islands/gamma\"]
   and (.repositories[0].dirty == 1)" <<<"${document}" >/dev/null' "a linked worktree must count for alpha and not as a repository, got ${code}:
 ${document}"
 
@@ -343,19 +343,19 @@ check '[[ ${code} == 3 ]] && jq -e ".fetched == true" <<<"${document}" >/dev/nul
 ${document}"
 check '[[ $(git -C "${workspace}/beta" rev-parse HEAD) == "${before}" ]] && grep -qx local "${workspace}/gamma/README.md"' 'status --fetch must leave the working trees alone'
 
-host_status --expect knowledgeislands/omega
-check '[[ ${code} == 4 ]] && jq -e ".outcome == \"unknown\" and .problems == [\"declared repository knowledgeislands/omega is absent\"]" <<<"${document}" >/dev/null' "an absent declared repository must make the outcome unknown, got ${code}:
+host_status --expect knowledge-islands/omega
+check '[[ ${code} == 4 ]] && jq -e ".outcome == \"unknown\" and .problems == [\"declared repository knowledge-islands/omega is absent\"]" <<<"${document}" >/dev/null' "an absent declared repository must make the outcome unknown, got ${code}:
 ${document}"
 
 git init --quiet "${workspace}/delta"
 host_status
-check '[[ ${code} == 4 ]] && jq -e ".repositories[] | select(.path == \"knowledgeislands/delta\") | .state == \"unknown\" and (.problem | endswith(\"not in the declared repository list\"))" <<<"${document}" >/dev/null' "an undeclared repository must be unknown, got ${code}:
+check '[[ ${code} == 4 ]] && jq -e ".repositories[] | select(.path == \"knowledge-islands/delta\") | .state == \"unknown\" and (.problem | endswith(\"not in the declared repository list\"))" <<<"${document}" >/dev/null' "an undeclared repository must be unknown, got ${code}:
 ${document}"
 
 # A repository whose Git read fails is unknown; the rest are still reported.
 echo 'ref: broken' >"${workspace}/delta/.git/HEAD"
-host_status --expect knowledgeislands/delta
-check '[[ ${code} == 4 ]] && jq -e "(.repositories | length) == 4 and ([.repositories[] | select(.state == \"unknown\") | .path] == [\"knowledgeislands/delta\"])" <<<"${document}" >/dev/null' "a broken repository must be unknown without hiding the rest, got ${code}:
+host_status --expect knowledge-islands/delta
+check '[[ ${code} == 4 ]] && jq -e "(.repositories | length) == 4 and ([.repositories[] | select(.state == \"unknown\") | .path] == [\"knowledge-islands/delta\"])" <<<"${document}" >/dev/null' "a broken repository must be unknown without hiding the rest, got ${code}:
 ${document}"
 rm -rf "${workspace}/delta"
 
@@ -486,7 +486,7 @@ profiled() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} AGENT_HOST
 # A content check for the other OS runs without --os, as setup's does.
 os_flags=(--os "${target_os}")
 validate() { python3 "${scripts}/host/profile-check.py" ${os_flags[@]+"${os_flags[@]}"} --hostname "$(hostname)" --shell zsh \
-  --workspace '~/workspaces/kit' --recipe-rig "${repo_root}/recipes/agent-host/rig.toml" "$1" 2>&1; }
+  --workspace '~/workspaces' --recipe-rig "${repo_root}/recipes/agent-host/rig.toml" "$1" 2>&1; }
 
 owner=${work}/payload
 payload "${owner}" r1 .claude/CLAUDE.md:0644 .claude/delegation.md:0644 .codex/AGENTS.md:0600 .zshrc:0644 \
@@ -557,8 +557,8 @@ payload "${bad}" bad .zshenv:0644
 refused 'the chosen shell'"'"'s start-up file' 'reserved destination ~/.zshenv' "${bad}"
 payload "${bad}" bad .config/mise/config.toml:0644
 refused 'a recipe directory' 'reserved destination ~/.config/mise/' "${bad}"
-payload "${bad}" bad workspaces/kit/notes.md:0644
-refused 'the workspace' 'reserved destination ~/workspaces/kit/' "${bad}"
+payload "${bad}" bad workspaces/notes.md:0644
+refused 'the workspace' 'reserved destination ~/workspaces/' "${bad}"
 payload "${bad}" bad .zshrc:0644
 manifest "${bad}" '.files[0].path = "../.zshrc"'
 refused 'a path outside home' 'has an empty, . or .. component' "${bad}"
@@ -665,7 +665,7 @@ bound() {
   )
 }
 bound_setup=$(bound setup.sh) || { echo "${bound_setup}" >&2; echo 'agent-host-workspace: setup with binding values failed' >&2; exit 1; }
-check '[[ -d ${host_home}/elsewhere/knowledgeislands/alpha/.git && ${bound_setup} == *"cloned knowledgeislands/alpha"* ]]' 'setup must clone into the binding workspace on the host'
+check '[[ -d ${host_home}/elsewhere/knowledge-islands/alpha/.git && ${bound_setup} == *"cloned knowledge-islands/alpha"* ]]' 'setup must clone into the binding workspace on the host'
 bound_report=$(bound status.sh) || true
 check '[[ ${bound_report} == *"Repositories under ${host_home}/elsewhere"* && ${bound_report} == *"OUTCOME=clean"* ]]' "status must report the binding workspace, got:
 ${bound_report}"

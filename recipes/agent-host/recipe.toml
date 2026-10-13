@@ -95,14 +95,14 @@ env = "AGENT_HOST_TAILSCALE_TAG"
 scripts = ["provision"]
 
 [parameters.repositories]
-summary = "Repository list file, one `<owner>/<repo> <clone URL>` per line"
+summary = "Repository list file, one `<territory>/<repository> <clone URL>` per line, under the workspace root"
 default = "operations/aws/agent-host/host/repositories.txt"
 env = "AGENT_HOST_REPOSITORIES"
 scripts = ["setup", "status", "stop", "destroy"]
 
 [parameters.workspace]
 summary = "Workspace root on the host; a leading ~/ is the operator's home there"
-default = "~/workspaces/kit"
+default = "~/workspaces"
 env = "KI_AGENT_HOST_WORKSPACE"
 scripts = ["setup", "status", "stop", "destroy"]
 
