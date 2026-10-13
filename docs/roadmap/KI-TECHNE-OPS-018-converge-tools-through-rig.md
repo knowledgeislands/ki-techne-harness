@@ -16,7 +16,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-12T19:56:25Z
+updated_at: 2026-10-13T22:53:48Z
 ---
 
 # Converge Tools Through Rig
@@ -52,3 +52,7 @@ Merged from KI-TECHNE-OPS-016 on 2026-10-12: [ADR-KI-PRINCIPAL-003](https://gith
 ### Adoption
 
 On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play thread, Decision 147): adopted as `deliver / Hold`. Its existing gates are the hold condition: Rig must install a signed `ki` release, and `rig status` must stay clean through a pin bump. vega has been deleted and is not yet rebuilt, so the second gate cannot clear now. Remote work stays within the Techne Programme Hold. Adoption grants no implementation, acceptance or remote authority.
+
+### Boundary audit handoff
+
+Handed over by `ki-principal` on 2026-10-13. On 2026-10-11 Kris Brown accepted the decisions of the [Rig and Techne boundary audit](https://github.com/knowledgeislands/ki-principal/blob/main/Streams/Projects/agent-host/design/rig-techne-boundary-audit.md) ([Hosts, Roles and Layers](https://github.com/knowledgeislands/ki-principal/blob/main/Pillars/Engineering%20Practice/Architecture/Hosts%2C%20Roles%20and%20Layers.md) summarises them). Decision 5 replaces this record's harness signed-release provider with a built-in signed-release install kind in `tools-rig`, and ADR-KI-PRINCIPAL-003 decision 3 is amended to match. The audit also moves Claude Code's install from the boot script into this record's scope, as a self-updating `minimum` tool. The Boundary above still describes the harness provider; reshaping it is this repository's to do when the record is next planned. Gate 1 then reads "Rig's signed-release install kind installs `ki`", which `tools-rig` delivers. Nothing here changes the record's status, horizon or hold.
