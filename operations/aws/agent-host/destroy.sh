@@ -155,12 +155,23 @@ if [[ ${stack_present} == true ]]; then
   echo "deleted stack ${stack_name}"
 fi
 
+# A configured Tailscale OAuth client lets provision.sh mint the key once no
+# spent one is left; otherwise the key is stored by hand.
+rebuild_key_step() {
+  if [[ -n ${AGENT_HOST_TAILSCALE_OAUTH_ITEM:-}${AGENT_HOST_TAILSCALE_OAUTH_CLIENT_SECRET:-} ]]; then
+    echo "  2. Delete any spent ${parameter_prefix}/tailscale-auth-key; provision.sh then mints a fresh key from the Tailscale OAuth client."
+  else
+    echo "  2. Generate a fresh Tailscale auth key and store it as ${parameter_prefix}/tailscale-auth-key, overwriting any spent one,"
+    echo "     or set AGENT_HOST_TAILSCALE_OAUTH_ITEM and delete any spent key so provision.sh mints one."
+  fi
+}
+
 if [[ ${operation} == rebuild ]]; then
   cat <<EOF
 Kept ${parameter_prefix}/github-token and ${parameter_prefix}/model-api-key for the next build.
 To rebuild:
   1. In the Tailscale admin console, remove the old ${AGENT_HOST_TAILSCALE_NAME} device, so the new host takes its name.
-  2. Generate a fresh Tailscale auth key and store it as ${parameter_prefix}/tailscale-auth-key, overwriting any spent one.
+$(rebuild_key_step)
   3. Run provision.sh, then setup.sh.
 EOF
   exit 0
@@ -175,6 +186,7 @@ aws ssm delete-parameters \
 cat <<EOF
 Withdrawn. Remove by hand what remains:
   - the tailnet device ${AGENT_HOST_TAILSCALE_NAME}, its tag, tag owner, grant and ssh rule, and any unused auth key;
+  - any Tailscale OAuth client created for the host, deleted in the admin console, and its 1Password item;
   - the GitHub token and any model API key issued for the host, revoked where they were issued;
   - any Ubuntu Pro attachment, detached from the host's machine in the Ubuntu Pro dashboard;
   - the operator role and its inline policy, and the operator profile;

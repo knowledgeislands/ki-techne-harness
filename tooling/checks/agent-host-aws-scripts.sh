@@ -36,11 +36,55 @@ case "$1 $2" in
       *Stacks\[0\].Outputs*) echo '[]' ;;
       *) exit 255 ;;
     esac ;;
-  'ssm describe-parameters') echo SecureString ;;
+  'ssm describe-parameters')
+    if [[ -n ${STUB_KEY_ABSENT:-} && $* == *tailscale-auth-key* ]]; then echo None; else echo SecureString; fi ;;
+  'ssm put-parameter') [[ $(cat) == "${STUB_KEY}" ]] && echo 'aws received the minted key on standard input' >>"${STUB_LOG}" ;;
   'ec2 describe-instances') echo i-0123456789abcdef0 ;;
 esac
 STUB
 chmod +x "${work}/bin/aws"
+
+# The Tailscale OAuth stand-ins. Each credential is random per run and reaches
+# the stubs only through the environment, so it can be found on disk under
+# ${work} only if the script under test puts it there. curl answers the
+# configuration it reads on standard input and logs what it saw, never a value.
+cat >"${work}/bin/op" <<'STUB'
+#!/usr/bin/env bash
+echo "op $*" >>"${STUB_LOG}"
+case $* in
+  "read ${STUB_OP_ITEM}/username") printf '%s\n' "${STUB_CLIENT_ID}" ;;
+  "read ${STUB_OP_ITEM}/credential") printf '%s\n' "${STUB_SECRET}" ;;
+  *) echo '[ERROR] not signed in' >&2; exit 1 ;;
+esac
+STUB
+cat >"${work}/bin/curl" <<'STUB'
+#!/usr/bin/env bash
+echo "curl $*" >>"${STUB_LOG}"
+config=$(cat)
+case ${config} in
+  *'/oauth/token"'*)
+    [[ ${config} == *"client_id=${STUB_CLIENT_ID}\""* && ${config} == *"client_secret=${STUB_SECRET}\""* ]] &&
+      echo 'curl token request carries the client' >>"${STUB_LOG}"
+    [[ -z ${STUB_TOKEN_REFUSED:-} ]] || { echo 'curl: (22) The requested URL returned error: 401' >&2; exit 22; }
+    printf '{"access_token": "%s", "token_type": "Bearer", "expires_in": 3600, "scope": "auth_keys"}' "${STUB_TOKEN}" ;;
+  *'/tailnet/-/keys"'*)
+    [[ ${config} == *"Authorization: Bearer ${STUB_TOKEN}\""* ]] && echo 'curl key request carries the token' >>"${STUB_LOG}"
+    printf '%s\n' "${config}" | sed -n 's/^data-raw = //p' | jq -r . | jq -c . | sed 's/^/curl key body /' >>"${STUB_LOG}"
+    printf '{"id": "kStubKeyId", "key": "%s"}' "${STUB_KEY}" ;;
+  *) exit 2 ;;
+esac
+STUB
+chmod +x "${work}/bin/op" "${work}/bin/curl"
+random() { od -An -N12 -tx1 /dev/urandom | tr -d ' \n'; }
+client_id=kStub$(random)
+secret=tskey-client-kStub-$(random)
+token=tskey-api-kStub-$(random)
+key=tskey-auth-kStub-$(random)
+op_item='op://Techne/agent-host Tailscale OAuth'
+# leaks: every file under ${work} holding a credential, which covers the
+# logged arguments of every stub, the script's output and any temporary file.
+leaks() { grep -rlF -e "${secret}" -e "${token}" -e "${key}" "${work}" || true; }
+mkdir "${work}/tmp"
 
 # ssh answers the status read: STUB_STATUS names a report under reports/, or
 # is unreachable (SSH's own 255).
@@ -83,8 +127,10 @@ run() {
   (($#)) && shift
   variables=("$@")
   : >"${work}/aws.log"
-  env -i HOME="${work}" PATH="${work}/bin:${bash_dir}:${jq_dir}:/usr/bin:/bin" STUB_LOG="${work}/aws.log" \
+  env -i HOME="${work}" TMPDIR="${work}/tmp" PATH="${work}/bin:${bash_dir}:${jq_dir}:/usr/bin:/bin" STUB_LOG="${work}/aws.log" \
     STUB_REPORTS="${work}/reports" STUB_STATUS="${status:-clean}" STUB_STACK_ABSENT="${stack_absent:-}" \
+    STUB_KEY_ABSENT="${key_absent:-}" STUB_TOKEN_REFUSED="${token_refused:-}" STUB_OP_ITEM="${op_item}" \
+    STUB_CLIENT_ID="${client_id}" STUB_SECRET="${secret}" STUB_TOKEN="${token}" STUB_KEY="${key}" \
     STUB_ACCOUNT="${account:-655383751458}" STUB_STACK_HOST_ID="${stack_host_id:-agent-host}" ${variables[@]+"${variables[@]}"} \
     bash "${scripts}/${script}" ${arguments[@]+"${arguments[@]}"} <<<"${input:-}" >"${work}/out.log" 2>&1
 }
@@ -109,6 +155,40 @@ check 'log | grep -qF "Values=/ki/techne/agent-host/ubuntu-pro-token"' 'provisio
 for bad in AGENT_HOST_REBOOT_WINDOW=4:00 "AGENT_HOST_REBOOT_WINDOW=Sun 04:00" AGENT_HOST_LIVEPATCH=yes AGENT_HOST_SHELL=fish; do
   check '! run provision.sh -- "${bad}" && ! log | grep -qF "cloudformation deploy"' "provision.sh must refuse ${bad}"
 done
+
+# Key minting: with no stored key, a configured OAuth client mints one just
+# before the deploy; with neither, the hand route is named and nothing is built.
+oauth_item="AGENT_HOST_TAILSCALE_OAUTH_ITEM=${op_item}"
+key_absent=1 run provision.sh && check false 'provision.sh must refuse a missing key with no OAuth client'
+check 'out | grep -qF "store a key by hand, or set AGENT_HOST_TAILSCALE_OAUTH_ITEM" && ! log | grep -qE "^(curl|op) |cloudformation deploy"' "provision.sh must name both routes and build nothing, got: $(out)"
+
+key_absent=1 run provision.sh -- "${oauth_item}" || { out >&2; exit 1; }
+check '[[ $(log | grep "^op " | tr "\n" "|") == "op read ${op_item}/username|op read ${op_item}/credential|" ]]' "provision.sh must read the client by its 1Password reference only, got: $(log | grep '^op ')"
+check '[[ $(log | grep -c "^curl --silent --show-error --fail --config -$") == 2 ]]' "curl must take each request on standard input with no other argument, got: $(log | grep '^curl ')"
+check 'log | grep -qx "curl token request carries the client" && log | grep -qx "curl key request carries the token"' "the requests must carry the client and the token, got: $(log)"
+body=$(log | sed -n 's/^curl key body //p')
+check 'jq -e --arg tag tag:ki-techne-agent-host '"'"'.capabilities.devices.create == {reusable: false, ephemeral: false, preauthorized: true, tags: [$tag]} and .expirySeconds == 3600'"'"' >/dev/null 2>&1 <<<"${body}"' "the key must be single-use, not ephemeral, pre-approved, tagged and one hour, got: ${body}"
+check 'log | grep -qF "ssm put-parameter --region eu-west-1 --name /ki/techne/agent-host/tailscale-auth-key --type SecureString --value file:///dev/stdin" && ! log | grep -qF -- --overwrite && log | grep -qx "aws received the minted key on standard input"' "the key must reach Parameter Store on standard input without overwriting, got: $(log)"
+check '[[ $(log | grep -oE "validate-template|put-parameter|cloudformation deploy" | tr "\n" " ") == "validate-template put-parameter cloudformation deploy " ]]' "the key must be minted after validation and before the deploy, got: $(log)"
+check 'out | grep -qF "minted Tailscale auth key kStubKeyId for tag:ki-techne-agent-host, single-use and expiring in 60 minutes"' "provision.sh must report the minted key by id, got: $(out)"
+check '[[ -z $(leaks) ]]' "a credential reached an argument, the output or disk: $(leaks)"
+
+key_absent=1 run provision.sh -- AGENT_HOST_TAILSCALE_OAUTH_CLIENT_ID="${client_id}" AGENT_HOST_TAILSCALE_OAUTH_CLIENT_SECRET="${secret}" || { out >&2; exit 1; }
+check '! log | grep -q "^op " && log | grep -qx "aws received the minted key on standard input"' "provision.sh must mint from an op run environment without 1Password, got: $(log)"
+check '[[ -z $(leaks) ]]' "a credential reached an argument, the output or disk: $(leaks)"
+
+run provision.sh -- "${oauth_item}" || { out >&2; exit 1; }
+check '! log | grep -qE "^(curl|op) |put-parameter" && log | grep -qF "cloudformation deploy"' "provision.sh must use a stored key without minting, got: $(log)"
+
+key_absent=1 token_refused=1 run provision.sh -- "${oauth_item}" && check false 'provision.sh must stop when Tailscale refuses the client'
+check '! log | grep -qE "put-parameter|cloudformation deploy" && [[ -z $(leaks) ]]' "a refused client must store and build nothing and leak nothing, got: $(log)"
+key_absent=1 run provision.sh -- AGENT_HOST_TAILSCALE_OAUTH_CLIENT_ID="${client_id}" AGENT_HOST_TAILSCALE_OAUTH_CLIENT_SECRET="not-${secret}" && check false 'provision.sh must refuse a malformed client secret'
+check '! log | grep -qE "^curl |cloudformation deploy" && out | grep -qx "the Tailscale OAuth client secret is malformed" && [[ -z $(leaks) ]]' "a malformed secret must be refused unnamed before any request, got: $(out)"
+
+run mint-tailscale-key.sh --check -- "${oauth_item}" || { out >&2; exit 1; }
+check 'out | grep -qx "Tailscale accepted the OAuth client (scope: auth_keys); no key was minted" && [[ $(log | grep -c "^curl --") == 1 ]] && ! log | grep -q "^AWS_PROFILE"' "--check must exchange the token only, with no AWS call, got: $(log)"
+check '[[ -z $(leaks) ]]' "a credential reached an argument, the output or disk: $(leaks)"
+check '! grep -nE "<<|>" "${scripts}/mint-tailscale-key.sh" | grep -vE ">&2|>/dev/null"' 'mint-tailscale-key.sh must use no here-document, here-string or file redirection, which may touch disk'
 
 # stop.sh: reads the status with a short connect timeout, warns, and always stops.
 run stop.sh || { out >&2; exit 1; }
@@ -208,6 +288,9 @@ run provision.sh -- "${scratch[@]}" || { out >&2; exit 1; }
 deploy=$(grep ' cloudformation deploy ' "${work}/aws.log")
 check '[[ ${deploy} == "AWS_PROFILE=scratch-admin cloudformation deploy --region eu-central-1 --stack-name ki-techne-scratch "*" --parameter-overrides AgentHostId=scratch HostName=ki-techne-scratch TailscaleHostname=scratch-tail TailscaleTag=tag:ki-techne-scratch ParameterPrefix=/ki/techne/scratch InstanceType=t3.large VolumeSize=60 Shell=bash --tags ki-agent-host-id=scratch "* ]]' "provision.sh must pass the second binding's values, got: ${deploy}"
 check '! log | grep -qE "=agent-host( |$)|ki-techne-agent-host|/ki/techne/agent-host|655383751458|eu-west-1"' "provision.sh must not reach the first binding, got: $(log)"
+key_absent=1 run provision.sh -- "${scratch[@]}" "${oauth_item}" || { out >&2; exit 1; }
+check 'log | grep -qF "ssm put-parameter --region eu-central-1 --name /ki/techne/scratch/tailscale-auth-key " && log | grep -qF "\"tags\":[\"tag:ki-techne-scratch\"]" && log | grep -qF "\"description\":\"ki-techne scratch build\""' "minting must use the second binding's tag, region and prefix, got: $(log)"
+check '! log | grep -qE "=agent-host( |$)|ki-techne-agent-host|/ki/techne/agent-host|655383751458|eu-west-1"' "minting must not reach the first binding, got: $(log)"
 
 run stop.sh -- "${scratch[@]/AWS_PROFILE=scratch-admin/AWS_PROFILE=scratch-operator}" || { out >&2; exit 1; }
 check 'log | grep -qF -- "--profile scratch-operator --region eu-central-1 --filters Name=tag:ki-agent-host-id,Values=scratch Name=tag:ki-lifecycle,Values=prototype Name=tag:Name,Values=ki-techne-scratch "' "stop.sh must select the second binding's host, got: $(log)"

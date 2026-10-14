@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd "${here}/../../.." && pwd)
 # Preserve Granted-exported credentials; AWS_PROFILE supplies the fallback.
 export AWS_PROFILE=${AWS_PROFILE:-knowledge-islands-techne}
 region=${AWS_REGION:-eu-west-1}
@@ -50,25 +51,41 @@ if aws cloudformation describe-stacks --region "${region}" --stack-name "${stack
 fi
 
 # Metadata only: secret values are read on the host at boot, never here.
-require_secret() {
+has_secret() {
   local key_type
   key_type=$(aws ssm describe-parameters \
     --region "${region}" \
     --parameter-filters "Key=Name,Option=Equals,Values=${parameter_prefix}/$1" \
     --query 'Parameters[0].Type' \
     --output text)
-  if [[ ${key_type} != SecureString ]]; then
-    echo "missing SecureString parameter ${parameter_prefix}/$1; create it first" >&2
+  [[ ${key_type} == SecureString ]]
+}
+require_secret() {
+  has_secret "$1" || { echo "missing SecureString parameter ${parameter_prefix}/$1; create it first" >&2; exit 1; }
+}
+# A stored auth key is used as it is. Without one, a configured Tailscale OAuth
+# client mints it just before the deploy; with neither, the hand route applies.
+mint_key=false
+if ! has_secret tailscale-auth-key; then
+  if [[ -n ${AGENT_HOST_TAILSCALE_OAUTH_ITEM:-}${AGENT_HOST_TAILSCALE_OAUTH_CLIENT_SECRET:-} ]]; then
+    mint_key=true
+  else
+    echo "missing SecureString parameter ${parameter_prefix}/tailscale-auth-key; store a key by hand, or set AGENT_HOST_TAILSCALE_OAUTH_ITEM to mint one" >&2
     exit 1
   fi
-}
-require_secret tailscale-auth-key
+fi
 # Livepatch attaches Ubuntu Pro with the binding owner's token.
 [[ ${livepatch} == true ]] && require_secret ubuntu-pro-token
 
 aws cloudformation validate-template \
   --region "${region}" \
   --template-body "file://${repo_root}/infra/aws/agent-host-stack.yaml" >/dev/null
+
+if [[ ${mint_key} == true ]]; then
+  AWS_REGION=${region} EXPECTED_AWS_ACCOUNT=${expected_account} AGENT_HOST_ID=${host_id} \
+    AGENT_HOST_TAILSCALE_TAG=${tailscale_tag} AGENT_HOST_PARAMETER_PREFIX=${parameter_prefix} \
+    bash "${here}/mint-tailscale-key.sh"
+fi
 
 aws cloudformation deploy \
   --region "${region}" \

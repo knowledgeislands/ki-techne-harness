@@ -78,7 +78,7 @@ The `knowledge-islands-techne-agent-host` AWS profile assumes the IAM role `arn:
 ## Before the build
 
 1. In the Tailscale admin console, merge the [tailnet policy](#tailnet-policy) below into the existing policy file. The console is the policy's only record; no repository holds it.
-2. Generate an auth key under **Settings → Keys → Generate auth key**:
+2. With a [Tailscale OAuth client](#key-minting) set up, skip to step 3: the build mints the key itself. Otherwise generate an auth key under **Settings → Keys → Generate auth key**:
    - **Reusable:** off, so the key joins one device only.
    - **Ephemeral:** off, so the node survives a stop and start.
    - **Pre-approved:** on. The option appears only when device approval is enabled; without device approval nothing is needed.
@@ -94,6 +94,43 @@ The `knowledge-islands-techne-agent-host` AWS profile assumes the IAM role `arn:
      --name /ki/techne/agent-host/tailscale-auth-key --type SecureString --value file:///dev/stdin
    pbcopy </dev/null
    ```
+
+## Key minting
+
+With a Tailscale OAuth client, `provision.sh` mints the auth key itself whenever the auth-key parameter is absent, so no build or rebuild needs the hand step above. The key has the hand route's properties: single-use, not ephemeral, pre-approved and tagged `tag:ki-techne-agent-host` only, but it expires after one hour rather than one day, which covers a build because the boot script reads it within minutes of the deploy. The hand route stays as the fallback: a stored key is always used as it is, and with no client configured the build asks for one.
+
+### One-time setup
+
+1. In the Tailscale admin console, open **Settings → OAuth clients** and generate a client:
+   - **Description:** `ki-techne-agent-host key minting`.
+   - **Scopes:** **Auth Keys** with **Write** only, and nothing else: the client cannot read or manage devices, the policy file or other keys' tags.
+   - **Tags:** `tag:ki-techne-agent-host` only. The tag must already be in `tagOwners`.
+
+   The console shows the client ID and secret once.
+2. In 1Password, create an **API Credential** item named `ki-techne-agent-host-tailscale-oauth`: put the client ID in **username** and the client secret in **credential**. Paste each straight from the console and clear the clipboard with `pbcopy </dev/null`.
+3. Close the console dialog. The secret now lives only in 1Password.
+
+The client secret never leaves the Mac. `mint-tailscale-key.sh` reads it with `op read` at build time, exchanges it for an access token, mints the key and pipes it to `aws ssm put-parameter --value file:///dev/stdin`. The secret, the token and the key stay in shell variables and pipes: no command argument, terminal output or file holds them, and nothing about the client reaches the host, the instance role, Parameter Store or Git. `bun run test` checks that offline against stubbed `op`, `curl` and `aws`.
+
+### Use it
+
+Name the item for the build, with 1Password unlocked and `op` signed in:
+
+```sh
+export AGENT_HOST_TAILSCALE_OAUTH_ITEM='op://<vault>/ki-techne-agent-host-tailscale-oauth'
+```
+
+`provision.sh` then mints the key after validating the template and before the deploy, printing the key's id but never the key. Under `op run`, set `AGENT_HOST_TAILSCALE_OAUTH_CLIENT_ID` and `AGENT_HOST_TAILSCALE_OAUTH_CLIENT_SECRET` instead, and the script reads them from the environment without calling `op`.
+
+To prove the client works without minting anything or touching AWS:
+
+```sh
+bash operations/aws/agent-host/mint-tailscale-key.sh --check
+```
+
+It prints the scope Tailscale granted. Run without `--check`, the script mints and stores a key alone, refusing to overwrite an existing parameter; delete that parameter and revoke the key under **Settings → Keys** if no build follows within the hour.
+
+A minted key is used only when no `tailscale-auth-key` parameter exists, so delete a spent or expired one first, as [Verify over Tailscale](#verify-over-tailscale) does after every build. If a build fails after minting, delete the parameter before retrying so the retry mints a fresh key.
 
 ## Tailnet policy
 
@@ -178,7 +215,7 @@ From the repository root, still under the administrator profile:
 bash operations/aws/agent-host/provision.sh
 ```
 
-The script refuses any account other than `655383751458`, refuses to run if the `ki-techne-agent-host` stack already exists or the auth-key parameter is missing, and deploys only that stack. It never touches `ki-techne-ops-007-controller`. Override the size with `AGENT_HOST_INSTANCE_TYPE` (`t3.medium`, `t3.large` or `t3.xlarge`) and `AGENT_HOST_VOLUME_SIZE` (16 to 100 GB).
+The script refuses any account other than `655383751458`, refuses to run if the `ki-techne-agent-host` stack already exists or the auth-key parameter is missing with no [OAuth client](#key-minting) to mint it, and deploys only that stack. It never touches `ki-techne-ops-007-controller`. Override the size with `AGENT_HOST_INSTANCE_TYPE` (`t3.medium`, `t3.large` or `t3.xlarge`) and `AGENT_HOST_VOLUME_SIZE` (16 to 100 GB).
 
 The boot script takes a few minutes. Its log goes to the instance console and `/var/log/ki-agent-host-bootstrap.log`, never including the key. To read it from the Mac:
 
@@ -385,7 +422,7 @@ Do both steps; either one alone stops access.
 
    It stops only a running instance tagged `ki-agent-host-id = agent-host`, `ki-lifecycle = prototype` and `Name = vega`. First it reads [Status](#status) with a 5-second connect timeout and prints a warning naming each repository at risk or unknown, or saying the status could not be read. It never refuses: a stop keeps the disk, so the work is still there when the host starts again. In an emergency, `--now` stops without waiting for the read.
 
-2. In the Tailscale admin console, remove the `vega` device and revoke any unused auth key for its tag.
+2. In the Tailscale admin console, remove the `vega` device and revoke any unused auth key for its tag. If the OAuth client's secret may be exposed, delete the client under **Settings → OAuth clients** too; the next build then uses the hand route until a new client is set up.
 
 ## Before a rebuild
 
@@ -412,8 +449,8 @@ CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/d
 CONFIRM_DESTROY_AGENT_HOST=ki-techne-agent-host bash operations/aws/agent-host/destroy.sh withdraw
 ```
 
-- **Rebuild** deletes the `ki-techne-agent-host` stack only, keeping the `github-token` and `model-api-key` parameters for the next build, then prints the rebuild sequence: remove the old `vega` device in the Tailscale admin console so the new host takes its name, store a fresh Tailscale auth key as [Before the build](#before-the-build) describes, overwriting any spent one, then run `provision.sh` and `setup.sh`. Run [Before a rebuild](#before-a-rebuild) first when the template has changed.
-- **Withdraw** deletes the stack and the three parameters under `/ki/techne/agent-host/`, then lists what remains to remove by hand: the tailnet device, its tag, tag owner, grant and `ssh` rule and any unused auth key; the GitHub token and any model API key issued for the host; the `ki-techne-agent-host-operator` role, its inline policy and the `knowledge-islands-techne-agent-host` profile; and the SSH and Zed entries in the chezmoi source, applied only after reviewing `chezmoi diff`.
+- **Rebuild** deletes the `ki-techne-agent-host` stack only, keeping the `github-token` and `model-api-key` parameters for the next build, then prints the rebuild sequence: remove the old `vega` device in the Tailscale admin console so the new host takes its name, store a fresh Tailscale auth key as [Before the build](#before-the-build) describes, overwriting any spent one, then run `provision.sh` and `setup.sh`. With `AGENT_HOST_TAILSCALE_OAUTH_ITEM` set, step 2 becomes deleting any spent key parameter, and `provision.sh` mints the fresh key as [Key minting](#key-minting) describes. Run [Before a rebuild](#before-a-rebuild) first when the template has changed.
+- **Withdraw** deletes the stack and the three parameters under `/ki/techne/agent-host/`, then lists what remains to remove by hand: the tailnet device, its tag, tag owner, grant and `ssh` rule and any unused auth key; any Tailscale OAuth client created for the host and its 1Password item; the GitHub token and any model API key issued for the host; the `ki-techne-agent-host-operator` role, its inline policy and the `knowledge-islands-techne-agent-host` profile; and the SSH and Zed entries in the chezmoi source, applied only after reviewing `chezmoi diff`.
 
 A bare `destroy.sh` is refused. Both operations refuse a stack that is not tagged `ki-agent-host-id = agent-host`, and both may be rerun after a partial clean-up: a stack that is already gone is skipped, and missing parameters do not block withdrawal.
 
