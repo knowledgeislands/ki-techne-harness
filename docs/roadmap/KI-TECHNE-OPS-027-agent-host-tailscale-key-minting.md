@@ -7,7 +7,7 @@ purpose: capability
 project: agent-host
 component: operations
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: c77c7d90c48b07978a39ed0a444baf2fa6117a17
