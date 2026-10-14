@@ -41,4 +41,4 @@ Not adopted. Open questions for planning: whether the replacement is `ki-authori
 
 ### Adoption
 
-On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play thread, Decision 147): adopted as `deliver / Future`. Live stack updates need remote authority the Techne Programme Hold does not grant, and the replacement tag name is Kris's decision during planning. Adoption grants no implementation, acceptance or remote authority.
+On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play run, 'TRIAGE-APPROVE (all 13 proposals)'): adopted as `deliver / Future`. Live stack updates need remote authority the Techne Programme Hold does not grant, and the replacement tag name is Kris's decision during planning. Adoption grants no implementation, acceptance or remote authority.

@@ -25,7 +25,7 @@ A rebuild of the agent host no longer needs Kris to generate a Tailscale auth ke
 
 Today the operator guide's [Before the build](../guides/operator/agent-host.md#before-the-build) asks Kris to generate a key in the Tailscale admin console: not reusable, not ephemeral, pre-approved, tagged `tag:ki-techne-agent-host` only, with a one-day expiry. Kris copies it to the clipboard, pipes it into the `/ki/techne/agent-host/tailscale-auth-key` SecureString parameter and clears the clipboard. After enrolment the guide's [Verify over Tailscale](../guides/operator/agent-host.md#verify-over-tailscale) step deletes the spent parameter. [Rebuild and withdraw](../guides/operator/agent-host.md#rebuild-and-withdraw) repeats the hand step on every rebuild, and `operations/aws/agent-host/destroy.sh rebuild` prints it as step 2 of the rebuild sequence. `operations/aws/agent-host/provision.sh` refuses to run when the parameter is missing (`require_secret tailscale-auth-key`).
 
-Kris approved capturing this on 2026-10-14 (Techne Decision 50) and adopted it at horizon `now` the same day (Techne Decision 56): local implementation may proceed, while creating the OAuth client and any live rebuild stay with Kris.
+Kris approved capturing this on 2026-10-14 in the Techne run ("TS-OAUTH - capture as work") and adopted it at horizon `now` the same day ("TS-OAUTH-ADOPT - now"): local implementation may proceed, while creating the OAuth client and any live rebuild stay with Kris.
 
 The proposal:
 

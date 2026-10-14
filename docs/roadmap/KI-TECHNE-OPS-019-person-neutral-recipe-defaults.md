@@ -78,8 +78,8 @@ It starts after TECHNE-TOOLS-OPS-013, which edits the same scripts, is accepted;
 
 ### Pairing
 
-TECHNE-TOOLS-OPS-015 owns the `chezmoi cat` removal, so that it lands with the payload hook and personal instructions always have one route; Kris confirmed this split on 2026-10-09 (Decision 24(c) in the Techne decisions log). This record keeps the binding fields and the other person-specific defaults, and its `profile` field names the payload source that TECHNE-TOOLS-OPS-015's hook applies. Neither record blocks the other: if this record lands first, `setup.sh` keeps its current personal-instruction route until TECHNE-TOOLS-OPS-015 replaces it. The new binding fields need a paired `tools-techne` binding-schema record, to be handed off when this record is planned.
+TECHNE-TOOLS-OPS-015 owns the `chezmoi cat` removal, so that it lands with the payload hook and personal instructions always have one route; Kris confirmed this split on 2026-10-09 in the Techne run: "Good" to this record, and 'take the chezmoi cat removal out of its scope (TECHNE-TOOLS-OPS-015 owns it)'. This record keeps the binding fields and the other person-specific defaults, and its `profile` field names the payload source that TECHNE-TOOLS-OPS-015's hook applies. Neither record blocks the other: if this record lands first, `setup.sh` keeps its current personal-instruction route until TECHNE-TOOLS-OPS-015 replaces it. The new binding fields need a paired `tools-techne` binding-schema record, to be handed off when this record is planned.
 
 ### Adoption
 
-On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play thread, Decision 147): adopted as `deliver / Next`. Adoption grants no implementation, acceptance or remote authority.
+On 12 October 2026 Kris approved the triage review's proposal as written (state-of-play run, 'TRIAGE-APPROVE (all 13 proposals)'): adopted as `deliver / Next`. Adoption grants no implementation, acceptance or remote authority.

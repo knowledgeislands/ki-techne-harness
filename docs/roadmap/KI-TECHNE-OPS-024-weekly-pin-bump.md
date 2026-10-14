@@ -27,7 +27,7 @@ Once a week, a housekeeping run on the Mac checks every tool pinned in `recipes/
 
 ## Context
 
-Kris chose this on 2026-10-11 (Decision 38 in the Techne thread's decisions log): option 1 for now, a weekly pin-bump housekeeping job, and no more comparing the Mac against the host's pins.
+Kris chose this on 2026-10-11 in the Techne run: "option 1 for now", a weekly pin-bump housekeeping job, and no more comparing the Mac against the host's pins.
 
 The pin file is Rig's `agent-host` profile. Each tool has a Linux and a macOS variant whose `locator` is the version. Six pins are `exact` (rig, ki, mise, bun, node, codex) and Claude Code's is a `minimum`, because it updates itself. `converge.sh` reads the locators and installs those versions on the host; `rig status --profile agent-host` reports drift through the observe-only `agent-host-pins` provider (`rig-pins.sh`). The pin file's own comment says a bump is an ordinary commit followed by a setup rerun. Nothing raises the pins today, so they fall behind until someone notices.
 
@@ -80,13 +80,13 @@ The Techne programme hold bars managing remote environments, not local work. Thi
 
 ## Dependencies / blocks
 
-The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Decision 40(3a) in the Techne thread's decisions log), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
+The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Kris accepted the Rig and Techne boundary audit's recommendation on 2026-10-11 in the Techne run: 'role profile moves to a recipe-independent roles/ folder in ki-techne-harness'), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays under the remote-environment hold and outside this record.
 
 ## Documentation impact
 
 ### Decision Records
 
-None. Decision 38 in the Techne thread's decisions log records Kris's choice; it does not change architecture.
+None. Kris's choice of 2026-10-11 in the Techne run, "option 1 for now", is recorded in that run's decisions log; it does not change architecture.
 
 ### Specifications
 
@@ -102,9 +102,9 @@ None beyond the overlaps under Dependencies / blocks. Each weekly run is spawned
 
 ## Discussion
 
-Held 2026-10-12 by Kris Brown's approval of the roadmap minimisation batch 5 (Decision 107 of the state-of-play thread): parked with the other agent-host records until the Techne agent-host thread resumes. Release when that thread is resumed, or reconsider at the review date. The record stays Ready; this is distinct from KI-HARNESS-GOV-168, which covers CI `ki` pins rather than the pins in `rig.toml`.
+Held 2026-10-12 by Kris Brown's approval of the roadmap minimisation batch 5 (Kris's 2026-10-12 approval in the state-of-play run, 'ROADMAP-BATCHES 3 to 5 approved as recommended'): parked with the other agent-host records until the Techne agent-host thread resumes. Release when that thread is resumed, or reconsider at the review date. The record stays Ready; this is distinct from KI-HARNESS-GOV-168, which covers CI `ki` pins rather than the pins in `rig.toml`.
 
-Captured, adopted into Next and planned on 2026-10-11 under Decision 38. On 2026-10-11 Kris accepted all four decisions below as recommended and moved the record to Ready, holding the pin-bump tool until the role profile's `roles/` move lands (Decision 40(3a) and 40(8) in the Techne thread's decisions log). The plan above matches the decisions. The paths in Current state, Steps and Files touched name today's `recipes/agent-host/rig.toml`; read them as the profile's new path once it moves.
+Captured, adopted into Next and planned on 2026-10-11 under Kris's instruction in the Techne run to 'capture and plan a ki-techne-harness record for a weekly pin-bump housekeeping job'. On 2026-10-11 Kris accepted all four decisions below as recommended and moved the record to Ready, holding the pin-bump tool until the role profile's `roles/` move lands (Kris accepting the Rig and Techne boundary audit the same day in the Techne run: 'move TECHNE-TOOLS-OPS-024 to ready but hold its pin-bump tool until the roles/ move lands'). The plan above matches the decisions. The paths in Current state, Steps and Files touched name today's `recipes/agent-host/rig.toml`; read them as the profile's new path once it moves.
 
 1. **Node's release line.** Resolved as recommended: stay on the pinned major (24, the current LTS line) and only raise within it; the run reports a newer LTS major as a note, and moving to it is a separate decision. Alternative: follow the newest LTS major automatically.
 2. **Claude Code's minimum.** Resolved as recommended: leave the minimum alone in the weekly run, because Claude Code updates itself and the pin is only a floor; raise it by hand when a needed feature requires it. Alternative: raise it to the latest release each week, at the cost of the host showing drift until it updates itself.
