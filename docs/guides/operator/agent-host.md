@@ -243,7 +243,7 @@ It uses SSH to the binding's Tailscale name only, `vega` for Kris's binding, or 
 - the repositories in [`host/repositories.txt`](../../../operations/aws/agent-host/host/repositories.txt), in the Mac's `~/workspaces/<territory>/<repository>` layout. It clones a missing repository, leaves a checkout with uncommitted changes alone and, with `--pull`, only fast-forwards a clean one;
 - mise and its global pins for Bun, Node and the Codex CLI, exact versions read from the recipe's pin file, then each repository's own mise tools and Bun dependencies, leaving each repository's `mise.toml` alone;
 - one shell environment file, `~/.config/ki-agent-host/env.sh`, sourced from `.profile`, `.bashrc`, Husky's `init.sh` and, for zsh, `.zshenv`, so tools are on `PATH` in non-interactive SSH and Git hooks too, and the login-shell check that [Shell](#shell) describes;
-- the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections;
+- the `ki` CLI at its pinned version, `ki bootstrap` for Claude Code and Codex, the local `ki-agentic-harness` checkout, the registry and the repositories' skill projections, after the sources stand-in that [Sources stand-in](#sources-stand-in) describes;
 - Rig at its pinned tag, with the pin file as `~/.config/rig/rig.toml` and the observe-only `agent-host-pins` provider: Rig reports drift and installs nothing yet;
 - `autoMemoryEnabled` set to `false` in `~/.claude/settings.json`;
 - the recipe's own host instructions, `recipes/agent-host/host-instructions.md`, as `~/.claude/rules/ki-agent-host.md` for Claude Code and as the first part of `~/.codex/AGENTS.md` for Codex: push where you worked, be level before working on the other machine, and leave roadmap writes to the workstation checkout;
@@ -271,6 +271,19 @@ The payload holds `manifest.json` and, under `home/`, each file it lists at its 
 On the host, `converge.sh` writes each file with its mode, removes a file the source dropped only when the last applied payload installed it, and records the applied manifest at `~/.local/state/ki-agent-host/profile-manifest.json`. `~/.codex/AGENTS.md` is composed: the recipe's rules first, then the owner's file under its own heading. Files the retired `chezmoi cat` path rendered into `~/.claude`, which carry its "Rendered for ... from the Mac's chezmoi source" header, are backed up and removed unless the payload delivers them. With a fragment, `rig apply --profile <profile> --scope tools` then installs the owner's personal tools and reports them changed, unchanged or failed. A run without a payload keeps the last applied payload's files and installs no owner tool; the host has the recipe layer alone until a payload is first sent.
 
 To recover a lost or rebuilt host's profile, re-render the payload on the workstation and rerun setup with it; nothing on the host is its only copy.
+
+### Sources stand-in
+
+A repository that declares a `sources` store, such as `ki-principal`, keeps it in OneDrive on the Macs. The host has no OneDrive, and `ki` 0.10.0 then refuses to repair that repository's skill projections with "declared sources store is not bound". As a stopgap, `converge.sh` binds each unbound `sources` role to an empty read-only directory outside the workspace. The Knowledge Islands sources store is empty on the Macs, so nothing is lost. By hand, for `ki-principal`:
+
+```sh
+dir=~/.local/share/ki/stores/ki-principal-sources-absent
+mkdir -p "$dir" && chmod 0555 "$dir"
+ki repo --repo ~/workspaces/knowledge-islands/ki-principal store bind sources "$dir" --write
+ki repo --estate repair
+```
+
+Remove the stand-in once `ki` can mark a store absent on a host: delete the step from `converge.sh`, then run `ki repo --repo <checkout> store unbind sources --write` and remove the directory.
 
 ### Shell
 

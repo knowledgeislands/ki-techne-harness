@@ -490,6 +490,20 @@ for path in "${declared[@]}"; do
   ki_run registry add --repo "${dir}" && changed "registered ${path}"
 done
 
+# Stopgap: a declared sources store lives in OneDrive, which a Linux host lacks,
+# and ki 0.10.0 then refuses to repair the repository's skill projections. Bind
+# an unbound sources role to an empty read-only stand-in until ki can mark a
+# store absent on a host. Stand-ins are removed by hand once it can.
+for path in "${declared[@]}"; do
+  dir=${workspace}/${path}
+  [[ -f ${dir}/.ki.toml ]] || continue
+  "${ki}" repo --repo "${dir}" store list 2>/dev/null | grep -q 'sources: unbound' || continue
+  standin=${HOME}/.local/share/ki/stores/${path##*/}-sources-absent
+  mkdir -p "${standin}" && chmod 0555 "${standin}"
+  ki_run repo --repo "${dir}" store bind sources "${standin}" --write &&
+    changed "sources stand-in for ${path}"
+done
+
 # diag exits 0 while projections are repairable, so read its summary instead.
 estate_healthy() {
   local summary
