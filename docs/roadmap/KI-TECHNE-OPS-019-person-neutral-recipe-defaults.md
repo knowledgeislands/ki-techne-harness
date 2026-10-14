@@ -6,13 +6,13 @@ purpose: debt
 project: agent-host
 component: operations
 kind: deliver
-status: draft
-horizon: next
+status: cancelled
+resolution: rejected
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T08:55:00Z
-updated_at: 2026-10-12T19:56:25Z
+updated_at: 2026-10-14T13:20:34Z
 ---
 
 # Person-Neutral Recipe Defaults
@@ -32,43 +32,9 @@ A generic review of the agent-host design on 2026-10-08 found that the scripts d
 - In scope: removing person-specific defaults from `setup.sh`, `provision.sh`, `stop.sh`, `status.sh`, `destroy.sh` and `recipe.toml`; changing `check_binding_defaults` to check a fixture binding rather than a live one; shipping `repositories.txt` as an example; declaring optional binding fields `repositories`, `profile` (the payload source) and `shell` (default zsh) in the recipe, with a short note in the recipe and the operator guide on how a binding uses them to personalise a host; and the operator guide's matching lines.
 - Out of scope: removing the `AGENT_HOST_INSTRUCTIONS` list, the `chezmoi cat` path and the `chezmoi` requirement from `setup.sh`, together with the payload hook and its contract (TECHNE-TOOLS-OPS-015); the shell hand-off (TECHNE-TOOLS-OPS-015) and the provider's login shell (KI-TECHNE-OPS-017); the binding schema and CLI in `tools-techne`, which needs a paired record for the new fields; splitting the operator guide or moving the neutral scripts out of `operations/aws/` (TECHNE-TOOLS-OPS-020 and TECHNE-TOOLS-OPS-021); and any remote action.
 
-## Current state
+## Cancelled
 
-Not yet grounded. `ki-plan` records the current source facts before Ready.
-
-## Steps
-
-- [ ] Plan this record under `ki-plan` before Ready, replacing these placeholder sections.
-
-## Files touched
-
-Not yet planned.
-
-## Verify
-
-Not yet planned.
-
-## Dependencies / blocks
-
-As declared in the frontmatter `blocks` and `blocked_by`; `ki-plan` confirms them.
-
-## Documentation impact
-
-### Decision Records
-
-Not yet assessed.
-
-### Specifications
-
-Not yet assessed.
-
-### Guides
-
-Not yet assessed.
-
-### Roadmap
-
-Adopted at Next on 12 October 2026; `ki-plan` assesses the rest before Ready.
+Cancelled 2026-10-14 as rejected (parked), approved by Kris Brown in the state-of-play run ('RC-ALL: approve all' to the roadmap census): the record sat at Next while the agent-host work is on hold, and there is no second binding owner to need it yet. Its Goal, Boundary and the 2026-10-08 approval (proposal P8, zsh as the recipe default) are kept as an idea in the agent-host Project (`ki-principal`, `Streams/Projects/agent-host/agent-host.md`); Git history keeps the full record. It leaves no outstanding change.
 
 ## Discussion
 

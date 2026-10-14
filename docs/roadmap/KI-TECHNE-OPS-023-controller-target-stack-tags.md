@@ -5,13 +5,13 @@ title: Controller and target tags
 purpose: debt
 component: infra
 kind: deliver
-status: draft
-horizon: future
+status: cancelled
+resolution: rejected
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-11T01:24:30Z
-updated_at: 2026-10-12T19:56:25Z
+updated_at: 2026-10-14T13:20:34Z
 ---
 
 # Controller and Target Tags
@@ -34,6 +34,10 @@ Tags change only through a stack update, so removal from live stacks needs a rem
 
 - In scope: the controller and target stack templates, their `provision.sh` tags, the target `destroy.sh` guard, and any offline checks and guides that name the tag.
 - Out of scope: the agent-host stack, which [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) covers; updating live stacks, which waits for remote-environment authority.
+
+## Cancelled
+
+Cancelled 2026-10-14 as rejected (parked), approved by Kris Brown in the state-of-play run ('RC-ALL: approve all' to the roadmap census): removing the tag from live stacks needs a remote stack update the Techne Programme Hold does not authorise. The finding, including that `operations/aws/target/destroy.sh` uses the tag as its safety guard, is kept as an idea in the agent-host Project (`ki-principal`, `Streams/Projects/agent-host/agent-host.md`); Git history keeps the full record. It leaves no outstanding change.
 
 ## Discussion
 
