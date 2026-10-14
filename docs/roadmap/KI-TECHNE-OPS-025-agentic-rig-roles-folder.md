@@ -5,12 +5,14 @@ title: Agentic-rig roles folder
 purpose: debt
 project: agent-host
 component: recipes
-status: triage
+status: cancelled
+resolution: merged
+resolution_target: KI-TECHNE-OPS-018
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-13T22:53:48Z
-updated_at: 2026-10-13T22:53:48Z
+updated_at: 2026-10-14T06:52:32Z
 ---
 
 # Agentic-Rig Roles Folder
@@ -30,10 +32,14 @@ Today the path `recipes/agent-host/rig.toml` is named by `recipe.toml` (`pins`),
 - In: moving the profile and its observe-only pins provider to `roles/`, the profile's name (whether it becomes `agentic-rig` is this repository's choice), updating every reference above, offline checks and the operator guide.
 - Out: any remote action or host rebuild; the version-policy minimums for workstations, which follow once `sol` includes the role; Rig's signed-release install kind and any Rig change for sharing a role across sources, which `tools-rig` delivers.
 
-## Dependencies / blocks
+## Cancelled
 
-Not blocked. It is the sequencing prerequisite for KI-TECHNE-OPS-024's pin-bump tool, which waits for the profile's lasting path. `tools-rig` is separately asked for a way for one agentic-rig role to serve both `sol` and `vega`; this move does not wait for that.
+Kris approved this closure on 14 October 2026, as written in the state-of-play thread's triage burn-down, under Kris's instruction to burn the roadmap down. Merged into KI-TECHNE-OPS-018, which carries this record's Goal and Boundary in its Discussion and widens its Boundary to include them; that record is held until vega is rebuilt and will be reshaped then. No change is outstanding here.
 
 ## Discussion
 
 Origin: `ki-principal`, state-of-play thread, under Kris Brown's acceptance of the audit decisions. Capture only; adoption, priority and plan belong to this repository.
+
+### Dependencies at capture
+
+Not blocked. It is the sequencing prerequisite for KI-TECHNE-OPS-024's pin-bump tool, which waits for the profile's lasting path. `tools-rig` is separately asked for a way for one agentic-rig role to serve both `sol` and `vega`; this move does not wait for that.

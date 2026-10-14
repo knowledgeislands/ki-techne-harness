@@ -5,12 +5,14 @@ title: Agent-host tailnet-only listener firewall
 purpose: capability
 project: agent-host
 component: recipes
-status: triage
+status: cancelled
+resolution: merged
+resolution_target: KI-TECHNE-OPS-018
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-13T23:55:10Z
-updated_at: 2026-10-13T23:55:10Z
+updated_at: 2026-10-14T06:52:32Z
 ---
 
 # Agent-Host Tailnet-Only Listener Firewall
@@ -51,10 +53,14 @@ What this repository shows today, read from the files only, with no AWS call:
 - In: a `linux-nftables` firewall declaration in the recipe's Rig profile for its agents' listener ports; adding `nftables` to the host's package install; moving the Rig pin to a release that contains the provider; an offline check that the stack keeps no public ingress rule; the operator guide's rollback (`sudo systemctl disable --now LOCATOR.service` and `sudo nft delete table inet rig_NAME`).
 - Out: any `rig apply`, host rebuild or AWS change. Applying the firewall to the running host waits for the Techne Programme Hold to allow remote-environment management. Rig's provider itself, its review and release belong to `tools-rig`.
 
-## Dependencies / blocks
+## Cancelled
 
-Not blocking anything. It depends on a Rig release containing KI-TOOL-RIG-CORE-051, after that record is reviewed and accepted, and on the Techne Programme Hold for any change to the running host. KI-TECHNE-OPS-025 may move the profile to `roles/` first; the declaration then belongs wherever the role profile lives.
+Kris approved this closure on 14 October 2026, as written in the state-of-play thread's triage burn-down, under Kris's instruction to burn the roadmap down. Merged into KI-TECHNE-OPS-018, which carries this record's Goal and Boundary in its Discussion and widens its Boundary to include them; that record is held until vega is rebuilt and will be reshaped then. No change is outstanding here.
 
 ## Discussion
 
 Origin: `tools-rig`, Rig Initiative, mac-studio-bootstrap Decision 51. Capture only; adoption, port choice, priority and plan belong to this repository.
+
+### Dependencies at capture
+
+Not blocking anything. It depends on a Rig release containing KI-TOOL-RIG-CORE-051, after that record is reviewed and accepted, and on the Techne Programme Hold for any change to the running host. KI-TECHNE-OPS-025 may move the profile to `roles/` first; the declaration then belongs wherever the role profile lives.

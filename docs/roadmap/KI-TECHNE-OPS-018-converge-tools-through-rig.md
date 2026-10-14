@@ -16,7 +16,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-13T22:53:48Z
+updated_at: 2026-10-14T06:52:32Z
 ---
 
 # Converge Tools Through Rig
@@ -40,6 +40,8 @@ This record is gated. It starts only when both conditions hold:
 
 - In scope: a small custom provider under `rig-provider-v1`, beside the recipe's own `rig.toml` (never in an owner's payload), that installs an exact `ki` version through `ki`'s own signed installer into the user's home without root and reports the installed version for `rig status`; the provider must keep `ki`'s signature check over its signed archives and checksum manifest, never falling back to a SHA-256-only download or mise's GitHub-release backend; replacing `converge.sh`'s Bun, Node, Codex and `ki` installs with `rig apply --profile agent-host`; generating or checking the global mise manifest from the same declaration so one file stays authoritative; offline tests; the operator guide.
 - Out of scope: a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing; Rig and mise bootstrap; Claude Code's install; Git settings, startup files, the repository set, `ki bootstrap`, the registry and projections, and Claude settings, which are not tool installs and stay in `converge.sh`; any live remote action.
+- Merged from KI-TECHNE-OPS-025 on 2026-10-14: the role-profile move to a `roles/` folder, with the Goal and Boundary carried into Discussion below.
+- Merged from KI-TECHNE-OPS-026 on 2026-10-14: the tailnet-only listener firewall declaration, with the Goal and Boundary carried into Discussion below.
 
 ## Discussion
 
@@ -56,3 +58,31 @@ On 12 October 2026 Kris approved the triage review's proposal as written (state-
 ### Boundary audit handoff
 
 Handed over by `ki-principal` on 2026-10-13. On 2026-10-11 Kris Brown accepted the decisions of the [Rig and Techne boundary audit](https://github.com/knowledgeislands/ki-principal/blob/main/Streams/Projects/agent-host/design/rig-techne-boundary-audit.md) ([Hosts, Roles and Layers](https://github.com/knowledgeislands/ki-principal/blob/main/Pillars/Engineering%20Practice/Architecture/Hosts%2C%20Roles%20and%20Layers.md) summarises them). Decision 5 replaces this record's harness signed-release provider with a built-in signed-release install kind in `tools-rig`, and ADR-KI-PRINCIPAL-003 decision 3 is amended to match. The audit also moves Claude Code's install from the boot script into this record's scope, as a self-updating `minimum` tool. The Boundary above still describes the harness provider; reshaping it is this repository's to do when the record is next planned. Gate 1 then reads "Rig's signed-release install kind installs `ki`", which `tools-rig` delivers. Nothing here changes the record's status, horizon or hold.
+
+### Merged from KI-TECHNE-OPS-025 on 2026-10-14
+
+Kris approved merging KI-TECHNE-OPS-025 into this record on 14 October 2026, in the state-of-play thread's triage burn-down, because it matters only to this record's role-profile reshape when vega is rebuilt. Its Goal and Boundary, carried as written:
+
+**Goal.** The agentic-rig role profile, today the Rig `agent-host` profile in `recipes/agent-host/rig.toml`, lives in a recipe-independent `roles/` folder in this repository. The `agent-host` recipe refers to it rather than owning it, so a second recipe, and an owned host such as `sol`, can include the same role without copying it or reaching into another recipe's folder.
+
+**Boundary.**
+
+- In: moving the profile and its observe-only pins provider to `roles/`, the profile's name (whether it becomes `agentic-rig` is this repository's choice), updating every reference named below, offline checks and the operator guide.
+- Out: any remote action or host rebuild; the version-policy minimums for workstations, which follow once `sol` includes the role; Rig's signed-release install kind and any Rig change for sharing a role across sources, which `tools-rig` delivers.
+
+**References to update, from its Context.** Today the path `recipes/agent-host/rig.toml` is named by `recipe.toml` (`pins`), `recipes/agent-host/rig-pins.sh`, `operations/aws/agent-host/setup.sh`, `status.sh` and `host/converge.sh`, `tooling/checks/agent-host-workspace.sh` and the operator guide. `tools-techne` does not read the pin path, so the move needs nothing there.
+
+**Dependencies at merge.** Not blocked. It is the sequencing prerequisite for KI-TECHNE-OPS-024's pin-bump tool, which waits for the profile's lasting path. `tools-rig` is separately asked for a way for one agentic-rig role to serve both `sol` and `vega`; this move does not wait for that.
+
+### Merged from KI-TECHNE-OPS-026 on 2026-10-14
+
+Kris approved merging KI-TECHNE-OPS-026 into this record on 14 October 2026, in the state-of-play thread's triage burn-down, because it matters only to this record's role-profile reshape when vega is rebuilt. Its Goal and Boundary, carried as written:
+
+**Goal.** The `agent-host` recipe declares Rig's tailnet-only firewall for the listeners its agents start, so a development server, preview or tool port on the host is reachable only from loopback and the tailnet. The AWS stack keeps opening no public inbound port. Kris's Macs and the agent host then share one firewall model.
+
+**Boundary.**
+
+- In: a `linux-nftables` firewall declaration in the recipe's Rig profile for its agents' listener ports; adding `nftables` to the host's package install; moving the Rig pin to a release that contains the provider; an offline check that the stack keeps no public ingress rule; the operator guide's rollback (`sudo systemctl disable --now LOCATOR.service` and `sudo nft delete table inet rig_NAME`).
+- Out: any `rig apply`, host rebuild or AWS change. Applying the firewall to the running host waits for the Techne Programme Hold to allow remote-environment management. Rig's provider itself, its review and release belong to `tools-rig`.
+
+**Dependencies at merge.** Not blocking anything. It depends on a Rig release containing KI-TOOL-RIG-CORE-051, after that record is reviewed and accepted, and on the Techne Programme Hold for any change to the running host. KI-TECHNE-OPS-025 may move the profile to `roles/` first; the declaration then belongs wherever the role profile lives.
