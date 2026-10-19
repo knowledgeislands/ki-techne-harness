@@ -9,14 +9,14 @@ component: recipes
 status: ready
 horizon: hold
 hold:
-  reason: parked
-  condition: the Techne agent-host thread resumes
+  reason: waiting-for
+  condition: the agent-host role profile moves to a recipe-independent roles/ folder, carried by KI-TECHNE-OPS-018
   review: 2026-11-12
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-11T01:38:30Z
-updated_at: 2026-10-12T05:27:00Z
+updated_at: 2026-10-19T23:36:23Z
 ---
 
 # Weekly Pin Bump
@@ -80,7 +80,7 @@ The Techne Programme Focus leaves live operations on the agent host to its bindi
 
 ## Dependencies / blocks
 
-The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Kris accepted the Rig and Techne boundary audit's recommendation on 2026-10-11 in the Techne run: 'role profile moves to a recipe-independent roles/ folder in ki-techne-harness'), so the tool is written once against the profile's lasting path. That move is not yet a record here; the Techne state-of-play thread will hand it to this repository. Until it lands, do not start this record's implementation. No other blocker. [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays the binding owner's live operation and outside this record.
+The pin-bump tool, its tests and the housekeeping template wait until the agent-host role profile moves out of `recipes/agent-host/` into a recipe-independent `roles/` folder in this repository (Kris accepted the Rig and Techne boundary audit's recommendation on 2026-10-11 in the Techne run: 'role profile moves to a recipe-independent roles/ folder in ki-techne-harness'), so the tool is written once against the profile's lasting path. That move is carried by [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md), merged there from KI-TECHNE-OPS-025 on 2026-10-14. Until it lands, do not start this record's implementation. No other blocker. [KI-TECHNE-OPS-017](KI-TECHNE-OPS-017-zsh-shell-at-rebuild.md) also edits `status.sh` (comments only) and `agent-host-workspace.sh`; whichever lands second rebases. [KI-TECHNE-OPS-018](KI-TECHNE-OPS-018-converge-tools-through-rig.md) may later make Rig install these tools; the pin file stays the source either way, so the job carries over. Landing a bumped pin on the host needs Kris to rerun setup, which stays the binding owner's live operation and outside this record.
 
 ## Documentation impact
 
@@ -103,6 +103,8 @@ None beyond the overlaps under Dependencies / blocks. Each weekly run is spawned
 ## Discussion
 
 Held 2026-10-12 by Kris Brown's approval of the roadmap minimisation batch 5 (Kris's 2026-10-12 approval in the state-of-play run, 'ROADMAP-BATCHES 3 to 5 approved as recommended'): parked with the other agent-host records until the Techne agent-host thread resumes. Release when that thread is resumed, or reconsider at the review date. The record stays Ready; this is distinct from KI-HARNESS-GOV-168, which covers CI `ki` pins rather than the pins in `rig.toml`.
+
+Re-validated on 20 October 2026 in the agent-host work's resume run, under Kris's overnight authority: the parking condition is met, because the agent-host work resumed when the Techne Programme Focus replaced the hold, but the record's own gate is not, because the role-profile move it waits for is still part of the held KI-TECHNE-OPS-018. The hold therefore stays, now waiting for that move rather than parked, with the same review date. The record stays Ready and its plan is unchanged.
 
 Captured, adopted into Next and planned on 2026-10-11 under Kris's instruction in the Techne run to 'capture and plan a ki-techne-harness record for a weekly pin-bump housekeeping job'. On 2026-10-11 Kris accepted all four decisions below as recommended and moved the record to Ready, holding the pin-bump tool until the role profile's `roles/` move lands (Kris accepting the Rig and Techne boundary audit the same day in the Techne run: 'move TECHNE-TOOLS-OPS-024 to ready but hold its pin-bump tool until the roles/ move lands'). The plan above matches the decisions. The paths in Current state, Steps and Files touched name today's `recipes/agent-host/rig.toml`; read them as the profile's new path once it moves.
 
