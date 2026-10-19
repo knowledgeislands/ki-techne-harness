@@ -8,7 +8,6 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@types/bun": "1.4.3",
-    "husky": "^9.1.7",
     "knip": "^6.42.0",
     "lint-staged": "^17.6.0",
     "rumdl": "^0.3.0",
@@ -47,7 +46,7 @@
   "scripts": {
     "clean": "rm -rf node_modules .turbo dist",
     "ki:deps:update": "bun update --latest",
-    "prepare": "husky",
+    "prepare": "git config core.hooksPath .githooks",
     "self:aws:validate": "bash operations/aws/validate-cloudformation.sh",
     "self:controller:encrypt-secrets": "bash operations/aws/controller/enable-secrets-encryption.sh",
     "self:deps:layout": "bash tooling/checks/root-dependencies.sh",
