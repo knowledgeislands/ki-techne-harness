@@ -2,7 +2,7 @@
 
 This runbook is for Kris, as the operator who builds, connects to, stops and tears down the prototype agent host. The recipe `agent-host` is the AWS base for a remote agentic rig: it takes a host as far as built and ready, and the binding owner's own setup rigs it for use. The host is a separate EC2 instance, `vega`, in account `655383751458`, region `eu-west-1`. It sits beside the retained controller `ki-techne-ops-007-primary` and shares nothing with it: its own stack, network, security group, instance role and instance profile.
 
-The host runs under the one standing exemption that the [Techne Programme Hold](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Hold.md) carries, recorded in the decision record `GDR-KI-PRINCIPAL-004` in `ki-principal`. The exemption has no automatic lapse: it stands until Kris changes or withdraws it. It covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
+The host is one of the two hosts the [Techne Programme Focus](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Focus.md) builds and runs, recorded in the decision record `GDR-KI-PRINCIPAL-004` in `ki-principal`. The focus has no automatic lapse: it stands until Kris changes it. Its agent-host scope covers this one host and nothing else. Agents prepare and review this path; only Kris runs it.
 
 ## At a glance
 

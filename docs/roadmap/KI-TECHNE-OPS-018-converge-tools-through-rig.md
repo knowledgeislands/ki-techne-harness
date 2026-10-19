@@ -16,7 +16,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-14T06:52:32Z
+updated_at: 2026-10-19T23:40:00Z
 ---
 
 # Converge Tools Through Rig
@@ -86,3 +86,7 @@ Kris approved merging KI-TECHNE-OPS-026 into this record on 14 October 2026, in 
 - Out: any `rig apply`, host rebuild or AWS change. Applying the firewall to the running host waits for the Techne Programme Hold to allow remote-environment management. Rig's provider itself, its review and release belong to `tools-rig`.
 
 **Dependencies at merge.** Not blocking anything. It depends on a Rig release containing KI-TOOL-RIG-CORE-051, after that record is reviewed and accepted, and on the Techne Programme Hold for any change to the running host. KI-TECHNE-OPS-025 may move the profile to `roles/` first; the declaration then belongs wherever the role profile lives.
+
+### Techne Programme Focus
+
+On 20 October 2026 the [Techne Programme Focus](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Focus.md) in `ki-principal` replaced the Techne Programme Hold. Building, rebuilding and setting up `vega`, and changes to its running host, now fall within the focus's agent-host scope and stay the binding owner's live operations; the references to the Techne Programme Hold above are historical and read against the focus's operating bounds. The same day the agent-host work's resume run re-validated this hold: neither gate is met, because Rig cannot yet install a signed `ki` release and stage 1's `rig status` has not been shown clean through a pin bump on the rebuilt `vega`. The hold stands unchanged.
