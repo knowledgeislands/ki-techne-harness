@@ -106,7 +106,7 @@ if [[ ${stack_present} == true ]]; then
 
   case ${outcome} in
     clean)
-      ((${#discard[@]} == 0)) && [[ ${discard_unreadable} == false ]] ||
+      { ((${#discard[@]} == 0)) && [[ ${discard_unreadable} == false ]]; } ||
         { echo 'refusing: nothing on the host is at risk, so no override applies' >&2; exit 1; } ;;
     at-risk)
       at_risk=$(jq -r '.repositories[] | select(.state == "at-risk") | .path' <<<"${report}" | sort -u)

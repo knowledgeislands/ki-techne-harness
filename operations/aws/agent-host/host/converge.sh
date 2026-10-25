@@ -320,7 +320,7 @@ fi
 # install_tools <directory> <label>: install what that directory's configuration lacks.
 install_tools() {
   local missing
-  missing=$(cd "$1" && "${mise}" ls --missing 2>/dev/null || true)
+  missing=$({ cd "$1" && "${mise}" ls --missing 2>/dev/null; } || true)
   [[ -z ${missing} ]] && return 0
   if (cd "$1" && "${mise}" install --yes >/dev/null 2>&1) || (cd "$1" && "${mise}" install --yes >/dev/null); then
     changed "mise tools for $2"
