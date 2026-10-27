@@ -7,16 +7,12 @@ project: agent-host
 component: operations
 kind: deliver
 status: draft
-horizon: hold
-hold:
-  reason: waiting-for
-  condition: Rig installs a signed ki release, and vega is rebuilt so rig status can be shown clean through a pin bump
-  review: 2026-11-12
+horizon: future
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-19T23:40:00Z
+updated_at: 2026-10-27T02:35:00Z
 ---
 
 # Converge Tools Through Rig
@@ -90,3 +86,7 @@ Kris approved merging KI-TECHNE-OPS-026 into this record on 14 October 2026, in 
 ### Techne Programme Focus
 
 On 20 October 2026 the [Techne Programme Focus](https://github.com/knowledgeislands/ki-principal/blob/main/Admin/Governance/Policies/Techne%20Programme%20Focus.md) in `ki-principal` replaced the Techne Programme Hold. Building, rebuilding and setting up `vega`, and changes to its running host, now fall within the focus's agent-host scope and stay the binding owner's live operations; the references to the Techne Programme Hold above are historical and read against the focus's operating bounds. The same day the agent-host work's resume run re-validated this hold: neither gate is met, because Rig cannot yet install a signed `ki` release and stage 1's `rig status` has not been shown clean through a pin bump on the rebuilt `vega`. The hold stands unchanged.
+
+### Release dependency dropped
+
+On 27 October 2026 the roadmap sweep dropped this record's release dependency and moved it to the `future` horizon, Later, under Kris's steer that releases are deprioritised. It no longer waits for a Rig release containing KI-TOOL-RIG-CORE-051 or for a signed `ki` release: vega's `converge.sh` can clone `tools-rig` and `tools-ki` at pinned commits instead of installing releases. Whether `rig status` has been shown clean through a pin bump on the rebuilt vega is a planning consideration when the record is next taken up, no longer a hold.

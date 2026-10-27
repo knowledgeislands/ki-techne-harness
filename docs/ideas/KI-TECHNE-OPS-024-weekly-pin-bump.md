@@ -19,6 +19,8 @@ created_at: 2026-10-11T01:38:30Z
 updated_at: 2026-10-19T23:36:23Z
 ---
 
+> **Idea, not on the roadmap.** A weekly job on the Mac that raises the agent host's tool pins to newer releases for Kris's review; the Focus forbids unattended agents on the hosts and releases are deprioritised, so bump pins by hand when vega is rebuilt. Moved out of `docs/roadmap/` on 27 October 2026 under the roadmap sweep, with its record kept in full here so that it can return when Kris brings it back; it was `KI-TECHNE-OPS-024`.
+
 # Weekly Pin Bump
 
 ## Goal
