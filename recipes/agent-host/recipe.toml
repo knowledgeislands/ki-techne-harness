@@ -27,7 +27,7 @@ footprint = [
 setup = "operations/aws/agent-host/setup.sh"
 status = "operations/aws/agent-host/status.sh"
 # The pins: Rig's agent-host profile, one variant per target OS.
-pins = "recipes/agent-host/rig.toml"
+pins = "roles/agent-host/rig.toml"
 
 # The status report (ODR-KI-PRINCIPAL-001): `status --json` prints one document
 # of this schema, and the exit status carries its outcome. `--fetch` updates

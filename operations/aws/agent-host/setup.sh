@@ -35,7 +35,7 @@ if [[ -n ${profile} ]]; then
   [[ -d ${profile} ]] || { echo "AGENT_HOST_PROFILE: ${profile} is not a directory" >&2; exit 2; }
   # shellcheck disable=SC2088 # the recipe default keeps its literal ~/ for the host.
   python3 "${here}/host/profile-check.py" --shell "${shell_choice}" --workspace "${workspace:-~/workspaces}" \
-    --recipe-rig "${here}/../../../recipes/agent-host/rig.toml" "${profile}" ||
+    --recipe-rig "${here}/../../../roles/agent-host/rig.toml" "${profile}" ||
     { echo "AGENT_HOST_PROFILE: ${profile} is not a valid profile payload; nothing was sent" >&2; exit 1; }
 fi
 converge_args+=(--shell "${shell_choice}")
@@ -44,8 +44,8 @@ converge_args+=(--git-name "$(git config --global user.name)" --git-email "$(git
 stage=$(mktemp -d)
 trap 'rm -rf "${stage}"' EXIT
 cp "${here}/host/converge.sh" "${here}/host/status.sh" "${here}/host/profile-check.py" "${stage}/"
-# The recipe's pins, their Rig provider and its own host instructions.
-cp "${here}/../../../recipes/agent-host/rig.toml" "${here}/../../../recipes/agent-host/rig-pins.sh" \
+# The role's pins and Rig provider, with the recipe's own host instructions.
+cp "${here}/../../../roles/agent-host/rig.toml" "${here}/../../../roles/agent-host/rig-pins.sh" \
   "${here}/../../../recipes/agent-host/host-instructions.md" "${stage}/"
 cp "${repositories}" "${stage}/repositories.txt"
 if [[ -n ${profile} ]]; then

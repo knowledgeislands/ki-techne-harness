@@ -12,14 +12,16 @@ harness_id=knowledgeislands/ki-agentic-harness
 harness_path=knowledge-islands/ki-agentic-harness
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-# The recipe's files: staged beside this script by setup.sh, or in the harness
-# checkout this script runs from.
+# Role files and recipe instructions are staged beside this script by setup.sh,
+# or resolved independently in the harness checkout this script runs from.
+role_dir=${script_dir}
 recipe_dir=${script_dir}
-[[ -f ${recipe_dir}/rig.toml ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/agent-host
+[[ -f ${role_dir}/rig.toml ]] || role_dir=$(cd "${script_dir}/../../../.." && pwd)/roles/agent-host
+[[ -f ${recipe_dir}/host-instructions.md ]] || recipe_dir=$(cd "${script_dir}/../../../.." && pwd)/recipes/agent-host
 
-# Pins: the recipe's Rig profile declares them; each
+# Pins: the role's Rig profile declares them; each
 # tool's locator for this OS is its version.
-pins=${recipe_dir}/rig.toml
+pins=${role_dir}/rig.toml
 case $(uname -s) in
   Linux) os=linux ;;
   Darwin) os=macos ;;
@@ -358,7 +360,7 @@ if write_file "${HOME}/.config/rig/rig.toml" "$(cat "${pins}")"; then
   changed "${HOME}/.config/rig/rig.toml pins"
 fi
 provider=${HOME}/.local/share/rig/providers/agent-host-pins
-if write_file "${provider}" "$(cat "${recipe_dir}/rig-pins.sh")"; then
+if write_file "${provider}" "$(cat "${role_dir}/rig-pins.sh")"; then
   changed "${provider}"
 fi
 [[ -x ${provider} ]] || chmod 755 "${provider}"

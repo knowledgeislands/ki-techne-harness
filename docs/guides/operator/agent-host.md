@@ -266,7 +266,7 @@ To rotate the token, create a new one, overwrite the parameter by adding `--over
 
 ## Workspace setup
 
-One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a pin in [`recipes/agent-host/rig.toml`](../../../recipes/agent-host/rig.toml) or the binding owner's profile changes:
+One rerunnable command from the Mac converges `techne`'s workspace on the host. Run it after every build, and again whenever the repository set, a pin in [`roles/agent-host/rig.toml`](../../../roles/agent-host/rig.toml) or the binding owner's profile changes:
 
 ```sh
 bash operations/aws/agent-host/setup.sh --pull # --pull fast-forwards clean checkouts
@@ -348,7 +348,7 @@ The exit status carries the outcome: 0 clean, 3 at risk, 4 unknown, 1 when the r
 
 The GitHub token expires 90 days after it is created and the Tailscale node key on its own schedule; the status report and the login banner warn within 14 days, so rotate the token as in [GitHub](#github) when either shows it. The banner knows only what the last text report found, which is why it also says when that report is more than 7 days old.
 
-To bump a pin, change its locator in `recipes/agent-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; installing through `rig apply` comes later.
+The recipe uses the shared `agent-host` role in `roles/agent-host/`; its host instructions stay in `recipes/agent-host/host-instructions.md`. To bump a pin, change its locator in `roles/agent-host/rig.toml` for each OS by an ordinary commit, then rerun setup; `converge.sh` installs the new version and status shows the host level again. `ki` moves to its current release this way. Claude Code updates itself, so its pin is a minimum. Rig only observes the pins for now; installing through `rig apply` comes later.
 
 ## Patching and restart
 

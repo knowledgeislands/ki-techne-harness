@@ -172,6 +172,30 @@ export KI_AGENT_HOST_SYSROOT=${work}/sysroot
 mkdir -p "${KI_AGENT_HOST_SYSROOT}"
 setup() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} bash "${scripts}/setup.sh" --pull 2>&1; }
 
+# Verify rendered host state, including the executable provider and recipe-owned
+# instructions, after either invocation mode. setup also leaves its flat payload.
+role_payload() {
+  python3 - "${repo_root}" "${host_home}" <<'PYROLE'
+from pathlib import Path
+import stat
+import sys
+repo, home = map(Path, sys.argv[1:])
+role = repo / 'roles/agent-host'
+recipe = repo / 'recipes/agent-host'
+staged = home / '.cache/ki-agent-host/payload'
+for name, source in [('rig.toml', role), ('rig-pins.sh', role), ('host-instructions.md', recipe)]:
+    assert (staged / name).read_bytes() == (source / name).read_bytes(), name
+    assert stat.S_IMODE((staged / name).stat().st_mode) == stat.S_IMODE((source / name).stat().st_mode), name
+assert (home / '.config/rig/rig.toml').read_bytes() == (role / 'rig.toml').read_bytes()
+provider = home / '.local/share/rig/providers/agent-host-pins'
+assert provider.read_bytes() == (role / 'rig-pins.sh').read_bytes()
+assert stat.S_IMODE(provider.stat().st_mode) == 0o755
+instructions = (recipe / 'host-instructions.md').read_text().rstrip('\n')
+for name in ['.claude/rules/ki-agent-host.md', '.codex/AGENTS.md']:
+    assert (home / name).read_text().split('\n\n', 1)[1].rstrip('\n') == instructions, name
+PYROLE
+}
+
 first=$(setup) || { echo "${first}" >&2; echo 'agent-host-workspace: first setup run failed' >&2; exit 1; }
 check '[[ ${first} == *"cloned knowledge-islands/alpha"* ]]' 'first run must clone alpha'
 check '[[ ${first} == *"fast-forwarded knowledge-islands/beta"* ]]' 'first run must fast-forward the clean, behind beta'
@@ -179,14 +203,22 @@ check '[[ ${first} == *"skipped  knowledge-islands/gamma: uncommitted changes"* 
 check '[[ ${first} == *"dependencies in knowledge-islands/alpha"* && ${first} == *"registered knowledge-islands/alpha"* ]]' 'first run must install and register alpha'
 check '[[ ${first} != *"no changes"* ]]' 'first run must report changes'
 
+check 'role_payload' 'staged setup must preserve role bytes, payload basenames and modes, and recipe instructions'
+
 second=$(setup) || { echo "${second}" >&2; echo 'agent-host-workspace: second setup run failed' >&2; exit 1; }
 check '[[ ${second} == *"CHANGES=0 "* && ${second} == *"no changes"* ]]' "second run must report no changes, got:
 ${second}"
 check '[[ ${second} == *"skipped  knowledge-islands/gamma: uncommitted changes"* ]]' 'second run must still leave gamma alone'
 
-on_host=$(HOME=${host_home} bash "${scripts}/host/converge.sh" --repositories "${repositories}" 2>&1) || true
-check '[[ ${on_host} == *"no changes"* ]]' "a run on the host must change nothing, got:
-${on_host}"
+# Checkout invocation must repair stale installed role state independently of
+# the flat staged files, while still rendering the recipe's instructions.
+printf 'stale fixture\n' >"${host_home}/.config/rig/rig.toml"
+printf 'stale fixture\n' >"${host_home}/.local/share/rig/providers/agent-host-pins"
+chmod 644 "${host_home}/.local/share/rig/providers/agent-host-pins"
+printf 'stale fixture\n' >"${host_home}/.claude/rules/ki-agent-host.md"
+printf 'stale fixture\n' >"${host_home}/.codex/AGENTS.md"
+on_host=$(HOME=${host_home} bash "${scripts}/host/converge.sh" --repositories "${repositories}" 2>&1) || { echo "${on_host}" >&2; echo 'agent-host-workspace: checkout convergence failed' >&2; exit 1; }
+check 'role_payload' 'checkout convergence must restore role bytes and provider mode, retaining recipe instructions'
 
 start='# >>> ki-agent-host >>>'
 for file in .profile .bashrc .config/husky/init.sh; do
@@ -230,7 +262,7 @@ check 'grep -q "npm:@openai/codex" "${host_home}/.config/mise/config.toml"' 'the
 # The pins: converge applies the pin file's Linux and
 # macOS locators alike, installs it and the provider for Rig, and renders the
 # recipe's instructions and the host marker.
-pins=${repo_root}/recipes/agent-host/rig.toml
+pins=${repo_root}/roles/agent-host/rig.toml
 check 'python3 "${repo_root}/tooling/checks/recipe-pins.py" "${pins}"' 'the pin file must declare every tool for both OSes through the observe-only provider'
 for tool in bun node; do
   pin=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["tool"][sys.argv[2]]["variant"]["macos"]["install"]["locator"])' "${pins}" "${tool}")
@@ -238,7 +270,7 @@ for tool in bun node; do
 done
 check 'grep -qx "\"npm:@openai/codex\" = \"0.162.0\"" "${host_home}/.config/mise/config.toml"' 'the mise configuration must pin Codex from the pin file'
 check 'cmp -s "${pins}" "${host_home}/.config/rig/rig.toml"' 'the pin file must be Rig'"'"'s configuration'
-check '[[ -x ${host_home}/.local/share/rig/providers/agent-host-pins ]] && cmp -s "${repo_root}/recipes/agent-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/agent-host-pins"' 'the provider must be installed for Rig'
+check '[[ -x ${host_home}/.local/share/rig/providers/agent-host-pins ]] && cmp -s "${repo_root}/roles/agent-host/rig-pins.sh" "${host_home}/.local/share/rig/providers/agent-host-pins"' 'the provider must be installed for Rig'
 for file in .claude/rules/ki-agent-host.md .codex/AGENTS.md; do
   check 'grep -qF "Push where you worked" "${host_home}/${file}" && grep -qF "roadmap writing checkout" "${host_home}/${file}"' "${file} must carry the two-checkout and writing-checkout rules"
 done
@@ -251,11 +283,11 @@ stub "${tools}/bun" 'echo 1.4.2'
 stub "${tools}/node" 'echo v24.20.1'
 stub "${tools}/claude" 'echo "2.1.300 (Claude Code)"'
 stub "${tools}/codex" 'echo "codex-cli (no version)"'
-verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 observe agent-host-pins "$@"; }
+verdict() { PATH="${tools}:/usr/bin:/bin" "${repo_root}/roles/agent-host/rig-pins.sh" rig-provider-v1 observe agent-host-pins "$@"; }
 check '[[ $(verdict bun exact 1.4.2) == present && $(verdict node exact 24.21.0) == drifted ]]' 'the provider must compare exact pins'
 check '[[ $(verdict claude minimum 2.1.285) == present && $(verdict claude minimum 2.2.0) == drifted ]]' 'the provider must compare minimum pins numerically'
 check '[[ $(verdict codex exact 0.162.0) == unknown && $(verdict rig exact 0.4.0) == missing ]]' 'the provider must report unknown and missing tools'
-check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/recipes/agent-host/rig-pins.sh" rig-provider-v1 apply agent-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
+check '! PATH="${tools}:/usr/bin:/bin" "${repo_root}/roles/agent-host/rig-pins.sh" rig-provider-v1 apply agent-host-pins bun exact 1.4.2 >/dev/null 2>&1' 'the provider must refuse anything but observing'
 check 'grep -qF "\"chatgpt-codex\"" "${host_home}/.config/ki/config.toml"' 'ki must configure the Codex runtime'
 check '[[ -f ${state}/repaired ]]' 'repairable estate projections must be repaired'
 
@@ -486,7 +518,7 @@ profiled() { HOME=${mac_home} AGENT_HOST_REPOSITORIES=${repositories} AGENT_HOST
 # A content check for the other OS runs without --os, as setup's does.
 os_flags=(--os "${target_os}")
 validate() { python3 "${scripts}/host/profile-check.py" ${os_flags[@]+"${os_flags[@]}"} --hostname "$(hostname)" --shell zsh \
-  --workspace '~/workspaces' --recipe-rig "${repo_root}/recipes/agent-host/rig.toml" "$1" 2>&1; }
+  --workspace '~/workspaces' --recipe-rig "${repo_root}/roles/agent-host/rig.toml" "$1" 2>&1; }
 
 owner=${work}/payload
 payload "${owner}" r1 .claude/CLAUDE.md:0644 .claude/delegation.md:0644 .codex/AGENTS.md:0600 .zshrc:0644 \

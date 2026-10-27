@@ -54,8 +54,8 @@ status=0
 # shellcheck disable=SC2029 # remote is built for the host shell on purpose.
 ssh ${ssh_options[@]+"${ssh_options[@]}"} "${host}" "${remote}" <"${here}/host/status.sh" || status=$?
 
-# The workstation against the same pins, through the recipe's own provider.
-recipe=${here}/../../../recipes/agent-host
+# The workstation against the same pins, through the role's observe-only provider.
+role=${here}/../../../roles/agent-host
 case $(uname -s) in Darwin) os=macos ;; *) os=linux ;; esac
 echo
 echo 'This workstation against the pins (signal only)'
@@ -63,8 +63,8 @@ awk -v os="${os}" '
   /^\[tool\./ { tool = substr($1, 7, length($1) - 7) }
   $1 == "variant." os ".install.kind" { gsub(/"/, "", $3); kind[tool] = $3 }
   $1 == "variant." os ".install.locator" { gsub(/"/, "", $3); print tool, kind[tool], $3 }
-' "${recipe}/rig.toml" | while read -r tool kind pin; do
-  state=$("${recipe}/rig-pins.sh" rig-provider-v1 observe agent-host-pins "${tool}" "${kind}" "${pin}" 2>/dev/null </dev/null || echo unknown)
+' "${role}/rig.toml" | while read -r tool kind pin; do
+  state=$("${role}/rig-pins.sh" rig-provider-v1 observe agent-host-pins "${tool}" "${kind}" "${pin}" 2>/dev/null </dev/null || echo unknown)
   printf '  %-24s %s (%s %s)\n' "${tool}" "${state}" "${kind}" "${pin}"
 done
 exit "${status}"

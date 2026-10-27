@@ -7,12 +7,13 @@ project: agent-host
 component: operations
 kind: deliver
 status: draft
-horizon: future
+horizon: now
+size: l
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-08T07:32:00Z
-updated_at: 2026-10-27T02:35:00Z
+updated_at: 2026-10-27T04:16:43Z
 ---
 
 # Converge Tools Through Rig
@@ -38,6 +39,104 @@ This record is gated. It starts only when both conditions hold:
 - Out of scope: a release-archive install kind in `tools-rig`, taken up only if a second archive-shipped tool needs Rig; any change to `ki`'s installer or release signing; Rig and mise bootstrap; Claude Code's install; Git settings, startup files, the repository set, `ki bootstrap`, the registry and projections, and Claude settings, which are not tool installs and stay in `converge.sh`; any live remote action.
 - Merged from KI-TECHNE-OPS-025 on 2026-10-14: the role-profile move to a `roles/` folder, with the Goal and Boundary carried into Discussion below.
 - Merged from KI-TECHNE-OPS-026 on 2026-10-14: the tailnet-only listener firewall declaration, with the Goal and Boundary carried into Discussion below.
+
+## Current state
+
+On 27 October 2026 this existing adopted record is selected from Future into Now under SUCCESSIVE-WAVES and CONFIDENT-UNATTENDED in the principal ways-of-working decisions, and the explicit wow-agent-host-role brief. Only the independently approved 14 October role/profile extraction is selected for delivery. The parent remains `draft`: its installation, version-policy and firewall phases are not planned or Ready. This is a separately approved, fully bounded partial phase, not a normal Ready-item outcome batch; no batch authorisation hash, whole-record Ready transition or completion claim is made.
+
+The Techne Programme Focus permits this local work for vega and sol. It grants no live operation here. The brief explicitly approves the following exact phase before implementation; neither acceptance nor pruning is authorised.
+
+### Baseline and delivery boundary
+
+Immutable baseline: `4ead291c9061854764643f4ef969eac79f8f3d8f` on local `main`, matching `origin/main` after the authorised origin-only fetch. The primary checkout was clean and uncontested. Delivery uses this background run's isolated `wow-agent-host-role` branch with local fast-forward integration only. The root work-adapter audit passed; the roadmap preflight warned only that this record lacked `size`, now classified `l` for the full parent. Re-audit must clear that warning before code edits. Frozen source profile/provider hashes and modes are retained in this phase's review evidence. No push is authorised.
+
+### Delegation
+
+No subagents. This run owns selection, planning, implementation and evidence for the bounded phase only; the supervisor receives the outcome and the unfinished parent remains for later planning.
+
+## Steps
+
+- [x] Move `recipes/agent-host/rig.toml` and `rig-pins.sh` together to `roles/agent-host/`, byte-identically with Git modes 100644 and 100755 respectively, keeping one source and the `agent-host` profile name.
+- [x] Rewire recipe metadata, setup validation/staging, workstation status and checkout convergence to the role. Resolve recipe-owned `host-instructions.md` independently. Keep the staged `rig.toml`, `rig-pins.sh` and `host-instructions.md` basenames unchanged.
+- [x] Extend existing offline fixtures to prove staged and checkout invocation use the same role payload and provider mode, retaining recipe instructions in both modes. Reuse existing provider verdict and status coverage; add no move-only tests.
+- [x] Run the single sufficient aggregate `bash tooling/checks/agent-host-workspace.sh` with temporary output outside the repository, then compulsory commit hooks. Review the full bounded diff, byte/mode invariants and committed paths; integrate locally by verified fast-forward and retire only this run's worktree.
+- [ ] Plan the remaining parent installation, version-policy and firewall scope under later authority; this step is outside the delivered extraction phase and has no implementation approval here.
+
+## Files touched
+
+- `docs/roadmap/KI-TECHNE-OPS-018-converge-tools-through-rig.md`
+- `recipes/agent-host/rig.toml`
+- `roles/agent-host/rig.toml`
+- `recipes/agent-host/rig-pins.sh`
+- `roles/agent-host/rig-pins.sh`
+- `recipes/agent-host/recipe.toml`
+- `operations/aws/agent-host/setup.sh`
+- `operations/aws/agent-host/status.sh`
+- `operations/aws/agent-host/host/converge.sh`
+- `tooling/checks/agent-host-workspace.sh`
+- `docs/guides/operator/agent-host.md`
+
+No additional tracked path is permitted. Reference closure covers current executable consumers and the operator guide; historical prose in this record and the deferred pin-bump idea remains provenance, not a current consumer. That idea already says its old paths are read as the lasting role path after this move. The declared general Project and repository directory standards require no new `roles/` README or declaration. No public schema or directory contract is introduced.
+
+## Verify
+
+The existing aggregate checker substitutes SSH, curl, tools, system state and local Git origins, using temporary homes; it performs no real host operation. Its existing setup path exercises flat staging and its direct convergence path exercises checkout lookup. Extend those fixtures for the unchanged role bytes and executable provider and exact recipe instructions; a single aggregate pass is sufficient. Do not invoke setup, status or convergence outside those fixtures. Mandatory hook failure stops affected work without bypass.
+
+## Dependencies / blocks
+
+The extraction has no release, Rig role-sharing, pin-bump observation or remote prerequisite. LOCAL-SYMLINKS removes release ceremony, not genuine prerequisites. Remaining parent scope stays undelivered: switching shared-tool installation to Rig, minimum versions, signed-release or clone/pin policy, Claude installation and firewall/package declarations. No package install, host/provider contract change, remote observation, rollout, network/security change or principal queue edit belongs to this phase.
+
+## Documentation impact
+
+### Decision Records
+
+None: this applies the already-approved role extraction without changing architecture.
+
+### Specifications
+
+None: the profile/provider bytes, schema, names and staged payload contract stay unchanged.
+
+### Guides
+
+The operator guide names the recipe-independent role as the shared pin source and preserves existing installation and operation instructions.
+
+### Roadmap
+
+This record retains the phase plan and review evidence; the broader parent remains draft and unfinished. The deferred pin-bump idea already interprets its historical pin paths as the lasting role path after extraction.
+
+## Review
+
+### Delivered
+
+Only the independently approved role extraction is delivered for review, against immutable baseline `4ead291c9061854764643f4ef969eac79f8f3d8f`. The parent remains `draft / now` while this partial is reviewed; its broader goal is not Ready, delivered or accepted. `baseline_ref` remains null for the unstarted full parent. No normal outcome batch, acceptance, pruning, push or live operation was used.
+
+The two files have a single source under `roles/agent-host/` and retain their original bytes and Git modes. SHA-256 for `rig.toml` (100644): `f0274b52b3ec553463660bfa31d2d095fa729ae6e745ea9e293d76379baa9430`. SHA-256 for `rig-pins.sh` (100755): `1539178380cac6addf8432593caa28e93a7f3f3bc95acc7f40955e6cd35b5891`.
+
+### Change Summary
+
+Recipe metadata, setup validation and flat staging, workstation status, checkout convergence and offline fixtures use the role source. Convergence resolves recipe instructions separately, preserving recipe ownership and staged payload basenames. The operator guide identifies the shared role. The profile name and observe-only provider contract are unchanged. All tracked changes stay within the frozen Files touched list.
+
+### Verification
+
+The final draft-parent audit also required an unchecked remaining-parent Step; that real planning obligation is retained above rather than changing the parent lifecycle.
+
+- `ki repo audit --skill ki-work --repo <primary>` passed adapter selection.
+- `ki repo audit --skill ki-work-roadmap --repo <worktree>` passed before implementation after adding the missing parent size and correcting the planned record's required heading/task-list shape. Initial planning validation failures stopped code edits until resolved.
+- The first `bash tooling/checks/agent-host-workspace.sh` attempt failed new instruction assertions because the fixture omitted the existing blank separator after the generated header. Correcting the running checker also invalidated that attempt's shell read; no result from that attempt is claimed as passing.
+- The corrected `bash tooling/checks/agent-host-workspace.sh` passed once in full, with temporary homes, local origins, stubs and system fixtures. Staged setup preserves role/profile bytes, payload basenames and modes; checkout convergence restores deliberately stale installed files and provider mode while retaining recipe instructions. Existing provider verdicts, status and owner-payload fixtures remain covered.
+- Exact SHA-256 and filesystem-mode predicates matched the immutable baseline; current executable/guide references contain no obsolete recipe pin/provider path. Compulsory commit hooks remain enforced on the phase commit, without bypass.
+
+### Outstanding concerns
+
+No unresolved extraction concern. The rest of this record remains undelivered: the Rig installation switch, minimum versions, firewall/package declarations, signed-release or clone/pin policy, and host rollout. No real host behaviour was observed; any live operation remains the binding owner's work under the Programme Focus. No new record or principal package/queue change is made.
+
+### Post-change review
+
+The extraction is independently useful: recipes and checkout invocations share one unchanged role without consuming another recipe's files. Regression coverage exercises both invocation modes, unchanged staging and exact instruction rendering. This phase is available for owner review only; the full parent still needs planning and cannot honestly enter whole-record Awaiting review or Done.
+
+### Mini recap
+
+The approved role source is extracted and its current consumers are rewired, with offline verification. The operator guide carries the lasting path; this record preserves partial authority, evidence and the remaining scope. No further knowledge route or replacement record is needed. Delivery is local only on sol.local; the supervisor receives the exact repository and branch handoff.
 
 ## Discussion
 
