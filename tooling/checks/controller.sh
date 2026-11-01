@@ -30,7 +30,7 @@ shellcheck \
   "${repo_root}"/operations/aws/controller/*.sh \
   "${repo_root}"/operations/aws/target/*.sh \
   "${repo_root}"/operations/telegram/*.sh \
-  "${repo_root}"/recipes/agent-host/*.sh \
+  "${repo_root}"/roles/agent-host/*.sh \
   "${repo_root}"/deploy/runtime/controller/*.sh \
   "${repo_root}"/deploy/runtime/target/*.sh
 
