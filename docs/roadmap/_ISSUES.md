@@ -1,5 +1,6 @@
 ---
 areas: { CTRL: 1, FAB: 1, OPS: 27 }
+work: ki.sop.tools
 ---
 
 # Roadmap issue ledger
