@@ -646,7 +646,7 @@ elif [[ -f ${applied_manifest} ]]; then
   skipped "profile payload: none staged; revision $(jq -r '.revision' "${applied_manifest}") stays applied"
 fi
 
-# KI keeps auto-memory off unless a repository opts in (ki-housekeeping-claude).
+# KI keeps auto-memory off unless a repository opts in (ki-env-housekeeping-claude).
 settings=${HOME}/.claude/settings.json
 if [[ $(jq '.autoMemoryEnabled' "${settings}" 2>/dev/null || true) != false ]]; then
   current='{}'
