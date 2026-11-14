@@ -33,7 +33,7 @@ Kris chose this on 2026-10-11 in the Techne run: "option 1 for now", a weekly pi
 
 The pin file is Rig's `agent-host` profile. Each tool has a Linux and a macOS variant whose `locator` is the version. Six pins are `exact` (rig, ki, mise, bun, node, codex) and Claude Code's is a `minimum`, because it updates itself. `converge.sh` reads the locators and installs those versions on the host; `rig status --profile agent-host` reports drift through the observe-only `agent-host-pins` provider (`rig-pins.sh`). The pin file's own comment says a bump is an ordinary commit followed by a setup rerun. Nothing raises the pins today, so they fall behind until someone notices.
 
-The repository has no housekeeping mechanism yet. The KI way to do recurring work in a Project repository is a `ki-work-housekeeping` template under `docs/housekeeping/`: `ki-next` notices when it is due and spawns a run record, which then goes through the normal lifecycle (`ki-plan`, `ki-implement`, then `awaiting-review` for Kris, then `ki-accept`). That fits "leave it for Kris's review" exactly, and nothing needs a scheduler of its own.
+The repository has no housekeeping mechanism yet. The KI way to do recurring work in a Project repository is a `ki-work-housekeeping` template under `docs/housekeeping/`: `ki-work next` notices when it is due and spawns a run record, which then goes through the normal lifecycle (`ki-plan`, `ki-implement`, then `awaiting-review` for Kris, then `ki-accept`). That fits "leave it for Kris's review" exactly, and nothing needs a scheduler of its own.
 
 The Techne Programme Focus leaves live operations on the agent host to its binding owner and bars managing any other remote environment; this job is local work. It runs only on the Mac, in the primary checkout of this repository. Its only outward calls are read-only lookups of public release metadata. It changes no host: the host changes only when Kris reruns setup, which stays his action.
 
@@ -76,7 +76,7 @@ The Techne Programme Focus leaves live operations on the agent host to its bindi
 
 - `bun run test` passes with mise's Python 3.12 first on `PATH`, including the new pin-bump tests, which make no network call.
 - With a copy of `rig.toml` whose locators are all raised by hand, `bun run test` still passes once the copy is in place (version-neutral checks), and fails when one variant differs from the other.
-- `ki repo audit` reports no failure, including `ki-work-housekeeping` on the new template, and `ki-next` on the Mac lists TECHNE-TOOLS-HK-001 as due (no `last-run`).
+- `ki repo audit` reports no failure, including `ki-work-housekeeping` on the new template, and `ki-work next` on the Mac lists TECHNE-TOOLS-HK-001 as due (no `last-run`).
 - `bash operations/aws/agent-host/status.sh` against the stubbed host in the checks prints no workstation section; its exit status and `--json` output are unchanged.
 - After approval, one live `bun run self:pins:bump --check` on the Mac reports each tool's latest release without writing. No host is touched.
 
